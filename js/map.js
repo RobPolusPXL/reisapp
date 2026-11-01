@@ -2,7 +2,7 @@
 import { map as mp, list } from './data.js';
 import { get } from './store.js';
 
-export function createMap(host, { interactive = true, onSelect = null } = {}) {
+export function createMap(host, { interactive = true, onSelect = null , contain = false } = {}) {
   const { w: W, h: H, paths, scale, ty } = mp;
   const markers = list.filter(c => c.p);
   const body = Object.entries(paths).map(([c, d]) => `<path data-c="${c}" d="${d}"/>`).join('') +
@@ -48,10 +48,10 @@ export function createMap(host, { interactive = true, onSelect = null } = {}) {
     if (!r.width || !r.height) return;
     vw = r.width; vh = r.height;
     svg.setAttribute('viewBox', `0 0 ${vw} ${vh}`);
-    k0 = interactive ? Math.max(vw / W, vh / H) : vw / W;
+    k0 = interactive ? Math.max(vw / W, vh / H) : contain ? Math.min(vw / W, vh / H) : vw / W;
     if (!inited) {
       inited = true;
-      if (interactive) focusPoint(14, 50, Math.max(k0, vw / 300)); else { k = k0; x = 0; y = 0; clamp(); apply(false); }
+      if (interactive) focusPoint(14, 50, Math.max(k0, vw >= 900 ? vw / 1000 : vw / 300)); else { k = k0; x = 0; y = 0; clamp(); apply(false); }
     } else { clamp(); apply(false); }
   }
   const ro = new ResizeObserver(resize);
