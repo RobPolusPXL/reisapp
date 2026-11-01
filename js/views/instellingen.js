@@ -1,7 +1,6 @@
 import { get, update, replaceAll, subscribe } from '../store.js';
 import { ic, toast } from '../ui.js';
 import { syncCardHtml, signIn, signOut, onStatus } from '../sync.js';
-import { isEmpty, loadSeed } from '../seed.js';
 
 export const THEMES = [
   ['groen', 'Groen', '#0E7C66'], ['blauw', 'Blauw', '#1D5FD1'], ['amber', 'Amber', '#B45309'],
@@ -20,7 +19,6 @@ export function mount(el) {
       <section class="card"><div class="card-head"><h2>Weergave</h2></div>
         <div class="seg" role="group" aria-label="Weergave">${MODES.map(([id, n]) => `<button type="button" data-mode="${id}" aria-pressed="${s.mode === id}">${n}</button>`).join('')}</div>
       </section>
-      ${isEmpty(get()) ? '<section class="card"><div class="card-head"><h2>Startdata</h2></div><p class="muted" style="margin:0 0 12px">Laad je bekende reizen en landen (uit je blog en Been) in deze lege app.</p><button type="button" class="btn soft block" id="seed">Mijn reizen laden</button></section>' : ''}
       ${syncCardHtml()}
       <section class="card"><div class="card-head"><h2>Back-up</h2></div>
         <p class="muted" style="margin:0 0 12px">Exporteer al je gegevens als bestand, of zet een eerder bestand terug.</p>
@@ -41,7 +39,6 @@ export function mount(el) {
     if (t) { update(st => { st.settings.theme = t.dataset.theme; }); return; }
     const m = e.target.closest('button[data-mode]');
     if (m) { update(st => { st.settings.mode = m.dataset.mode; }); return; }
-    if (e.target.closest('#seed')) { loadSeed(); return; }
     if (e.target.closest('#sync-in')) { signIn(); return; }
     if (e.target.closest('#sync-out')) { signOut(); return; }
     if (e.target.closest('#exp')) {
