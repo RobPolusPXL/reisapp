@@ -19,15 +19,16 @@ export function mount(el, { params }) {
       if (n) sub += ` · ${nightsLabel(n)}`;
     } else if (i.type === 'activity' && i.date && i.dateEnd && i.dateEnd !== i.date) sub += ` · ${fmtRange(i.date, i.dateEnd)}`;
     else if (i.date) sub += ` · ${fmtDate(i.date)}`;
+    let extra = '';
     if (i.type === 'flight') {
       const route = [i.f?.from, i.f?.to].filter(Boolean).join(' → ');
-      if (route) sub += ` · ${route}`;
       const px = i.f?.pax?.length ? i.f.pax : (i.f?.seat ? [{ seat: i.f.seat }] : []);
       const seats = px.filter(x => x.seat).map(x => x.name ? `${x.name.split(' ')[0]} ${x.seat}` : x.seat);
-      if (seats.length) sub += ` · ${seats.join(', ')}`;
+      if (route) extra += `<div class="s s-route">${esc(route)}</div>`;
+      if (seats.length) extra += `<div class="s">${esc(seats.join(' · '))}</div>`;
     }
     const right = i.score ? `${scoreH(String(i.score).replace('.', ','))}` : ic('chev', 20);
-    return `<button type="button" class="item" data-item="${esc(i.id)}"><span class="ico">${ic(icon, 22)}</span><span class="grow"><div class="t">${esc(i.name)}</div><div class="s">${esc(sub)}</div></span><span class="r">${right}</span></button>`;
+    return `<button type="button" class="item" data-item="${esc(i.id)}"><span class="ico">${ic(icon, 22)}</span><span class="grow"><div class="t">${esc(i.name)}</div><div class="s">${esc(sub)}</div>${extra}</span><span class="r">${right}</span></button>`;
   };
 
   const draw = () => {
