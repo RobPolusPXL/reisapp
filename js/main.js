@@ -35,13 +35,14 @@ const loaders = {
   paspoort: () => import('./views/paspoort.js'),
   reizen: () => import('./views/reizen.js'),
   reis: () => import('./views/reis.js'),
+  statistieken: () => import('./views/statistieken.js'),
   instellingen: () => import('./views/instellingen.js'),
 };
 
 async function route() {
   const parts = (location.hash.replace(/^#\/?/, '') || 'kaart').split('/');
   const name = loaders[parts[0]] ? parts[0] : 'kaart';
-  const tab = name === 'reis' ? 'reizen' : name;
+  const tab = name === 'reis' || name === 'statistieken' ? 'reizen' : name;
   cleanup?.(); cleanup = null;
   view.className = '';
   view.innerHTML = '';
