@@ -2,7 +2,7 @@
 const V = 'reisapp-v1';
 const CORE = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
-  'js/main.js', 'js/store.js', 'js/data.js', 'js/ui.js', 'js/map.js', 'js/sheets.js', 'js/trips.js', 'js/sync.js', 'js/firebase-config.js',
+  'js/main.js', 'js/store.js', 'js/data.js', 'js/ui.js', 'js/map.js', 'js/sheets.js', 'js/trips.js', 'js/sync.js', 'js/seed.js', 'js/firebase-config.js',
   'js/views/kaart.js', 'js/views/paspoort.js', 'js/views/reizen.js', 'js/views/reis.js', 'js/views/instellingen.js',
   'data/map.json', 'data/countries.json', 'assets/icons/icon.svg', 'assets/icons/icon-192.png', 'assets/icons/icon-512.png',
 ];
