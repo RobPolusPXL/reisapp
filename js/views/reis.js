@@ -1,6 +1,6 @@
 import { get, subscribe, getTrip, update } from '../store.js';
 import { nameOf } from '../data.js';
-import { esc, ic, fmtRange, fmtDate, daysBetween, SNOR } from '../ui.js';
+import { esc, ic, fmtRange, fmtDate, daysBetween, scoreH } from '../ui.js';
 import { legsHtml, TYPES, openTripForm, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
 
 const FILTERS = [['all', 'Alles'], ['flight', 'Vluchten'], ['stay', 'Verblijf'], ['food', 'Eten'], ['activity', 'Activiteit']];
@@ -25,7 +25,7 @@ export function mount(el, { params }) {
       const seats = px.filter(x => x.seat).map(x => x.name ? `${x.name.split(' ')[0]} ${x.seat}` : x.seat);
       if (seats.length) sub += ` · ${seats.join(', ')}`;
     }
-    const right = i.score ? `${SNOR}${esc(String(i.score).replace('.', ','))}` : ic('chev', 20);
+    const right = i.score ? `${scoreH(String(i.score).replace('.', ','))}` : ic('chev', 20);
     return `<button type="button" class="item" data-item="${esc(i.id)}"><span class="ico">${ic(icon, 22)}</span><span class="grow"><div class="t">${esc(i.name)}</div><div class="s">${esc(sub)}</div></span><span class="r">${right}</span></button>`;
   };
 

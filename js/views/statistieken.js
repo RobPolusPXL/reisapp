@@ -1,6 +1,6 @@
 import { get, subscribe } from '../store.js';
 import { nameOf, flag } from '../data.js';
-import { esc, ic, daysBetween, fmtRange, SNOR } from '../ui.js';
+import { esc, ic, daysBetween, fmtRange, scoreH } from '../ui.js';
 import { MODES, TYPES, tripStats } from '../trips.js';
 
 const num = n => String(Math.round(n * 10) / 10).replace('.', ',');
@@ -74,9 +74,9 @@ export function mount(el) {
       <section class="card"><div class="card-head"><h2>Onderweg</h2></div>
         <div class="list">
           ${Object.entries(TYPES).map(([k, [label, icon]]) => `<div class="list-row"><span class="ico-sm">${ic(icon, 20)}</span><div class="grow">${label}</div><strong>${types[k] || 0}</strong></div>`).join('')}
-          ${avg !== null ? `<div class="list-row"><span class="ico-sm">${ic('snor', 20)}</span><div class="grow">Gemiddelde score<div class="s">${scored.length} met score</div></div><strong>${SNOR}${num(avg)}</strong></div>` : ''}
+          ${avg !== null ? `<div class="list-row"><span class="ico-sm">${ic('snor', 20)}</span><div class="grow">Gemiddelde score<div class="s">${scored.length} met score</div></div><strong>${scoreH(num(avg))}</strong></div>` : ''}
         </div>
-        ${best.length ? `<h3 style="font-size:15px;margin:18px 0 6px">Hoogst gescoord</h3><div class="list">${best.map(i => `<div class="list-row"><div class="grow"><div class="t">${esc(i.name)}</div><div class="s">${esc(TYPES[i.type]?.[0] || '')}</div></div><strong>${SNOR}${esc(String(i.score).replace('.', ','))}</strong></div>`).join('')}</div>` : ''}
+        ${best.length ? `<h3 style="font-size:15px;margin:18px 0 6px">Hoogst gescoord</h3><div class="list">${best.map(i => `<div class="list-row"><div class="grow"><div class="t">${esc(i.name)}</div><div class="s">${esc(TYPES[i.type]?.[0] || '')}</div></div><strong>${scoreH(String(i.score).replace('.', ','))}</strong></div>`).join('')}</div>` : ''}
       </section>` : `<div class="card"><h2>Nog geen reizen</h2><p class="muted">Voeg een reis toe, dan verschijnen hier je statistieken.</p></div>`}
     </div>`;
   };

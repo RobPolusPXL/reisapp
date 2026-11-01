@@ -89,7 +89,7 @@ export function daysBetween(a, b) {
   return Math.round((db - da) / 86400000) + 1;
 }
 
-/** Kleine snor in plaats van een ster, voor scores. */
-export const SNOR = '<img class="snor-i" src="assets/snor.webp" alt="" width="38" height="12">';
+/** Score met een snor (silhouet van het blog, in themakleur) en een getal met vaste breedte, zodat alles netjes onder elkaar staat. */
+export const scoreH = v => `<span class="score"><span class="snor-i" aria-hidden="true"></span><span class="sn">${esc(String(v))}</span></span>`;
 /** Tekst voor een scorekeuze: 1 snor, 3,5 snorren. */
 export const snorTxt = n => `${String(n).replace('.', ',')} ${Number(n) === 1 ? 'snor' : 'snorren'}`;

@@ -423,8 +423,12 @@ a.list-row { color: inherit; }
 .kpis b { font-size: 19px; }
 @media (min-width: 900px) { .kpis b { font-size: 22px; } }
 
-/* Snorren in plaats van sterren */
-.snor-i { height: .62em; width: auto; vertical-align: -.02em; margin-right: .3em; }
-.rc-score .sc .snor-i, .sc .v .snor-i { height: .46em; vertical-align: .04em; }
-.kpis b .snor-i, .big4 b .snor-i { height: .42em; vertical-align: .08em; }
-.rc-tile .st .snor-i, .crr .cst .snor-i, .brow .snor-i, .rank .v .snor-i { height: .74em; }
+/* Snorren in plaats van sterren: silhouet van de blogsnor in themakleur */
+.score { display: inline-flex; align-items: center; gap: .32em; white-space: nowrap; }
+.snor-i { display: inline-block; flex: none; height: .6em; aspect-ratio: 240 / 76; background: var(--accent); -webkit-mask: url(../assets/snor.webp) center / contain no-repeat; mask: url(../assets/snor.webp) center / contain no-repeat; }
+.score .sn { min-width: 2.35ch; text-align: left; font-variant-numeric: tabular-nums; line-height: 1; }
+.rc-score .sc .score, .sc .v .score { justify-content: flex-end; }
+.kpis b .score, .big4 b .score { justify-content: center; }
+.kpis b .score .sn, .big4 b .score .sn, .kpis b .score, .big4 b .score { font-size: inherit; color: var(--ink); font-weight: inherit; }
+.big4 b .score .sn { color: var(--accent); }
+.kpis b .snor-i, .big4 b .snor-i { height: .5em; }
