@@ -346,3 +346,4 @@ a.list-row { color: inherit; }
 .rc-t { min-width: 0; }
 .todo.soon { opacity: .55; cursor: default; }
 .todo.soon .soon-l { font-size: 13px; flex: none; }
+.credits-page .chips { overflow: visible; padding-bottom: 0; }
