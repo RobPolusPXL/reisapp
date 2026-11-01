@@ -37,8 +37,8 @@ const list = countries.map(c => {
   const un195 = c.unMember || ['VA', 'PS'].includes(c.cca2);
   const o = { c: c.cca2, n: c.translations?.nld?.common || c.name.common, e: c.name.common, k: continent(c), u: un195 ? 1 : 0 };
   if (!paths[c.cca2] && c.latlng?.length === 2) {
-    const [x, y] = proj([c.latlng[1], c.latlng[0]]);
-    o.p = [Math.round(x * 10) / 10, Math.round(y * 10) / 10];
+    const pt = proj([c.latlng[1], c.latlng[0]]);
+    if (pt && Number.isFinite(pt[0]) && Number.isFinite(pt[1]) && pt[1] >= 0 && pt[1] <= H) o.p = [Math.round(pt[0] * 10) / 10, Math.round(pt[1] * 10) / 10];
   }
   return o;
 }).sort((a, b) => a.n.localeCompare(b.n, 'nl'));
