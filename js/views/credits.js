@@ -7,6 +7,35 @@ const SCORES = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 const num = n => String(n).replace('.', ',');
 const link = c => `https://coasterpedia.net/w/index.php?search=${encodeURIComponent(c.name + ' ' + c.park)}`;
 
+const SEAT_NAMES = { 1: ['plek'], 2: ['links', 'rechts'], 3: ['links', 'midden', 'rechts'], 4: ['links buiten', 'links binnen', 'rechts binnen', 'rechts buiten'] };
+const ROW_NAMES = { 2: ['voorste rij', 'achterste rij'], 3: ['voorste rij', 'middelste rij', 'achterste rij'] };
+/** 'Wagon 3 · voorste rij · links' voor een zitje in de getekende trein (wagon 1 = voorop). */
+export function seatLabel(t, pos) {
+  if (!t || !pos) return '';
+  const parts = [];
+  if (t.cars > 1) parts.push(`Wagon ${pos.car + 1}`);
+  if (t.rows > 1) parts.push((ROW_NAMES[t.rows] || [])[pos.row] || `rij ${pos.row + 1}`);
+  parts.push((SEAT_NAMES[t.across] || [])[pos.col] || `plaats ${pos.col + 1}`);
+  return parts.join(' · ');
+}
+function trainHtml(t, pos) {
+  const cars = [];
+  for (let car = 0; car < t.cars; car++) {
+    let rows = '';
+    for (let row = 0; row < t.rows; row++) {
+      let seats = '';
+      for (let col = 0; col < t.across; col++) {
+        const on = pos && pos.car === car && pos.row === row && pos.col === col;
+        const lab = seatLabel(t, { car, row, col });
+        seats += `<button type="button" class="tseat${on ? ' on' : ''}" data-seat="${car}.${row}.${col}" aria-label="${esc(lab)}" aria-pressed="${on}"></button>`;
+      }
+      rows += `<div class="trow">${seats}</div>`;
+    }
+    cars.push(`<div class="tcar"><span class="tcarn">${t.cars > 1 ? car + 1 : ''}</span>${rows}</div>`);
+  }
+  return `<div class="train-wrap"><div class="train-front">▲ voorkant</div>${cars.join('')}</div>`;
+}
+
 let db = null;
 async function load() {
   db ||= await fetch('data/coasters.json').then(r => r.json()).catch(() => []);
@@ -41,6 +70,7 @@ function openCredit(c) {
   const cur = get().credits[c.id];
   const draft = ridesOf(cur).map(r => ({ ...r }));
   if (!draft.length) draft.push({ date: '', score: '', seat: '' });
+  let openIdx = -1;
   const sh = openSheet('', { title: c.name });
   const rideRow = (r, i) => `<div class="ride" data-ride>
       <div class="ride-h"><strong>Rit ${i + 1}</strong>${draft.length > 1 ? `<button type="button" class="icon-btn" data-delride aria-label="Rit ${i + 1} verwijderen" style="background:var(--bg);width:40px;height:40px">${ic('trash', 18)}</button>` : ''}</div>
@@ -48,13 +78,17 @@ function openCredit(c) {
         <div class="field"><label>Datum</label><input name="date" type="date" value="${esc(r.date || '')}"></div>
         <div class="field"><label>Score (optioneel)</label><select name="score"><option value="">Geen score</option>${SCORES.map(n => `<option value="${n}"${String(r.score) === String(n) ? ' selected' : ''}>★ ${num(n)}</option>`).join('')}</select></div>
       </div>
-      <div class="field"><label>Plaats in de trein (optioneel)</label><input name="seat" value="${esc(r.seat || '')}" placeholder="Bijvoorbeeld rij 3 of voorin" autocomplete="off"></div>
+      ${c.train ? `<div class="field"><label>Plaats in de trein (optioneel)</label>
+        <button type="button" class="seatbtn" data-pick="${i}" aria-expanded="${openIdx === i}">${r.pos ? esc(seatLabel(c.train, r.pos)) : '<span class="muted">Kies je plaats in de trein</span>'}${ic('chev', 18)}</button>
+        ${openIdx === i ? trainHtml(c.train, r.pos) : ''}</div>`
+      : `<div class="field"><label>Plaats in de trein (optioneel)</label><input name="seat" value="${esc(r.seat || '')}" placeholder="Bijvoorbeeld rij 3 of voorin" autocomplete="off"></div>`}
     </div>`;
   const read = () => {
     const rows = [...sh.el.querySelectorAll('[data-ride]')];
     if (!rows.length) return;
+    const old = draft.slice();
     draft.length = 0;
-    for (const r of rows) draft.push({ date: r.querySelector('[name=date]').value, score: r.querySelector('[name=score]').value, seat: r.querySelector('[name=seat]').value.trim() });
+    rows.forEach((r, i) => draft.push({ date: r.querySelector('[name=date]').value, score: r.querySelector('[name=score]').value, seat: r.querySelector('[name=seat]')?.value.trim() ?? old[i]?.seat ?? '', ...(old[i]?.pos ? { pos: old[i].pos } : {}) }));
   };
   const render = () => sh.setHtml(`<h2>${esc(c.name)}</h2>
     <p class="muted" style="margin:-6px 0 14px">${esc([c.maker, c.year, c.type].filter(Boolean).join(' · '))}</p>
@@ -66,9 +100,18 @@ function openCredit(c) {
     </form>`);
   render();
   sh.el.addEventListener('click', e => {
+    const pk = e.target.closest('[data-pick]');
+    if (pk) { read(); const i = +pk.dataset.pick; openIdx = openIdx === i ? -1 : i; render(); return; }
+    const st = e.target.closest('[data-seat]');
+    if (st) {
+      read();
+      const [car, row, col] = st.dataset.seat.split('.').map(Number), r = draft[openIdx];
+      if (r) { if (r.pos && r.pos.car === car && r.pos.row === row && r.pos.col === col) { delete r.pos; r.seat = ''; } else { r.pos = { car, row, col }; r.seat = seatLabel(c.train, r.pos); } }
+      openIdx = -1; render(); return;
+    }
     if (e.target.closest('[data-addride]')) { read(); draft.push({ date: [...draft].reverse().find(r => r.date)?.date || '', score: '', seat: '' }); render(); sh.el.querySelectorAll('[data-ride]')[draft.length - 1]?.querySelector('[name=date]').focus(); return; }
     const d = e.target.closest('[data-delride]');
-    if (d) { read(); const i = [...sh.el.querySelectorAll('[data-ride]')].indexOf(d.closest('[data-ride]')); draft.splice(i, 1); render(); return; }
+    if (d) { read(); const i = [...sh.el.querySelectorAll('[data-ride]')].indexOf(d.closest('[data-ride]')); draft.splice(i, 1); openIdx = -1; render(); return; }
     if (e.target.closest('[data-del]')) { update(st => { delete st.credits[c.id]; }); sh.close(); toast('Credit verwijderd'); }
   });
   sh.el.addEventListener('submit', e => {
