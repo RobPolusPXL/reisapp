@@ -51,7 +51,7 @@ export function createMap(host, { interactive = true, onSelect = null , contain 
     k0 = interactive ? Math.max(vw / W, vh / H) : contain ? Math.min(vw / W, vh / H) : vw / W;
     if (!inited) {
       inited = true;
-      if (interactive) focusPoint(14, 50, Math.max(k0, vw / 300)); else { k = k0; x = 0; y = 0; clamp(); apply(false); }
+      if (interactive) focusPoint(14, 50, Math.max(k0, vw >= 900 ? vw / 1000 : vw / 300)); else { k = k0; x = 0; y = 0; clamp(); apply(false); }
     } else { clamp(); apply(false); }
   }
   const ro = new ResizeObserver(resize);
