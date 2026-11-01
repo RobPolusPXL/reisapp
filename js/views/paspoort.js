@@ -1,10 +1,14 @@
 import { get, subscribe, update, newId, setCountry } from '../store.js';
 import { byCode, CONT, flag, nameOf, statsFor } from '../data.js';
 import { createMap } from '../map.js';
-import { esc, ic, openSheet, toast } from '../ui.js';
+import { esc, ic, openSheet, toast, fmtRange, fmtDate, daysBetween, scoreH } from '../ui.js';
+import { load as loadCoasters, parkOverview, ridesOf, avgScore } from './credits.js';
 import { countryOptions } from '../trips.js';
 import { openCountryPicker, openCountrySheet } from '../sheets.js';
 import { loadAirports, attachAirportSearch } from '../airports.js';
+
+const wideNow = () => window.matchMedia('(min-width: 1100px)').matches;
+const num = v => String(v).replace('.', ',');
 
 const PLACES = {
   cities: { title: 'Mijn steden', add: 'Stad toevoegen', empty: 'Nog geen steden' },
@@ -49,6 +53,9 @@ function openPlaceForm(kind) {
 }
 
 export function mount(el) {
+  let coasters = [];
+  loadCoasters().then(db => { coasters = db; if (wideNow()) draw(); });
+  const mq = window.matchMedia('(min-width: 1100px)');
   let showAll = false;
   let slide = 0;
   let map = null;
@@ -78,6 +85,34 @@ export function mount(el) {
     </section>`;
   };
 
+  // Overzicht voor de site (breed scherm): geen kaarten, open lijsten met dunne lijnen.
+  const siteHtml = (st, s, visited, conts, contTotal) => {
+    const trips = [...st.trips].sort((a, b) => (b.start || '').localeCompare(a.start || '')).slice(0, 5);
+    const parks = parkOverview(coasters, st.credits || {});
+    const allRides = parks.flatMap(p => p.rows);
+    const rideN = allRides.reduce((n, r) => n + r.rides, 0), creditN = allRides.length;
+    const cities = st.places.cities, airports = st.places.airports;
+    const cityGroups = new Map();
+    for (const p of cities) { if (!cityGroups.has(p.c)) cityGroups.set(p.c, []); cityGroups.get(p.c).push(p.name); }
+    const cg = [...cityGroups].sort((a, b) => b[1].length - a[1].length || nameOf(a[0]).localeCompare(nameOf(b[0]), 'nl'));
+    const avgAll = avgScore(parks.flatMap(pk => []).concat(Object.values(st.credits || {}).flatMap(c => ridesOf(c))));
+    const stat = (n, small, l, sub) => `<div><b>${n}${small ? `<small> ${small}</small>` : ''}</b><span>${l}</span><em>${sub || '&nbsp;'}</em></div>`;
+    return `<div class="site pas-site">
+      <header class="site-head"><h1>Paspoort</h1><a class="icon-btn" href="#/instellingen" aria-label="Instellingen">${ic('gear', 22)}</a></header>
+      <p class="site-lead">${s.un.length} van ${s.totalUN} landen bezocht · ${cities.length} ${cities.length === 1 ? 'stad' : 'steden'} · ${airports.length} ${airports.length === 1 ? 'luchthaven' : 'luchthavens'}</p>
+      <div class="site-map"><div class="map-host mini plain" id="mini"></div></div>
+      <div class="site-stats">${stat(s.un.length, `/ ${s.totalUN}`, 'landen', `${s.pct}% van de wereld`)}${stat(conts, `/ ${contTotal}`, 'continenten', `${Math.round(conts / contTotal * 100)}% verkend`)}${stat(cities.length, '', cities.length === 1 ? 'stad' : 'steden', `in ${new Set(cities.map(p => p.c)).size} landen`)}${stat(airports.length, '', airports.length === 1 ? 'luchthaven' : 'luchthavens', '')}${stat(creditN, creditN === 1 ? 'credit' : 'credits', 'pretparken', rideN ? `${rideN} ${rideN === 1 ? 'rit' : 'ritten'}${avgAll ? ` · gemiddeld ${num(avgAll)}` : ''}` : '')}</div>
+      <div class="site-cols">
+        <section><h2>Reizen<a href="#/reizen">Alle reizen</a></h2>${trips.length ? trips.map(t => { const d = daysBetween(t.start, t.end); return `<a class="s-trip" href="#/reis/${esc(t.id)}"><span class="s-td">${esc(fmtRange(t.start, t.end))}</span><span class="s-tt">${esc(t.title || nameOf(t.legs[0]?.c) || 'Reis')}</span><span class="s-tf">${t.legs.slice(0, 4).map(l => flag(l.c)).join('')}</span><span class="s-tl">${d} ${d === 1 ? 'dag' : 'dagen'}</span></a>`; }).join('') : '<div class="empty">Nog geen reizen</div>'}</section>
+        <section><h2>Pretparken<a href="#/credits">Alle pretparken</a></h2>${parks.length ? parks.slice(0, 2).map(pk => `<div class="s-park">${pk.country ? flag(pk.country) : ''}<div><b>${esc(pk.park)}</b><small>${pk.country ? esc(nameOf(pk.country)) : ''}${pk.last ? ` · laatst ${esc(fmtDate(pk.last))}` : ''}</small></div><div class="s-c">${pk.got}<small> / ${pk.total} credits</small></div></div><div class="s-pb"><u style="width:${Math.round(pk.got / (pk.total || 1) * 100)}%"></u></div>
+          <table class="s-tab"><tr><th>Baan</th><th>Score</th><th>Ritten</th><th>Datums</th></tr>${pk.rows.slice(0, 6).map(r => `<tr><td class="n">${esc(r.name)}<small>${esc(r.meta)}</small></td><td>${r.score ? scoreH(num(r.score)) : ''}</td><td>${r.rides}</td><td class="d">${esc(r.dates)}</td></tr>`).join('')}</table>`).join('') : '<div class="empty">Nog geen pretparken</div>'}</section>
+        <section><h2>Landen<button type="button" class="s-add" id="addc">Toevoegen</button></h2><ul class="s-two">${visited.map(c => `<li data-c="${c.c}">${flag(c.c)}<span>${esc(c.n)}</span><small>${st.countries[c.c]?.y ? esc(st.countries[c.c].y) : ''}</small></li>`).join('')}</ul></section>
+        <section><h2>Steden<button type="button" class="s-add" data-add="cities">Toevoegen</button></h2><ul>${cg.map(([c, names]) => `<li data-c="${esc(c)}">${flag(c)}<span>${esc(nameOf(c))}<small>${esc(names.join(', '))}</small></span><em>${names.length}</em></li>`).join('') || '<li class="empty">Nog geen steden</li>'}</ul></section>
+        <section><h2>Luchthavens<button type="button" class="s-add" data-add="airports">Toevoegen</button></h2><ul>${airports.map(p => `<li>${flag(p.c)}<span>${esc([p.code, p.name].filter(Boolean).join(' · '))}<small>${esc(nameOf(p.c))}</small></span></li>`).join('') || '<li class="empty">Nog geen luchthavens</li>'}</ul></section>
+        <section><h2>Continenten</h2>${Object.entries(CONT).filter(([k]) => s.cont[k].total).map(([k, n]) => `<div class="s-cb"><span>${esc(n)}</span><div><u style="width:${s.cont[k].pct}%"></u></div><b>${s.cont[k].got}/${s.cont[k].total}</b></div>`).join('')}</section>
+      </div></div>`;
+  };
+
   const draw = () => {
     const st = get();
     const s = statsFor(st);
@@ -88,6 +123,12 @@ export function mount(el) {
     const conts = contVisited.size, contPct = Math.round((conts / contTotal) * 100);
     const top = Object.keys(CONT).filter(k => s.cont[k].got).sort((a, b) => s.cont[b].got - s.cont[a].got)[0] || null;
     const wish = Object.entries(st.countries).filter(([, v]) => v.s === 'w').map(([c]) => byCode.get(c)).filter(Boolean).sort((a, b) => a.n.localeCompare(b.n, 'nl'));
+    if (wideNow()) {
+      el.innerHTML = siteHtml(st, s, visited, conts, contTotal);
+      map?.destroy();
+      map = createMap(el.querySelector('#mini'), { interactive: false, contain: true });
+      return;
+    }
     el.innerHTML = `<div class="page">
       <header class="page-head"><h1>Paspoort</h1><a class="icon-btn" href="#/instellingen" aria-label="Instellingen">${ic('gear', 22)}</a></header>
       <div class="cols">
@@ -155,6 +196,7 @@ export function mount(el) {
   };
   draw();
   const unsub = subscribe(draw);
+  mq.addEventListener('change', draw);
 
   const onClick = e => {
     const dot = e.target.closest('[data-dot]');
@@ -175,5 +217,5 @@ export function mount(el) {
     if (e.target.closest('#more')) { showAll = !showAll; draw(); }
   };
   el.addEventListener('click', onClick);
-  return () => { unsub(); map?.destroy(); el.removeEventListener('click', onClick); };
+  return () => { unsub(); mq.removeEventListener('change', draw); map?.destroy(); el.removeEventListener('click', onClick); };
 }

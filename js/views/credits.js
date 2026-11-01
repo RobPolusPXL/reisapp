@@ -64,6 +64,20 @@ const datesText = ds => {
   return out.join(', ') + (more ? ` +${more}` : '');
 };
 
+/** Per park met credits: aantallen en de gereden banen (voor het overzicht op de site). */
+export function parkOverview(db, credits) {
+  const parks = [...new Set(db.map(c => c.park))];
+  return parks.map(park => {
+    const open = db.filter(c => c.park === park && c.status === 'open');
+    const done = open.filter(c => ridesOf(credits[c.id]).length)
+      .sort((x, y) => lastDate(ridesOf(credits[y.id])).localeCompare(lastDate(ridesOf(credits[x.id]))) || x.name.localeCompare(y.name, 'nl'));
+    const all = done.flatMap(c => ridesOf(credits[c.id]));
+    return {
+      park, country: (db.find(c => c.park === park) || {}).c || '', got: done.length, total: open.length, last: lastDate(all),
+      rows: done.map(c => { const r = ridesOf(credits[c.id]); return { name: c.name, meta: [c.maker, c.year].filter(Boolean).join(' · '), score: avgScore(r), rides: r.length, dates: datesText(uniqDates(r)) }; }),
+    };
+  }).filter(x => x.got).sort((a, b) => b.last.localeCompare(a.last));
+}
 const lastDate = rides => rides.map(r => r.date).filter(Boolean).sort().pop() || '';
 
 function openCredit(c, { addRide = false, focus = -1 } = {}) {
