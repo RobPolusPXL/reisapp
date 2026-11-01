@@ -71,3 +71,9 @@ scripts/build-data.mjs generator voor kaart- en landendata
 - Steden, regio's en luchthavens zijn eigen lijsten (naam + land), zonder kaartlaag of vooraf geladen database.
 - Continenttotalen tellen alleen de 195 VN-landen (Been telt ook gebieden mee, dus de aantallen verschillen).
 - De Firebase-koppeling is geschreven maar nog niet getest met een echt project.
+
+## Gegevensbronnen
+
+- `data/airports.json`: [OurAirports](https://ourairports.com/data/) (publiek domein).
+- `data/airlines.json`: [OpenFlights](https://openflights.org/data) (Open Database License; vermelding: © OpenFlights.org).
+- `vendor/zxing/`: [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) (MIT), leest de streepjescode van een boarding pass lokaal in de browser.

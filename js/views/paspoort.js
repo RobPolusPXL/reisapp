@@ -4,6 +4,7 @@ import { createMap } from '../map.js';
 import { esc, ic, openSheet, toast } from '../ui.js';
 import { countryOptions } from '../trips.js';
 import { openCountryPicker, openCountrySheet } from '../sheets.js';
+import { loadAirports, attachAirportSearch } from '../airports.js';
 
 const PLACES = {
   cities: { title: 'Mijn steden', add: 'Stad toevoegen', empty: 'Nog geen steden' },
@@ -15,13 +16,22 @@ function openPlaceForm(kind) {
   const cfg = PLACES[kind];
   const sh = openSheet(`<h2>${cfg.add}</h2>
     <form class="form" novalidate>
-      ${kind === 'airports' ? `<div class="pair"><div class="field" style="flex:0 0 110px"><label for="p-code">Code</label><input id="p-code" name="code" maxlength="4" placeholder="BRU" style="text-transform:uppercase"></div>
+      ${kind === 'airports' ? `<div class="field"><label for="p-zoek">Zoeken</label><input id="p-zoek" placeholder="Zoek luchthaven, stad of code" autocapitalize="characters"></div>
+      <p class="muted" style="margin:-4px 0 0;font-size:13px">Staat hij er niet tussen? Vul hem hieronder zelf in.</p>
+      <div class="pair"><div class="field" style="flex:0 0 110px"><label for="p-code">Code</label><input id="p-code" name="code" maxlength="4" placeholder="BRU" style="text-transform:uppercase"></div>
         <div class="field"><label for="p-naam">Naam</label><input id="p-naam" name="naam" placeholder="Naam van de luchthaven"></div></div>`
       : `<div class="field"><label for="p-naam">Naam</label><input id="p-naam" name="naam" placeholder="Naam"></div>`}
       <div class="field"><label for="p-land">Land</label><select id="p-land" name="land">${countryOptions('')}</select></div>
       <p class="muted" role="alert" id="p-err" style="margin:0;color:var(--danger)"></p>
       <div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="submit" class="btn primary">Opslaan</button></div>
     </form>`, { title: cfg.add });
+  if (kind === 'airports') {
+    loadAirports();
+    attachAirportSearch(sh.el.querySelector('#p-zoek'), a => {
+      const f = sh.el.querySelector('form').elements;
+      f.code.value = a.code; f.naam.value = a.name; f.land.value = a.c;
+    });
+  }
   sh.el.addEventListener('submit', e => {
     e.preventDefault();
     const f = e.target.elements;
@@ -31,7 +41,7 @@ function openPlaceForm(kind) {
     if (!land) { err.textContent = 'Kies een land.'; return; }
     update(st => {
       st.places[kind].push(kind === 'airports' ? { id: newId(), code, name: naam, c: land } : { id: newId(), name: naam, c: land });
-      if (!st.countries[land]) st.countries[land] = { s: 'v' };
+      if (kind !== 'airports' && !st.countries[land]) st.countries[land] = { s: 'v' };
     });
     sh.close();
     toast('Toegevoegd');
