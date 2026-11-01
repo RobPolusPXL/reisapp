@@ -107,9 +107,13 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     draft.date = val(f, 'date'); draft.note = val(f, 'note');
     if (draft.type === 'flight') {
       for (const k of ['airline', 'number', 'from', 'to', 'dep', 'arr', 'seat', 'cls', 'ref']) draft.f[k] = val(f, k);
+      for (const k of ['from', 'to']) if (/^[a-z]{3}$/i.test(draft.f[k])) draft.f[k] = draft.f[k].toUpperCase();
     } else { draft.name = val(f, 'name'); draft.score = val(f, 'score'); }
   };
-  const fld = (n, label, type = 'text', v = '', ph = '') => `<div class="field"><label for="i-${n}">${label}</label><input id="i-${n}" name="${n}" type="${type}" value="${esc(v)}" placeholder="${esc(ph)}"></div>`;
+  const fld = (n, label, type = 'text', v = '', ph = '', extra = '') => `<div class="field"><label for="i-${n}">${label}</label><input id="i-${n}" name="${n}" type="${type}" value="${esc(v)}" placeholder="${esc(ph)}"${extra}></div>`;
+  // Luchthavens uit Paspoort worden voorgesteld; een andere code of naam intypen kan ook.
+  const apList = () => `<datalist id="ap-list">${get().places.airports.map(a => `<option value="${esc(a.code || a.name)}">${esc([a.code, a.name].filter(Boolean).join(' · '))}</option>`).join('')}</datalist>`;
+  const apAttr = ' list="ap-list" autocomplete="off" autocapitalize="characters"';
   const render = (err = '') => {
     const t = draft.type, f = draft.f;
     sh.setHtml(`<h2>${item ? 'Item bewerken' : 'Item toevoegen'}</h2>
@@ -117,7 +121,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
       <div class="field"><label for="i-type">Soort</label><select id="i-type" name="type">${Object.entries(TYPES).map(([k, [n]]) => `<option value="${k}"${k === t ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
       ${t === 'flight' ? `
         <div class="pair">${fld('airline', 'Maatschappij', 'text', f.airline, 'Maatschappij')}${fld('number', 'Vluchtnummer', 'text', f.number, 'Vluchtnummer')}</div>
-        <div class="pair">${fld('from', 'Van', 'text', f.from, 'Luchthaven')}${fld('to', 'Naar', 'text', f.to, 'Luchthaven')}</div>
+        <div class="pair">${fld('from', 'Van', 'text', f.from, 'Luchthaven of code', apAttr)}${fld('to', 'Naar', 'text', f.to, 'Luchthaven of code', apAttr)}</div>${apList()}
         ${fld('date', 'Datum', 'date', draft.date)}
         <div class="pair">${fld('dep', 'Vertrek', 'time', f.dep)}${fld('arr', 'Aankomst', 'time', f.arr)}</div>
         <div class="pair">${fld('seat', 'Zitplaats', 'text', f.seat, 'Zitplaats')}
