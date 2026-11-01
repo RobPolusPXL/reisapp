@@ -57,6 +57,7 @@ export function mount(el) {
   loadCoasters().then(db => { coasters = db; if (wideNow()) draw(); });
   const mq = window.matchMedia('(min-width: 1100px)');
   let showAll = false;
+  const openSitePark = new Set();
   let slide = 0;
   let map = null;
 
@@ -103,10 +104,10 @@ export function mount(el) {
       <div class="site-map"><div class="map-host mini plain" id="mini"></div></div>
       <div class="site-stats">${stat(s.un.length, `/ ${s.totalUN}`, 'landen', `${s.pct}% van de wereld`)}${stat(conts, `/ ${contTotal}`, 'continenten', `${Math.round(conts / contTotal * 100)}% verkend`)}${stat(cities.length, '', cities.length === 1 ? 'stad' : 'steden', `in ${new Set(cities.map(p => p.c)).size} landen`)}${stat(airports.length, '', airports.length === 1 ? 'luchthaven' : 'luchthavens', '')}${stat(creditN, creditN === 1 ? 'credit' : 'credits', 'pretparken', rideN ? `${rideN} ${rideN === 1 ? 'rit' : 'ritten'}${avgAll ? ` · gemiddeld ${num(avgAll)}` : ''}` : '')}</div>
       <div class="site-cols">
-        <section><h2>Reizen<a href="#/reizen">Alle reizen</a></h2>${trips.length ? trips.map(t => { const d = daysBetween(t.start, t.end); return `<a class="s-trip" href="#/reis/${esc(t.id)}"><span class="s-td">${esc(fmtRange(t.start, t.end))}</span><span class="s-tt">${esc(t.title || nameOf(t.legs[0]?.c) || 'Reis')}</span><span class="s-tf">${t.legs.slice(0, 4).map(l => flag(l.c)).join('')}</span><span class="s-tl">${d} ${d === 1 ? 'dag' : 'dagen'}</span></a>`; }).join('') : '<div class="empty">Nog geen reizen</div>'}</section>
-        <section><h2>Pretparken<a href="#/credits">Alle pretparken</a></h2>${parks.length ? parks.slice(0, 2).map(pk => `<div class="s-park">${pk.country ? flag(pk.country) : ''}<div><b>${esc(pk.park)}</b><small>${pk.country ? esc(nameOf(pk.country)) : ''}${pk.last ? ` · laatst ${esc(fmtDate(pk.last))}` : ''}</small></div><div class="s-c">${pk.got}<small> / ${pk.total} credits</small></div></div><div class="s-pb"><u style="width:${Math.round(pk.got / (pk.total || 1) * 100)}%"></u></div>
-          <table class="s-tab"><tr><th>Baan</th><th>Score</th><th>Ritten</th><th>Datums</th></tr>${pk.rows.slice(0, 6).map(r => `<tr><td class="n">${esc(r.name)}<small>${esc(r.meta)}</small></td><td>${r.score ? scoreH(num(r.score)) : ''}</td><td>${r.rides}</td><td class="d">${esc(r.dates)}</td></tr>`).join('')}</table>`).join('') : '<div class="empty">Nog geen pretparken</div>'}</section>
+        <section><h2>Reizen<a href="#/reizen">Alle reizen</a></h2>${trips.length ? trips.map(t => { const d = daysBetween(t.start, t.end); return `<a class="s-trip" href="#/reis/${esc(t.id)}"><span class="s-tt">${esc(t.title || nameOf(t.legs[0]?.c) || 'Reis')}</span><span class="s-tl">${d} ${d === 1 ? 'dag' : 'dagen'}</span><span class="s-td">${esc(fmtRange(t.start, t.end))}</span><span class="s-tf">${t.legs.slice(0, 5).map(l => flag(l.c)).join('')}</span></a>`; }).join('') : '<div class="empty">Nog geen reizen</div>'}</section>
         <section><h2>Landen<button type="button" class="s-add" id="addc">Toevoegen</button></h2><ul class="s-two">${visited.map(c => `<li data-c="${c.c}">${flag(c.c)}<span>${esc(c.n)}</span><small>${st.countries[c.c]?.y ? esc(st.countries[c.c].y) : ''}</small></li>`).join('')}</ul></section>
+        <section><h2>Pretparken<a href="#/credits">Alle pretparken</a></h2>${parks.length ? parks.map(pk => { const o = openSitePark.has(pk.park); return `<div class="s-parkwrap${o ? ' open' : ''}"><button type="button" class="s-park" data-spark="${esc(pk.park)}" aria-expanded="${o}">${pk.country ? flag(pk.country) : ''}<div class="s-pn"><b>${esc(pk.park)}</b><small>${pk.country ? esc(nameOf(pk.country)) : ''}${pk.last ? ` · laatst ${esc(fmtDate(pk.last))}` : ''}</small></div><div class="s-c">${pk.got}<small> / ${pk.total} credits</small></div><span class="s-chev">${ic('chev', 18)}</span></button><div class="s-pb"><u style="width:${Math.round(pk.got / (pk.total || 1) * 100)}%"></u></div>
+          ${o ? `<table class="s-tab"><tr><th>Baan</th><th>Score</th><th>Ritten</th><th class="d">Datums</th></tr>${pk.rows.map(r => `<tr><td class="n">${esc(r.name)}<small>${esc(r.meta)}</small></td><td>${r.score ? scoreH(num(r.score)) : ''}</td><td>${r.rides}</td><td class="d">${esc(r.dates)}</td></tr>`).join('')}</table>` : ''}</div>`; }).join('') : '<div class="empty">Nog geen pretparken</div>'}</section>
         <section><h2>Steden<button type="button" class="s-add" data-add="cities">Toevoegen</button></h2><ul>${cg.map(([c, names]) => `<li data-c="${esc(c)}">${flag(c)}<span>${esc(nameOf(c))}<small>${esc(names.join(', '))}</small></span><em>${names.length}</em></li>`).join('') || '<li class="empty">Nog geen steden</li>'}</ul></section>
         <section><h2>Luchthavens<button type="button" class="s-add" data-add="airports">Toevoegen</button></h2><ul>${airports.map(p => `<li>${flag(p.c)}<span>${esc([p.code, p.name].filter(Boolean).join(' · '))}<small>${esc(nameOf(p.c))}</small></span></li>`).join('') || '<li class="empty">Nog geen luchthavens</li>'}</ul></section>
         <section><h2>Continenten</h2>${Object.entries(CONT).filter(([k]) => s.cont[k].total).map(([k, n]) => `<div class="s-cb"><span>${esc(n)}</span><div><u style="width:${s.cont[k].pct}%"></u></div><b>${s.cont[k].got}/${s.cont[k].total}</b></div>`).join('')}</section>
@@ -203,6 +204,8 @@ export function mount(el) {
     if (dot) { const car = el.querySelector('#car'); car.scrollTo({ left: +dot.dataset.dot * car.clientWidth, behavior: 'smooth' }); return; }
     const c = e.target.closest('[data-c]');
     if (c) { openCountrySheet(c.dataset.c); return; }
+    const sp = e.target.closest('[data-spark]');
+    if (sp) { const k = sp.dataset.spark; openSitePark.has(k) ? openSitePark.delete(k) : openSitePark.add(k); draw(); return; }
     const g = e.target.closest('[data-grp]');
     if (g) { const c = g.dataset.grp; open.has(c) ? open.delete(c) : open.add(c); draw(); return; }
     const a = e.target.closest('[data-add]');
