@@ -26,7 +26,7 @@ function drawNav(active) {
   const links = TABS.map(([id, label, icon]) => `<a href="#/${id}" ${active === id ? 'aria-current="page"' : ''}>${ic(icon, 24)}${label}</a>`).join('');
   document.getElementById('tabs').innerHTML = links;
   document.getElementById('side').innerHTML =
-    `<a class="brand" href="#/kaart" aria-label="Mustache Passport" title="Mustache Passport"><img src="assets/snor.webp" alt="Mustache Passport" width="140" height="44"></a>${TABS.map(([id, label, icon]) => `<a href="#/${id}" ${active === id ? 'aria-current="page"' : ''}>${ic(icon, 22)}${label}</a>`).join('')}
+    `<a class="brand" href="#/kaart" aria-label="Mustache Passport" title="Mustache Passport"><img class="logo-d" src="assets/logo.png" alt="Mustache Passport" width="210" height="auto"><img class="logo-l" src="assets/logo-licht.png" alt="Mustache Passport" width="210" height="auto"></a>${TABS.map(([id, label, icon]) => `<a href="#/${id}" ${active === id ? 'aria-current="page"' : ''}>${ic(icon, 22)}${label}</a>`).join('')}
      <div class="spacer"></div><a href="#/instellingen" ${active === 'instellingen' ? 'aria-current="page"' : ''}>${ic('gear', 22)}Instellingen</a>`;
 }
 

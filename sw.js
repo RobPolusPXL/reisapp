@@ -7,7 +7,7 @@ const CORE = [
   './', 'index.html', 'css/app.css',
   'js/main.js', 'js/store.js', 'js/data.js', 'js/ui.js', 'js/map.js', 'js/sheets.js','js/airports.js','data/airports.json','js/airlines.js','data/airlines.json','js/boardingpass.js','vendor/zxing/reader.js','vendor/zxing/share.js','vendor/zxing/zxing_reader.wasm', 'js/trips.js', 'js/sync.js', 'js/firebase-config.js',
   'js/views/kaart.js', 'js/views/paspoort.js', 'js/views/reizen.js', 'js/views/reis.js', 'js/views/statistieken.js', 'js/views/credits.js', 'js/views/achtbaanstatistieken.js', 'data/coasters.json', 'js/views/instellingen.js',
-  'data/map.json', 'data/countries.json', 'assets/icons/icon-maskable-512.png', 'assets/snor.webp', 'assets/icons/icon-192.png', 'assets/icons/icon-512.png',
+  'data/map.json', 'data/countries.json', 'assets/icons/icon-maskable-512.png', 'assets/logo.png', 'assets/logo-licht.png', 'assets/icons/icon-192.png', 'assets/icons/icon-512.png',
 ];
 
 self.addEventListener('install', e => {
