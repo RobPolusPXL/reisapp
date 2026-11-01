@@ -182,7 +182,7 @@ export function mount(el) {
             cr.forEach((r, i) => { const k = r.date || ''; if (!byDate.has(k)) byDate.set(k, []); byDate.get(k).push({ ...r, n: i + 1 }); });
             const keys = [...byDate.keys()].sort((x, y) => !x ? 1 : !y ? -1 : x.localeCompare(y));
             body = `<div class="rc-body"><div class="rc-grid">${keys.map(k => `<div class="rc-day"><div class="rc-date">${k ? esc(fmtDate(k)) : 'Zonder datum'}</div>
-              ${byDate.get(k).map(r => `<div class="rc-ride"><span class="rn">Rit ${r.n}</span><span class="rs">${r.score ? '★ ' + esc(num(r.score)) : ''}</span><span class="rp">${r.seat ? esc(r.seat) : '<span class="muted">Geen plaats</span>'}</span></div>`).join('')}</div>`).join('')}</div>
+              ${byDate.get(k).map(r => `<div class="rc-ride"><span class="rn">Rit ${r.n}</span><span class="rs">${r.score ? `<span class="spill">★ ${esc(num(r.score))}</span>` : ''}</span><span class="rp">${r.seat ? esc(r.seat) : '<span class="muted">Geen plaats</span>'}</span></div>`).join('')}</div>`).join('')}</div>
               <button type="button" class="btn soft" data-c="${esc(c.id)}">Ritten bewerken</button></div>`;
           }
           return `<div class="ride-card${o ? ' open' : ''}"><button type="button" class="rc-head" data-exp="${esc(c.id)}" aria-expanded="${o}"><div class="rc-top"><div class="rc-t"><b>${esc(c.name)}</b><div class="s">${esc([c.maker, c.year, c.type].filter(Boolean).join(' · '))}</div></div>

@@ -304,16 +304,18 @@ a.list-row { color: inherit; }
 .rc-head { text-align: left; width: 100%; border: 0; background: none; color: inherit; font: inherit; padding: 14px 16px; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; }
 .rc-chev { margin-left: auto; color: var(--muted); display: inline-flex; align-items: center; transition: transform .15s; }
 .ride-card.open .rc-chev { transform: rotate(90deg); }
-.rc-body { padding: 2px 16px 14px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); margin-top: -2px; padding-top: 12px; }
+.rc-body { padding: 2px 16px 14px; display: flex; flex-direction: column; gap: 6px; border-top: 1px solid var(--line); margin-top: -2px; padding-top: 12px; }
 .rc-date { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
-.rc-grid { display: grid; grid-template-columns: max-content max-content 1fr; gap: 6px 10px; align-items: baseline; font-size: 14px; }
-.rc-day { display: contents; }
-.rc-day .rc-date { grid-column: 1 / -1; margin-top: 8px; }
+.rc-grid { display: block; font-size: 14px; }
+.rc-day { display: block; }
+.rc-date { font-size: 13px; font-weight: 700; color: var(--accent); margin: 14px 0 2px; }
 .rc-grid > .rc-day:first-child .rc-date { margin-top: 0; }
-.rc-ride { display: contents; }
-.rc-ride .rn { font-weight: 600; }
-.rc-ride .rs { font-weight: 700; white-space: nowrap; text-align: right; font-variant-numeric: tabular-nums; }
-.rc-ride .rp { overflow-wrap: anywhere; min-width: 0; }
+.rc-ride { display: flex; align-items: center; gap: 6px; padding: 9px 0; border-top: 1px solid var(--line); }
+.rc-date + .rc-ride { border-top: 0; }
+.rc-ride .rn { min-width: 34px; font-weight: 600; }
+.rc-ride .rs { min-width: 44px; display: flex; }
+.spill { display: inline-block; min-width: 44px; text-align: center; background: var(--accent-soft); color: var(--accent); font-weight: 700; border-radius: 10px; padding: 2px 6px; white-space: nowrap; font-size: 13px; }
+.rc-ride .rp { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .rc-body .btn { align-self: flex-start; }
 .ride-card:hover { outline: 2px solid var(--accent-soft); }
 .rc-top { display: flex; align-items: flex-start; gap: 10px; }
