@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="nl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Reisapp</title>
+<meta name="theme-color" content="#0E7C66">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="assets/icons/icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/icons/icon-192.png">
+<link rel="stylesheet" href="css/app.css">
+<script>
+// Thema vroeg zetten om flikkeren te voorkomen
+(function () {
+  try {
+    var s = (JSON.parse(localStorage.getItem('reisapp.v1') || '{}').settings) || {};
+    var mode = s.mode || 'system';
+    var dark = mode === 'dark' || (mode === 'system' && matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.dataset.theme = s.theme || 'groen';
+    document.documentElement.dataset.scheme = dark ? 'dark' : 'light';
+  } catch (e) {}
+})();
+</script>
+</head>
+<body>
+<div id="app">
+  <aside id="side" aria-label="Navigatie"></aside>
+  <main id="view" tabindex="-1"></main>
+  <nav id="tabs" aria-label="Hoofdmenu"></nav>
+</div>
+<div id="sheet-root"></div>
+<div id="toast" role="status" aria-live="polite"></div>
+<noscript>Deze app heeft JavaScript nodig.</noscript>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>
