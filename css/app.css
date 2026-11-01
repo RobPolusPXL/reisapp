@@ -291,10 +291,7 @@ a.list-row { color: inherit; }
 
 /* ---------- Achtbanen: overzicht ---------- */
 .gplus { margin-left: auto; width: 48px; height: 48px; border-radius: 24px; border: 0; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; cursor: pointer; box-shadow: var(--shadow); flex: none; }
-.park-row { display: flex; align-items: center; gap: 12px; }
-.hero2 { display: flex; flex-direction: column; gap: 12px; }
-.hero2 > .card { margin: 0; }
-.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; align-content: center; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; align-content: center; }
 .kpis b { display: block; font-size: 20px; }
 .kpis span { font-size: 12px; color: var(--muted); }
 .sec-h { display: flex; align-items: baseline; justify-content: space-between; margin: 10px 4px -2px; }
@@ -329,12 +326,11 @@ a.list-row { color: inherit; }
 .pick { width: 100%; border: 0; background: none; text-align: left; font: inherit; color: inherit; cursor: pointer; }
 @media (min-width: 900px) {
   .credits-page { max-width: 1000px; }
-  .hero2 { display: grid; grid-template-columns: 1.3fr 1fr; align-items: stretch; }
   .groups { display: grid; grid-template-columns: repeat(3, 1fr); align-items: start; }
 }
 
 /* Tekst wordt nooit afgekapt: lange namen en plaatsen lopen door op de volgende regel. */
-.rc-t, .rc-t .s, .chip, .todo .t, .todo .s, .grp2-h > span:not(.cnt), .ap-name, .seatbtn, .park-row h2, .park-row .muted { overflow-wrap: anywhere; min-width: 0; }
+.rc-t, .rc-t .s, .chip, .todo .t, .todo .s, .grp2-h > span:not(.cnt), .ap-name, .seatbtn { overflow-wrap: anywhere; min-width: 0; }
 .chip { max-width: 100%; }
 .rc-t { min-width: 0; }
 .todo.soon { opacity: .55; cursor: default; }
@@ -375,3 +371,50 @@ a.list-row { color: inherit; }
   .site-only { display: block; }
 }
 .ctr.open .cds .chip { background: var(--surface); }
+
+/* Achtbanen: parken openklapbaar */
+.park { background: var(--surface); border-radius: 18px; overflow: hidden; }
+.ph { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ph .flag { flex: none; }
+.ph .pn { flex: 1; min-width: 0; }
+.ph .pn b { font-size: 17px; display: block; overflow-wrap: anywhere; }
+.ph .pn small { color: var(--muted); }
+.ph .pc { text-align: right; flex: none; }
+.ph .pc b { font-size: 22px; color: var(--accent); line-height: 1; }
+.ph .pc b i { font-style: normal; font-size: 14px; color: var(--muted); font-weight: 600; }
+.ph .pc small { display: block; color: var(--muted); font-size: 12px; }
+.park.open > .ph .rc-chev { transform: rotate(90deg); }
+.pbar { padding: 0 16px 14px; }
+.pbar .bar { height: 6px; border-radius: 3px; }
+.pb { padding: 0 12px 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.pb > .sec-h { margin-top: 12px; }
+@media (min-width: 900px) { .pb { padding: 0 16px 16px; } }
+.alllink { display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 16px; border-radius: 14px; background: var(--accent); color: var(--on-accent); font-weight: 600; }
+/* Achtbaanstatistieken */
+.big4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.big4 > div { background: var(--surface); border-radius: 16px; padding: 14px; text-align: center; }
+.big4 b { display: block; font-size: 26px; color: var(--accent); }
+.big4 span { font-size: 12px; color: var(--muted); }
+.sgrid { display: grid; grid-template-columns: 1fr; gap: 12px; align-items: start; }
+.sc2 h2 { font-size: 15px; margin-bottom: 12px; }
+.brow { display: grid; grid-template-columns: minmax(110px, 38%) 1fr auto; gap: 10px; align-items: center; margin: 10px 0; font-size: 14px; }
+.brow .lbl { overflow-wrap: anywhere; }
+.brow .bar { height: 10px; border-radius: 5px; }
+.brow .n { font-weight: 700; font-variant-numeric: tabular-nums; }
+.rank { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.rank:first-of-type { border-top: 0; }
+.rank .p { width: 26px; height: 26px; border-radius: 13px; background: var(--accent-soft); color: var(--accent); font-weight: 700; display: grid; place-items: center; font-size: 13px; }
+.rank small { color: var(--muted); display: block; font-size: 12px; }
+.rank .v { font-weight: 700; color: var(--accent); }
+@media (min-width: 900px) {
+  .big4 { grid-template-columns: repeat(4, 1fr); }
+  .sgrid { grid-template-columns: 1fr 1fr; }
+  .sgrid .span2 { grid-column: 1 / -1; }
+}
+
+/* In een open park: kaarten grijs op het witte park, tegeltjes wit */
+.pb .ride-card, .pb .grp2 { background: var(--bg); }
+.pb .rc-tile { background: var(--surface); }
+.pb .ctable { border: 1px solid var(--line); }
+.kpis b { font-size: 19px; }
+@media (min-width: 900px) { .kpis b { font-size: 22px; } }

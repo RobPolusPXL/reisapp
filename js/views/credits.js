@@ -1,6 +1,6 @@
 // Achtbanen en credits (test: Energylandia). Bron van de data: Coasterpedia (CC BY-SA 4.0).
 import { get, subscribe, update } from '../store.js';
-import { flag, nameOf } from '../data.js';
+import { flag, nameOf, norm } from '../data.js';
 import { esc, ic, openSheet, toast, fmtDate, fmtRange } from '../ui.js';
 
 const SCORES = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
@@ -37,7 +37,7 @@ function trainHtml(t, pos) {
 }
 
 let db = null;
-async function load() {
+export async function load() {
   db ||= await fetch('data/coasters.json').then(r => r.json()).catch(() => []);
   return db;
 }
@@ -50,7 +50,7 @@ export function ridesOf(cr) {
   return Array.from({ length: n }, (_, i) => i === 0 ? { date: cr.date || '', score: cr.score || '', seat: '' } : { date: '', score: '', seat: '' });
 }
 /** Gemiddelde van de scores van alle ritten (op één decimaal), of '' zonder scores. */
-const avgScore = rides => {
+export const avgScore = rides => {
   const v = rides.map(r => parseFloat(r.score)).filter(n => !isNaN(n));
   return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : '';
 };
@@ -146,11 +146,18 @@ const dateChips = ds => {
 };
 
 function openPicker(coasters) {
-  const sh = openSheet(`<h2>Nieuwe rit</h2><p class="muted" style="margin:-6px 0 12px">Kies de baan</p>
-    <div class="list">${coasters.map(c => {
-      const n = ridesOf(get().credits[c.id]).length;
-      return `<button type="button" class="list-row pick" data-pick="${esc(c.id)}"><div class="grow"><div class="t">${esc(c.name)}</div><div class="s">${esc([c.maker, c.year].filter(Boolean).join(' · '))}${n ? ` · ${n}× gereden` : ''}</div></div>${ic('chev', 20)}</button>`;
-    }).join('')}</div>`, { title: 'Nieuwe rit' });
+  const rows = q => {
+    const n = norm(q.trim());
+    const l = n ? coasters.filter(c => norm(`${c.name} ${c.park} ${c.maker || ''}`).includes(n)) : coasters;
+    return l.length ? l.map(c => {
+      const k = ridesOf(get().credits[c.id]).length;
+      return `<button type="button" class="list-row pick" data-pick="${esc(c.id)}"><div class="grow"><div class="t">${esc(c.name)}</div><div class="s">${esc([c.park, c.maker, c.year].filter(Boolean).join(' · '))}${k ? ` · ${k}× gereden` : ''}</div></div>${ic('chev', 20)}</button>`;
+    }).join('') : '<div class="empty">Niets gevonden</div>';
+  };
+  const sh = openSheet(`<h2>Nieuwe rit</h2>
+    <div class="field" style="margin:4px 0 10px"><input id="pk-q" type="search" placeholder="Zoek een baan of park" autocomplete="off" aria-label="Zoek een baan of park"></div>
+    <div class="list" id="pk-list">${rows('')}</div>`, { title: 'Nieuwe rit' });
+  sh.el.querySelector('#pk-q').addEventListener('input', e => { sh.el.querySelector('#pk-list').innerHTML = rows(e.target.value); });
   sh.el.addEventListener('click', e => {
     const b = e.target.closest('[data-pick]');
     if (!b) return;
@@ -164,16 +171,23 @@ export function mount(el) {
   let off = false;
   const openGroups = new Set(['Thrill']);
   const openCards = new Set();
+  const openParks = new Set();
+  let inited = false;
   const draw = () => {
     if (off || !db) return;
     const credits = get().credits;
     const parks = [...new Set(db.map(c => c.park))];
     const all = db.filter(c => c.status === 'open');
     const allRides = all.flatMap(c => ridesOf(credits[c.id]));
-    const kAvg = avgScore(allRides), kLast = lastDate(allRides);
+    const kAvg = avgScore(allRides);
+    const creditN = all.filter(c => ridesOf(credits[c.id]).length).length;
+    const parkN = parks.filter(pk => db.some(c => c.park === pk && c.status === 'open' && ridesOf(credits[c.id]).length)).length;
+    if (!inited) { inited = true; const best = parks.map(pk => [pk, lastDate(db.filter(c => c.park === pk).flatMap(c => ridesOf(credits[c.id])))]).sort((x, y) => y[1].localeCompare(x[1]))[0]; openParks.add(parks.length === 1 || !best || !best[1] ? parks[0] : best[0]); }
     el.innerHTML = `<div class="page credits-page">
       <header class="page-head"><a class="icon-btn" href="#/paspoort" aria-label="Terug naar Paspoort">${ic('back', 26)}</a><h1>Achtbanen</h1>
         <button type="button" class="gplus" data-new aria-label="Nieuwe rit toevoegen">${ic('plus', 24)}</button></header>
+      <section class="card kpis"><div><b>${creditN}</b><span>${creditN === 1 ? 'credit' : 'credits'}</span></div><div><b>${allRides.length}</b><span>${allRides.length === 1 ? 'rit' : 'ritten'}</span></div><div><b>${kAvg ? '★ ' + esc(num(kAvg)) : '–'}</b><span>gemiddeld</span></div><div><b>${parkN}</b><span>${parkN === 1 ? 'park' : 'parken'}</span></div></section>
+      <a class="alllink" href="#/achtbaanstatistieken"><span>Alle statistieken</span>${ic('chev', 20)}</a>
       ${parks.map(park => {
         const list = db.filter(c => c.park === park);
         const open = list.filter(c => c.status === 'open');
@@ -183,12 +197,10 @@ export function mount(el) {
         const soon = list.filter(c => c.status !== 'open');
         const pct = open.length ? Math.round(done.length / open.length * 100) : 0;
         const pr = done.flatMap(c => ridesOf(credits[c.id]));
-        return `<div class="hero2">
-          <section class="card"><div class="park-row">${flag(list[0].c)}<div><h2>${esc(park)}</h2><div class="muted">${esc(nameOf(list[0].c))}</div></div>
-            <span class="big" style="margin-left:auto;font-size:34px">${done.length}<small> / ${open.length}</small></span></div>
-            <div class="bar" style="height:10px;border-radius:5px;margin-top:12px"><i style="width:${pct}%"></i></div></section>
-          <section class="card kpis"><div><b>${pr.length}</b><span>${pr.length === 1 ? 'rit' : 'ritten'}</span></div><div><b>${kAvg ? '★ ' + esc(num(kAvg)) : '–'}</b><span>gemiddeld</span></div><div><b style="font-size:16px">${kLast ? esc(fmtDate(kLast)) : '–'}</b><span>laatst gereden</span></div></section>
-        </div>
+        const isOpen = openParks.has(park), lastD = lastDate(pr);
+        return `<section class="park${isOpen ? ' open' : ''}"><button type="button" class="ph" data-p="${esc(park)}" aria-expanded="${isOpen}">${flag(list[0].c)}<div class="pn"><b>${esc(park)}</b><small>${esc(nameOf(list[0].c))}${lastD ? ` · laatst ${esc(fmtDate(lastD))}` : ''}</small></div><div class="pc"><b>${done.length}<i> / ${open.length}</i></b><small>credits</small></div><span class="rc-chev">${ic('chev', 18)}</span></button>
+          <div class="pbar"><div class="bar"><i style="width:${pct}%"></i></div></div>
+          ${isOpen ? `<div class="pb">
         ${done.length ? `<div class="sec-h"><h2>Gereden</h2><span class="muted">${done.length}</span></div>
         <div class="ride-cards app-only">${done.map(c => {
           const cr = ridesOf(credits[c.id]), sc = avgScore(cr), ds = uniqDates(cr), o = openCards.has(c.id);
@@ -213,13 +225,15 @@ export function mount(el) {
           return `<div class="grp2${o ? ' open' : ''}"><button type="button" class="grp2-h" data-g="${g}" aria-expanded="${o}">${ic('chev', 18)}<span>${g}</span><span class="cnt">${l.length}</span></button>
             ${o ? l.map(c => `<button type="button" class="todo" data-c="${esc(c.id)}"><div class="grow"><div class="t">${esc(c.name)}</div><div class="s">${esc([c.maker, c.year].filter(Boolean).join(' · '))}</div></div>${ic('plus', 20)}</button>`).join('')
               + sn.map(c => `<div class="todo soon" aria-disabled="true"><div class="grow"><div class="t">${esc(c.name)}</div><div class="s">${esc(c.maker || '')}</div></div><span class="muted soon-l">Binnenkort</span></div>`).join('') : ''}</div>`;
-        }).join('')}</div>`;
+        }).join('')}</div></div>` : ''}</section>`;
       }).join('')}
       <p class="muted" style="text-align:center;font-size:13px;margin-top:16px">Data: <a href="https://coasterpedia.net" target="_blank" rel="noopener" style="color:inherit">Coasterpedia</a> (CC BY-SA 4.0)</p>
     </div>`;
   };
   const onClick = e => {
     if (e.target.closest('[data-new]')) { openPicker(db.filter(c => c.status === 'open')); return; }
+    const pk = e.target.closest('[data-p]');
+    if (pk) { openParks.has(pk.dataset.p) ? openParks.delete(pk.dataset.p) : openParks.add(pk.dataset.p); draw(); return; }
     const rb = e.target.closest('[data-ride]');
     if (rb) { const [cid, i] = rb.dataset.ride.split(':'); const c = db.find(x => x.id === cid); if (c) openCredit(c, { focus: +i }); return; }
     const ex = e.target.closest('[data-exp]');
