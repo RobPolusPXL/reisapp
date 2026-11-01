@@ -11,6 +11,7 @@ const blank = () => ({
   countries: {},                       // { BE: { s: 'v' | 'w', y?: 2019 } }
   places: { cities: [], regions: [], airports: [] },
   trips: [],
+  travelers: [],                       // namen die je bij vluchten kunt kiezen
   settings: { theme: 'groen', mode: 'system' },
 });
 
@@ -21,6 +22,7 @@ function normalize(s = {}) {
     countries: s.countries || {},
     places: { ...b.places, ...(s.places || {}) },
     trips: s.trips || [],
+    travelers: s.travelers || [],
     settings: { ...b.settings, ...(s.settings || {}) },
   };
 }

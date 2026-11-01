@@ -1,7 +1,7 @@
 import { get, subscribe, getTrip, update } from '../store.js';
 import { nameOf } from '../data.js';
 import { esc, ic, fmtRange, fmtDate, daysBetween } from '../ui.js';
-import { legsHtml, TYPES, openTripForm, openItemForm, confirmSheet } from '../trips.js';
+import { legsHtml, TYPES, openTripForm, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
 
 const FILTERS = [['all', 'Alles'], ['flight', 'Vluchten'], ['stay', 'Verblijf'], ['food', 'Eten'], ['activity', 'Activiteit']];
 
@@ -12,11 +12,18 @@ export function mount(el, { params }) {
   const itemRow = i => {
     const [label, icon] = TYPES[i.type] || ['Item', 'dots'];
     let sub = label;
-    if (i.date) sub += ` · ${fmtDate(i.date)}`;
+    if (i.type === 'stay' && i.date && i.dateEnd && i.dateEnd !== i.date) {
+      sub += ` · ${fmtRange(i.date, i.dateEnd)}`;
+      const n = nightsBetween(i.date, i.dateEnd);
+      if (n) sub += ` · ${nightsLabel(n)}`;
+    } else if (i.type === 'activity' && i.date && i.dateEnd && i.dateEnd !== i.date) sub += ` · ${fmtRange(i.date, i.dateEnd)}`;
+    else if (i.date) sub += ` · ${fmtDate(i.date)}`;
     if (i.type === 'flight') {
       const route = [i.f?.from, i.f?.to].filter(Boolean).join(' → ');
       if (route) sub += ` · ${route}`;
-      if (i.f?.seat) sub += ` · zitplaats ${i.f.seat}`;
+      const px = i.f?.pax?.length ? i.f.pax : (i.f?.seat ? [{ seat: i.f.seat }] : []);
+      const seats = px.filter(x => x.seat).map(x => x.name ? `${x.name.split(' ')[0]} ${x.seat}` : x.seat);
+      if (seats.length) sub += ` · ${seats.join(', ')}`;
     }
     const right = i.score ? `★ ${esc(String(i.score).replace('.', ','))}` : ic('chev', 20);
     return `<button type="button" class="item" data-item="${esc(i.id)}"><span class="ico">${ic(icon, 22)}</span><span class="grow"><div class="t">${esc(i.name)}</div><div class="s">${esc(sub)}</div></span><span class="r">${right}</span></button>`;
