@@ -217,3 +217,13 @@ svg.map .sel { stroke: var(--ink); stroke-width: 2px; }
 .row-actions { display: flex; gap: 8px; }
 .card-link { display: block; }
 svg.map.static circle:not(.v):not(.w) { display: none; }
+
+/* ---------- Carrousel (Paspoort) ---------- */
+.carousel { display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; overscroll-behavior-x: contain; }
+.carousel::-webkit-scrollbar { display: none; }
+.slide { flex: 0 0 100%; min-width: 0; scroll-snap-align: start; }
+.slide h2 { font-size: 18px; font-weight: 700; }
+.dots { display: flex; justify-content: center; gap: 4px; margin-top: 10px; }
+.dots button { width: 28px; height: 28px; border: 0; background: transparent; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.dots button::before { content: ""; width: 10px; height: 10px; border-radius: 5px; background: var(--field); }
+.dots button[aria-current=true]::before { background: var(--accent); }
