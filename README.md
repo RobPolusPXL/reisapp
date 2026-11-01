@@ -39,9 +39,9 @@ Repository-instellingen → Pages → bron: branch `main`, map `/ (root)`. Alle 
 
 Zonder configuratie blijft alles lokaal op het toestel (localStorage). Voor sync:
 
-1. Maak een Firebase-project en een **Web-app** aan; kopieer de config naar `js/firebase-config.js`.
+1. Maak een Firebase-project en een **Web-app** aan; kopieer de config naar `js/firebase-config.js` (staat al ingevuld voor `reisapp-d2030`).
 2. Zet **Authentication → Google** aan en voeg je Pages-domein (`<gebruiker>.github.io`) toe onder *Authorized domains*.
-3. Maak **Firestore** aan en plaats de regels uit `firestore.rules` (elke gebruiker ziet alleen zijn eigen document `users/{uid}`).
+3. Maak **Firestore** aan en zet de regels uit `firestore.rules` online met `firebase deploy --only firestore:rules` (elke gebruiker ziet alleen zijn eigen document `users/{uid}`).
 
 De volledige app-state staat als één JSON-tekst in `users/{uid}`. Bij een conflict wint de **laatste wijziging** (op tijdstempel) voor de hele state; bewerk dus niet tegelijk offline op twee toestellen.
 

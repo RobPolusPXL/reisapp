@@ -1,7 +1,7 @@
 import { loadData } from './data.js';
 import { get, subscribe } from './store.js';
 import { ic, esc } from './ui.js';
-import { initSync, configured } from './sync.js';
+import { initSync } from './sync.js';
 import { autoSeed } from './seed.js';
 
 const TABS = [['kaart', 'Kaart', 'map'], ['paspoort', 'Paspoort', 'book'], ['reizen', 'Reizen', 'case']];
@@ -59,7 +59,7 @@ async function route() {
 
 (async () => {
   await loadData();
-  await autoSeed(configured);
+  await autoSeed();
   window.addEventListener('hashchange', route);
   await route();
   initSync();
