@@ -43,28 +43,12 @@ export function mount(el) {
   let slide = 0;
   let map = null;
 
-  const open = new Set();
-  const delBtn = (kind, p) => `<button type="button" class="icon-btn" style="background:var(--bg)" data-del="${kind}:${esc(p.id)}" aria-label="${esc(p.name || p.code)} verwijderen">${ic('trash', 20)}</button>`;
-
   const placeCard = kind => {
     const cfg = PLACES[kind];
     const items = get().places[kind];
-    const head = sub => `<div class="card-head"><div><h2>${cfg.title}</h2>${sub ? `<div class="muted">${sub}</div>` : ''}</div><button type="button" class="btn soft add-sm" data-add="${kind}" aria-label="${esc(cfg.add)}">${ic('plus', 18)}<span>Toevoegen</span></button></div>`;
-    if (!items.length) return `<section class="card">${head('')}<div class="empty">${cfg.empty}</div></section>`;
-    if (kind !== 'cities') {
-      return `<section class="card">${head('')}<div class="list">${items.map(p => `<div class="list-row">${flag(p.c)}<div class="grow"><div class="t">${esc(kind === 'airports' ? [p.code, p.name].filter(Boolean).join(' · ') : p.name)}</div><div class="s">${esc(nameOf(p.c))}</div></div>${delBtn(kind, p)}</div>`).join('')}</div></section>`;
-    }
-    // Steden gegroepeerd per land: één rij per land, openklappen voor de steden.
-    const groups = new Map();
-    for (const p of items) { if (!groups.has(p.c)) groups.set(p.c, []); groups.get(p.c).push(p); }
-    const sorted = [...groups].sort((a, b) => b[1].length - a[1].length || nameOf(a[0]).localeCompare(nameOf(b[0]), 'nl'));
-    const n = items.length, l = groups.size;
-    return `<section class="card">${head(`${n} ${n === 1 ? 'stad' : 'steden'} in ${l} ${l === 1 ? 'land' : 'landen'}`)}
-      <div class="list">${sorted.map(([c, ps]) => {
-        const isOpen = open.has(c);
-        return `<div class="grp${isOpen ? ' open' : ''}"><button type="button" class="list-row grp-head" data-grp="${esc(c)}" aria-expanded="${isOpen}">${flag(c)}<div class="grow"><div class="t">${esc(nameOf(c))}</div>${isOpen ? '' : `<div class="s ell">${esc(ps.map(p => p.name).join(', '))}</div>`}</div><span class="count">${ps.length}</span>${ic('chev', 20)}</button>
-          ${isOpen ? `<div class="grp-body">${ps.map(p => `<div class="list-row sub"><div class="grow"><div class="t">${esc(p.name)}</div></div>${delBtn(kind, p)}</div>`).join('')}</div>` : ''}</div>`;
-      }).join('')}</div>
+    return `<section class="card"><div class="card-head"><h2>${cfg.title}</h2><button type="button" class="btn soft" data-add="${kind}">${ic('plus', 18)}Toevoegen</button></div>
+      ${items.length ? `<div class="list">${items.map(p => `<div class="list-row">${flag(p.c)}<div class="grow"><div class="t">${esc(kind === 'airports' ? [p.code, p.name].filter(Boolean).join(' · ') : p.name)}</div><div class="s">${esc(nameOf(p.c))}</div></div>
+        <button type="button" class="icon-btn" style="background:var(--bg)" data-del="${kind}:${esc(p.id)}" aria-label="${esc(p.name || p.code)} verwijderen">${ic('trash', 20)}</button></div>`).join('')}</div>` : `<div class="empty">${cfg.empty}</div>`}
     </section>`;
   };
 
@@ -80,7 +64,7 @@ export function mount(el) {
     const wish = Object.entries(st.countries).filter(([, v]) => v.s === 'w').map(([c]) => byCode.get(c)).filter(Boolean).sort((a, b) => a.n.localeCompare(b.n, 'nl'));
     el.innerHTML = `<div class="page">
       <header class="page-head"><h1>Paspoort</h1><a class="icon-btn" href="#/instellingen" aria-label="Instellingen">${ic('gear', 22)}</a></header>
-      <div class="cols pas-top">
+      <div class="cols">
         <div class="map-plain"><div class="map-host mini plain" id="mini"></div></div>
         <section class="card" aria-roledescription="carrousel" aria-label="Statistieken">
           <div class="carousel" id="car" tabindex="0">
@@ -112,17 +96,17 @@ export function mount(el) {
           <div class="dots" role="group" aria-label="Kies een kaart">${[0, 1, 2].map(i => `<button type="button" data-dot="${i}" aria-label="Kaart ${i + 1} van 3" aria-current="${i === slide}"></button>`).join('')}</div>
         </section>
       </div>
-      <div class="cols pas-mid">
+      <div class="cols">
         <section class="card"><div class="card-head"><h2>Mijn continenten</h2></div>
           ${Object.entries(CONT).filter(([k]) => s.cont[k].total).map(([k, n]) => `<div class="bar-row"><span class="name">${n}</span><div class="bar"><i style="width:${s.cont[k].pct}%;${s.cont[k].got ? 'min-width:6px' : ''}"></i></div><span class="num">${s.cont[k].got}/${s.cont[k].total}</span></div>`).join('')}
         </section>
+      </div>
       <section class="card"><div class="card-head"><div><h2>Mijn landen</h2><div class="muted">en niet-VN-gebieden</div></div><button type="button" class="btn soft" id="addc">${ic('plus', 18)}Toevoegen</button></div>
         ${shown.length ? `<div class="list">${shown.map(c => `<button type="button" class="list-row" style="width:100%;border:0;background:none;text-align:left;cursor:pointer;border-top:1px solid var(--line)" data-c="${c.c}">${flag(c.c)}<div class="grow"><div class="t">${esc(c.n)}</div><div class="s">${st.countries[c.c]?.y ? esc(st.countries[c.c].y) : ''}${c.u ? '' : ' niet-VN-gebied'}</div></div></button>`).join('')}</div>` : '<div class="empty">Nog geen landen. Tik op de kaart of voeg er een toe.</div>'}
         ${visited.length > 5 ? `<button type="button" class="btn block" id="more" style="margin-top:10px">${showAll ? 'Minder tonen' : `+ ${visited.length - 5} meer`}</button>` : ''}
       </section>
-      </div>
       ${wish.length ? `<section class="card"><div class="card-head"><h2>Wil ik zien</h2></div><div class="list">${wish.map(c => `<button type="button" class="list-row" style="width:100%;border:0;background:none;text-align:left;cursor:pointer;border-top:1px solid var(--line)" data-c="${c.c}">${flag(c.c)}<div class="grow"><div class="t">${esc(c.n)}</div></div></button>`).join('')}</div></section>` : ''}
-      <div class="cols pas-places">${placeCard('cities')}${placeCard('regions')}${placeCard('airports')}</div>
+      <div class="cols">${placeCard('cities')}${placeCard('regions')}${placeCard('airports')}</div>
     </div>`;
     map?.destroy();
     map = createMap(el.querySelector('#mini'), { interactive: false });
@@ -150,8 +134,6 @@ export function mount(el) {
     if (dot) { const car = el.querySelector('#car'); car.scrollTo({ left: +dot.dataset.dot * car.clientWidth, behavior: 'smooth' }); return; }
     const c = e.target.closest('[data-c]');
     if (c) { openCountrySheet(c.dataset.c); return; }
-    const g = e.target.closest('[data-grp]');
-    if (g) { const c = g.dataset.grp; open.has(c) ? open.delete(c) : open.add(c); draw(); return; }
     const a = e.target.closest('[data-add]');
     if (a) { openPlaceForm(a.dataset.add); return; }
     const d = e.target.closest('[data-del]');

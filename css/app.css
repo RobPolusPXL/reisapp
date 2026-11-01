@@ -240,35 +240,3 @@ svg.map.static circle:not(.v):not(.w) { display: none; }
 .stat-card .all { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; min-height: 48px; padding: 0 16px; border-radius: 12px; background: color-mix(in srgb, currentColor 18%, transparent); font-weight: 600; }
 .ico-sm { width: 36px; height: 36px; border-radius: 18px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; flex: none; }
 a.list-row { color: inherit; }
-
-/* ---------- Paspoort: steden per land ---------- */
-.grp { border-top: 1px solid var(--line); }
-.grp:first-child { border-top: 0; }
-.grp-head { width: 100%; border: 0 !important; background: none; text-align: left; cursor: pointer; color: inherit; font: inherit; }
-.grp-head > svg:last-child { color: var(--muted); transition: transform .15s; flex: none; }
-.grp.open .grp-head > svg:last-child { transform: rotate(90deg); }
-.grp .count { min-width: 28px; height: 28px; padding: 0 8px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
-.grp-body { padding: 0 0 8px 50px; }
-.list-row.sub { min-height: 48px; }
-.ell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-
-/* ---------- Paspoort op laptop ---------- */
-@media (min-width: 900px) {
-  .pas-top > .map-plain { flex: 3 1 0; }
-  .pas-top > .card { flex: 2 1 0; display: flex; flex-direction: column; justify-content: center; }
-  .pas-top .carousel { flex-direction: column; overflow: visible; gap: 18px; }
-  .pas-top .slide { flex: none; }
-  .pas-top .slide + .slide { border-top: 1px solid var(--line); padding-top: 18px; }
-  .pas-top .slide .big { font-size: 36px; }
-  .pas-top .slide .big small { font-size: 18px; }
-  .pas-top .slide > div[style*="margin-top:16px"], .pas-top .slide > div[style*="margin-top:14px"] { margin-top: 8px !important; }
-  .pas-top .slide .bar { margin-top: 10px !important; height: 8px !important; }
-  .pas-top .slide > p { display: none; }
-  .pas-top .dots { display: none; }
-  .pas-mid { align-items: flex-start; }
-  .pas-places { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); align-items: start; }
-}
-@media (min-width: 900px) {
-  .pas-places .add-sm { width: 44px; padding: 0; flex: none; }
-  .pas-places .add-sm span { display: none; }
-}
