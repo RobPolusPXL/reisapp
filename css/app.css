@@ -250,7 +250,7 @@ a.list-row { color: inherit; }
 .grp .count { min-width: 28px; height: 28px; padding: 0 8px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
 .grp-body { padding: 0 0 8px 50px; }
 .list-row.sub { min-height: 48px; }
-.ell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ell { overflow-wrap: anywhere; }
 
 /* ---------- Luchthavens zoeken ---------- */
 .ap-results { display: flex; flex-direction: column; margin-top: 6px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); }
@@ -330,3 +330,8 @@ a.list-row { color: inherit; }
   .ride-cards .ride-card { height: 100%; }
   .groups { display: grid; grid-template-columns: repeat(3, 1fr); align-items: start; }
 }
+
+/* Tekst wordt nooit afgekapt: lange namen en plaatsen lopen door op de volgende regel. */
+.rc-t, .rc-t .s, .chip, .todo .t, .todo .s, .grp2-h > span:not(.cnt), .ap-name, .seatbtn, .park-row h2, .park-row .muted { overflow-wrap: anywhere; min-width: 0; }
+.chip { max-width: 100%; }
+.rc-t { min-width: 0; }
