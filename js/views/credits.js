@@ -66,10 +66,11 @@ const datesText = ds => {
 
 const lastDate = rides => rides.map(r => r.date).filter(Boolean).sort().pop() || '';
 
-function openCredit(c) {
+function openCredit(c, { addRide = false } = {}) {
   const cur = get().credits[c.id];
   const draft = ridesOf(cur).map(r => ({ ...r }));
   if (!draft.length) draft.push({ date: '', score: '', seat: '' });
+  else if (addRide) draft.push({ date: [...draft].reverse().find(r => r.date)?.date || '', score: '', seat: '' });
   let openIdx = -1;
   const sh = openSheet('', { title: c.name });
   const rideRow = (r, i) => `<div class="ride" data-ride>
@@ -124,44 +125,77 @@ function openCredit(c) {
   });
 }
 
+const CATS = ['Thrill', 'Familie', 'Kinderen'];
+const cat = c => /kiddie/i.test(c.type) ? 'Kinderen' : /hyper|launch|invert|hybrid|water|wing/i.test(c.type) ? 'Thrill' : 'Familie';
+const dateChips = ds => ds.map(d => `<span class="chip a">${esc(fmtDate(d))}</span>`).join('');
+
+function openPicker(coasters) {
+  const sh = openSheet(`<h2>Nieuwe rit</h2><p class="muted" style="margin:-6px 0 12px">Kies de baan</p>
+    <div class="list">${coasters.map(c => {
+      const n = ridesOf(get().credits[c.id]).length;
+      return `<button type="button" class="list-row pick" data-pick="${esc(c.id)}"><div class="grow"><div class="t">${esc(c.name)}</div><div class="s">${esc([c.maker, c.year].filter(Boolean).join(' · '))}${n ? ` · ${n}× gereden` : ''}</div></div>${ic('chev', 20)}</button>`;
+    }).join('')}</div>`, { title: 'Nieuwe rit' });
+  sh.el.addEventListener('click', e => {
+    const b = e.target.closest('[data-pick]');
+    if (!b) return;
+    const c = coasters.find(x => x.id === b.dataset.pick);
+    sh.close();
+    if (c) openCredit(c, { addRide: ridesOf(get().credits[c.id]).length > 0 });
+  });
+}
+
 export function mount(el) {
   let off = false;
+  const openGroups = new Set(['Thrill']);
   const draw = () => {
     if (off || !db) return;
     const credits = get().credits;
     const parks = [...new Set(db.map(c => c.park))];
-    el.innerHTML = `<div class="page">
-      <header class="page-head"><a class="icon-btn" href="#/paspoort" aria-label="Terug naar Paspoort">${ic('back', 26)}</a><h1>Achtbanen</h1></header>
+    const all = db.filter(c => c.status === 'open');
+    const allRides = all.flatMap(c => ridesOf(credits[c.id]));
+    const kAvg = avgScore(allRides), kLast = lastDate(allRides);
+    el.innerHTML = `<div class="page credits-page">
+      <header class="page-head"><a class="icon-btn" href="#/paspoort" aria-label="Terug naar Paspoort">${ic('back', 26)}</a><h1>Achtbanen</h1>
+        <button type="button" class="gplus" data-new aria-label="Nieuwe rit toevoegen">${ic('plus', 24)}</button></header>
       ${parks.map(park => {
-        const list = db.filter(c => c.park === park).sort((x, y) => {
-          const rx = ridesOf(credits[x.id]), ry = ridesOf(credits[y.id]);
-          if (!!rx.length !== !!ry.length) return rx.length ? -1 : 1;
-          if (rx.length) return lastDate(ry).localeCompare(lastDate(rx)) || x.name.localeCompare(y.name, 'nl');
-          if ((x.status === 'open') !== (y.status === 'open')) return x.status === 'open' ? -1 : 1;
-          return x.name.localeCompare(y.name, 'nl');
-        });
+        const list = db.filter(c => c.park === park);
         const open = list.filter(c => c.status === 'open');
-        const got = open.filter(c => ridesOf(credits[c.id]).length).length;
-        const pct = open.length ? Math.round(got / open.length * 100) : 0;
-        return `<section class="card">
-          <div class="card-head"><div style="display:flex;align-items:center;gap:12px">${flag(list[0].c)}<div><h2>${esc(park)}</h2><div class="muted">${esc(nameOf(list[0].c))}</div></div></div>
-            <div style="text-align:right"><span class="big" style="font-size:36px">${got}<small> / ${open.length}</small></span></div></div>
-          <div class="bar" style="height:10px;border-radius:5px;margin-bottom:12px"><i style="width:${pct}%"></i></div>
-          <div class="list">${list.map(c => {
-            const cr = ridesOf(credits[c.id]), planned = c.status !== 'open', sc = avgScore(cr), ld = lastDate(cr), ds = uniqDates(cr);
-            const sub = [c.maker, c.year, c.type].filter(Boolean).join(' · ');
-            const right = planned ? '<span class="muted">Nog niet open</span>'
-              : cr.length ? `<span style="display:flex;flex-direction:column;align-items:flex-end;font-size:13px;color:var(--muted)">${sc ? `<strong style="color:var(--ink)">★ ${esc(num(sc))}</strong>` : ''}<span>${cr.length > 1 ? cr.length + '×' : ''}${cr.length === 1 && ld ? esc(fmtDate(ld)) : ''}</span></span>` : ic('plus', 20);
-            return `<button type="button" class="list-row" style="width:100%;border:0;background:none;text-align:left;cursor:${planned ? 'default' : 'pointer'};border-top:1px solid var(--line);${planned ? 'opacity:.55' : ''}" ${planned ? 'disabled' : `data-c="${esc(c.id)}"`}>
-              <span class="credit-dot${cr.length ? ' on' : ''}" aria-hidden="true">${cr.length ? ic('check', 16) : ''}</span>
-              <div class="grow"><div class="t">${esc(c.name)}</div><div class="s">${esc(sub)}</div>${cr.length && ds.length > 1 ? `<div class="s" style="color:var(--accent)">${esc(datesText(ds))}</div>` : ''}</div>${right}</button>`;
-          }).join('')}</div>
-        </section>`;
+        const done = open.filter(c => ridesOf(credits[c.id]).length)
+          .sort((x, y) => lastDate(ridesOf(credits[y.id])).localeCompare(lastDate(ridesOf(credits[x.id]))) || x.name.localeCompare(y.name, 'nl'));
+        const todo = open.filter(c => !ridesOf(credits[c.id]).length);
+        const soon = list.filter(c => c.status !== 'open');
+        const pct = open.length ? Math.round(done.length / open.length * 100) : 0;
+        const pr = done.flatMap(c => ridesOf(credits[c.id]));
+        return `<div class="hero2">
+          <section class="card"><div class="park-row">${flag(list[0].c)}<div><h2>${esc(park)}</h2><div class="muted">${esc(nameOf(list[0].c))}</div></div>
+            <span class="big" style="margin-left:auto;font-size:34px">${done.length}<small> / ${open.length}</small></span></div>
+            <div class="bar" style="height:10px;border-radius:5px;margin-top:12px"><i style="width:${pct}%"></i></div></section>
+          <section class="card kpis"><div><b>${pr.length}</b><span>${pr.length === 1 ? 'rit' : 'ritten'}</span></div><div><b>${kAvg ? '★ ' + esc(num(kAvg)) : '–'}</b><span>gemiddeld</span></div><div><b style="font-size:16px">${kLast ? esc(fmtDate(kLast)) : '–'}</b><span>laatst gereden</span></div></section>
+        </div>
+        ${done.length ? `<div class="sec-h"><h2>Gereden</h2><span class="muted">${done.length}</span></div>
+        <div class="ride-cards">${done.map(c => {
+          const cr = ridesOf(credits[c.id]), sc = avgScore(cr), ds = uniqDates(cr), seat = [...cr].reverse().find(r => r.seat)?.seat;
+          return `<button type="button" class="ride-card" data-c="${esc(c.id)}"><div class="rc-top"><div class="rc-t"><b>${esc(c.name)}</b><div class="s">${esc([c.maker, c.year, c.type].filter(Boolean).join(' · '))}</div></div>
+            <div class="rc-score">${sc ? `<div class="sc">★ ${esc(num(sc))}</div>` : ''}<small>${cr.length} ${cr.length === 1 ? 'rit' : 'ritten'}</small></div></div>
+            <div class="chips">${dateChips(ds)}${seat ? `<span class="chip">${esc(seat)}</span>` : ''}</div></button>`;
+        }).join('')}</div>` : ''}
+        <div class="sec-h"><h2>Nog te rijden</h2><span class="muted">${todo.length}${soon.length ? ` · ${soon.length} binnenkort` : ''}</span></div>
+        <div class="groups">${CATS.map(g => {
+          const l = todo.filter(c => cat(c) === g);
+          if (!l.length) return '';
+          const o = openGroups.has(g);
+          return `<div class="grp2${o ? ' open' : ''}"><button type="button" class="grp2-h" data-g="${g}" aria-expanded="${o}">${ic('chev', 18)}<span>${g}</span><span class="cnt">${l.length}</span></button>
+            ${o ? l.map(c => `<button type="button" class="todo" data-c="${esc(c.id)}"><div class="grow"><div class="t">${esc(c.name)}</div><div class="s">${esc([c.maker, c.year].filter(Boolean).join(' · '))}</div></div>${ic('plus', 20)}</button>`).join('') : ''}</div>`;
+        }).join('')}</div>
+        ${soon.length ? `<p class="muted" style="margin:10px 4px 0;font-size:13px">Binnenkort: ${soon.map(c => esc(c.name)).join(', ')}</p>` : ''}`;
       }).join('')}
-      <p class="muted" style="text-align:center;font-size:13px">Data: <a href="https://coasterpedia.net" target="_blank" rel="noopener" style="color:inherit">Coasterpedia</a> (CC BY-SA 4.0)</p>
+      <p class="muted" style="text-align:center;font-size:13px;margin-top:16px">Data: <a href="https://coasterpedia.net" target="_blank" rel="noopener" style="color:inherit">Coasterpedia</a> (CC BY-SA 4.0)</p>
     </div>`;
   };
   const onClick = e => {
+    if (e.target.closest('[data-new]')) { openPicker(db.filter(c => c.status === 'open')); return; }
+    const g = e.target.closest('[data-g]');
+    if (g) { openGroups.has(g.dataset.g) ? openGroups.delete(g.dataset.g) : openGroups.add(g.dataset.g); draw(); return; }
     const b = e.target.closest('[data-c]');
     if (b) { const c = db.find(x => x.id === b.dataset.c); if (c) openCredit(c); }
   };

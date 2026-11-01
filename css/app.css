@@ -288,3 +288,45 @@ a.list-row { color: inherit; }
 .tseat { width: 40px; height: 40px; border-radius: 12px; border: 2px solid var(--field); background: var(--surface); cursor: pointer; padding: 0; }
 .tseat:hover { border-color: var(--accent); }
 .tseat.on { background: var(--accent); border-color: var(--accent); }
+
+/* ---------- Achtbanen: overzicht ---------- */
+.gplus { margin-left: auto; width: 48px; height: 48px; border-radius: 24px; border: 0; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; cursor: pointer; box-shadow: var(--shadow); flex: none; }
+.park-row { display: flex; align-items: center; gap: 12px; }
+.hero2 { display: flex; flex-direction: column; gap: 12px; }
+.hero2 > .card { margin: 0; }
+.kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; align-content: center; }
+.kpis b { display: block; font-size: 20px; }
+.kpis span { font-size: 12px; color: var(--muted); }
+.sec-h { display: flex; align-items: baseline; justify-content: space-between; margin: 10px 4px -2px; }
+.sec-h h2 { font-size: 15px; font-weight: 700; }
+.ride-cards { display: flex; flex-direction: column; gap: 10px; }
+.ride-card { text-align: left; width: 100%; border: 0; background: var(--surface); color: inherit; font: inherit; border-radius: 18px; padding: 14px 16px; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; }
+.ride-card:hover { outline: 2px solid var(--accent-soft); }
+.rc-top { display: flex; align-items: flex-start; gap: 10px; }
+.rc-t b { font-size: 16px; }
+.rc-t .s { color: var(--muted); font-size: 13px; }
+.rc-score { margin-left: auto; text-align: right; flex: none; }
+.rc-score .sc { font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1; white-space: nowrap; }
+.rc-score small { display: block; color: var(--muted); font-size: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { background: var(--bg); border-radius: 12px; padding: 3px 10px; font-size: 13px; }
+.chip.a { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.groups { display: flex; flex-direction: column; gap: 8px; }
+.grp2 { background: var(--surface); border-radius: 16px; overflow: hidden; }
+.grp2-h { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 16px; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; cursor: pointer; text-align: left; }
+.grp2-h > svg { color: var(--muted); transition: transform .15s; }
+.grp2.open .grp2-h > svg { transform: rotate(90deg); }
+.cnt { margin-left: auto; background: var(--accent-soft); color: var(--accent); border-radius: 12px; padding: 2px 10px; font-size: 13px; }
+.todo { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 16px; border: 0; border-top: 1px solid var(--line); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.todo .grow { flex: 1; min-width: 0; }
+.todo .t { font-weight: 500; }
+.todo .s { font-size: 12px; color: var(--muted); }
+.todo > svg { color: var(--accent); flex: none; }
+.pick { width: 100%; border: 0; background: none; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+@media (min-width: 900px) {
+  .credits-page { max-width: 1000px; }
+  .hero2 { display: grid; grid-template-columns: 1.3fr 1fr; align-items: stretch; }
+  .ride-cards { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .ride-cards .ride-card { height: 100%; }
+  .groups { display: grid; grid-template-columns: repeat(3, 1fr); align-items: start; }
+}
