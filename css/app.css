@@ -438,3 +438,12 @@ a.list-row { color: inherit; }
 .ride-card.open .rc-head { padding-bottom: 0; }
 .ride-card.open .rc-gh:first-child { padding-top: 7px; }
 .kpis b .score .sn, .big4 b .score .sn { min-width: 0; }
+
+/* Scorekiezer met snorren */
+.sp { display: flex; flex-wrap: wrap; gap: 8px; }
+.sp-b { border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 12px; padding: 8px 12px; font: inherit; font-size: 15px; cursor: pointer; min-height: 40px; }
+.sp-b .score { font-weight: 600; }
+.sp-b .sn { min-width: 0; font-size: 1em; text-align: left; }
+.sp-b.on { background: var(--accent-soft); border-color: var(--accent); }
+.sp { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.sp-b { display: flex; justify-content: center; }

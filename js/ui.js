@@ -91,5 +91,15 @@ export function daysBetween(a, b) {
 
 /** Score met een snor (silhouet van het blog, in themakleur) en een getal met vaste breedte, zodat alles netjes onder elkaar staat. */
 export const scoreH = v => `<span class="score"><span class="snor-i" aria-hidden="true"></span><span class="sn">${esc(String(v))}</span></span>`;
+/** Scorekiezer met snor-icoon per waarde (vervangt een select, want een select kan geen icoon tonen). Hidden input name=score houdt de waarde vast; opnieuw tikken wist de score. */
+export const scorePick = v => `<div class="sp" role="group" aria-label="Score"><input type="hidden" name="score" value="${esc(String(v ?? ''))}">${[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map(n => `<button type="button" class="sp-b${String(v) === String(n) ? ' on' : ''}" data-sp="${n}" aria-pressed="${String(v) === String(n)}">${scoreH(String(n).replace('.', ','))}</button>`).join('')}</div>`;
+document.addEventListener('click', e => {
+  const b = e.target.closest('.sp-b'); if (!b) return;
+  const sp = b.closest('.sp'), inp = sp.querySelector('input'), on = !b.classList.contains('on');
+  sp.querySelectorAll('.sp-b').forEach(x => { x.classList.remove('on'); x.setAttribute('aria-pressed', 'false'); });
+  if (on) { b.classList.add('on'); b.setAttribute('aria-pressed', 'true'); }
+  inp.value = on ? b.dataset.sp : '';
+  inp.dispatchEvent(new Event('input', { bubbles: true }));
+});
 /** Tekst voor een scorekeuze: 1 snor, 3,5 snorren. */
 export const snorTxt = n => `${String(n).replace('.', ',')} ${Number(n) === 1 ? 'snor' : 'snorren'}`;

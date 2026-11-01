@@ -4,7 +4,7 @@ import { list, byCode, nameOf, flag } from './data.js';
 import { loadAirlines, airlineByName, attachAirlineSearch } from './airlines.js';
 import { scanBoardingPass } from './boardingpass.js';
 import { loadAirports, airportByCode, attachAirportSearch, ensureMyAirport } from './airports.js';
-import { esc, ic, openSheet, toast, daysBetween, snorTxt } from './ui.js';
+import { esc, ic, openSheet, toast, daysBetween, scorePick } from './ui.js';
 
 export const MODES = {
   plane: ['Vliegtuig', 'plane'], car: ['Auto', 'car'], train: ['Trein', 'train'],
@@ -158,7 +158,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
             ? `<div class="pair">${fld('date', 'Begint op', 'date', draft.date)}${fld('dateEnd', 'Eindigt op', 'date', draft.dateEnd || '')}</div>
                <button type="button" class="btn soft" data-noend style="align-self:flex-start">${ic('trash', 18)}Eén dag</button>`
             : `${fld('date', 'Datum', 'date', draft.date)}${t === 'activity' ? `<button type="button" class="btn soft" data-endday style="align-self:flex-start">${ic('plus', 18)}Eindigt op een andere dag</button>` : ''}`}
-        <div class="field"><label for="i-score">Score (optioneel)</label><select id="i-score" name="score"><option value="">Geen score</option>${[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map(n => `<option value="${n}"${String(draft.score) === String(n) ? ' selected' : ''}>${snorTxt(n)}</option>`).join('')}</select></div>`}
+        <div class="field"><label>Score (optioneel)</label>${scorePick(draft.score)}</div>`}
       ${fld('note', 'Notitie', 'text', draft.note, 'Notitie')}
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
       <div class="pair">${item ? `<button type="button" class="btn danger" data-del>${ic('trash', 18)}Verwijderen</button>` : '<button type="button" class="btn" data-close>Annuleren</button>'}<button type="submit" class="btn primary">Opslaan</button></div>

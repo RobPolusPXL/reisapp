@@ -1,7 +1,7 @@
 // Achtbanen en credits (test: Energylandia). Bron van de data: Coasterpedia (CC BY-SA 4.0).
 import { get, subscribe, update } from '../store.js';
 import { flag, nameOf, norm } from '../data.js';
-import { esc, ic, openSheet, toast, fmtDate, fmtRange, scoreH, snorTxt } from '../ui.js';
+import { esc, ic, openSheet, toast, fmtDate, fmtRange, scoreH, scorePick } from '../ui.js';
 
 const SCORES = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 const num = n => String(n).replace('.', ',');
@@ -75,10 +75,8 @@ function openCredit(c, { addRide = false, focus = -1 } = {}) {
   const sh = openSheet('', { title: c.name });
   const rideRow = (r, i) => `<div class="ride" data-ride>
       <div class="ride-h"><strong>Rit ${i + 1}</strong>${draft.length > 1 ? `<button type="button" class="icon-btn" data-delride aria-label="Rit ${i + 1} verwijderen" style="background:var(--bg);width:40px;height:40px">${ic('trash', 18)}</button>` : ''}</div>
-      <div class="pair">
-        <div class="field"><label>Datum</label><input name="date" type="date" value="${esc(r.date || '')}"></div>
-        <div class="field"><label>Score (optioneel)</label><select name="score"><option value="">Geen score</option>${SCORES.map(n => `<option value="${n}"${String(r.score) === String(n) ? ' selected' : ''}>${snorTxt(n)}</option>`).join('')}</select></div>
-      </div>
+      <div class="field"><label>Datum</label><input name="date" type="date" value="${esc(r.date || '')}"></div>
+      <div class="field"><label>Score (optioneel)</label>${scorePick(r.score)}</div>
       ${c.train ? `<div class="field"><label>Plaats in de trein (optioneel)</label>
         <button type="button" class="seatbtn" data-pick="${i}" aria-expanded="${openIdx === i}">${r.pos ? esc(seatLabel(c.train, r.pos)) : '<span class="muted">Kies je plaats in de trein</span>'}${ic('chev', 18)}</button>
         ${openIdx === i ? trainHtml(c.train, r.pos) : ''}</div>`
