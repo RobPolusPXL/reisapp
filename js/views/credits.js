@@ -66,7 +66,7 @@ const datesText = ds => {
 
 const lastDate = rides => rides.map(r => r.date).filter(Boolean).sort().pop() || '';
 
-function openCredit(c, { addRide = false } = {}) {
+function openCredit(c, { addRide = false, focus = -1 } = {}) {
   const cur = get().credits[c.id];
   const draft = ridesOf(cur).map(r => ({ ...r }));
   if (!draft.length) draft.push({ date: '', score: '', seat: '' });
@@ -100,6 +100,7 @@ function openCredit(c, { addRide = false } = {}) {
       <div class="pair">${cur ? '<button type="button" class="btn danger" data-del>Credit verwijderen</button>' : '<button type="button" class="btn" data-close>Annuleren</button>'}<button type="submit" class="btn primary">${cur ? 'Opslaan' : 'Credit toevoegen'}</button></div>
     </form>`);
   render();
+  if (focus >= 0) sh.el.querySelectorAll('[data-ride]')[focus]?.scrollIntoView({ block: 'center' });
   sh.el.addEventListener('click', e => {
     const pk = e.target.closest('[data-pick]');
     if (pk) { read(); const i = +pk.dataset.pick; openIdx = openIdx === i ? -1 : i; render(); return; }
@@ -127,6 +128,12 @@ function openCredit(c, { addRide = false } = {}) {
 
 const CATS = ['Thrill', 'Familie', 'Kinderen'];
 const cat = c => /kiddie/i.test(c.type) ? 'Kinderen' : /hyper|launch|invert|hybrid|water|wing/i.test(c.type) ? 'Thrill' : 'Familie';
+/** Ritten per datum (oplopend), elk met zijn oorspronkelijke index. */
+function rideGroups(cr) {
+  const m = new Map();
+  cr.forEach((r, i) => { const k = r.date || ''; if (!m.has(k)) m.set(k, []); m.get(k).push({ ...r, i }); });
+  return [...m].sort((x, y) => !x[0] ? 1 : !y[0] ? -1 : x[0].localeCompare(y[0]));
+}
 const dateChips = ds => ds.map(d => `<span class="chip a">${esc(fmtDate(d))}</span>`).join('');
 
 function openPicker(coasters) {
@@ -174,21 +181,21 @@ export function mount(el) {
           <section class="card kpis"><div><b>${pr.length}</b><span>${pr.length === 1 ? 'rit' : 'ritten'}</span></div><div><b>${kAvg ? '★ ' + esc(num(kAvg)) : '–'}</b><span>gemiddeld</span></div><div><b style="font-size:16px">${kLast ? esc(fmtDate(kLast)) : '–'}</b><span>laatst gereden</span></div></section>
         </div>
         ${done.length ? `<div class="sec-h"><h2>Gereden</h2><span class="muted">${done.length}</span></div>
-        <div class="ride-cards">${done.map(c => {
+        <div class="ride-cards app-only">${done.map(c => {
           const cr = ridesOf(credits[c.id]), sc = avgScore(cr), ds = uniqDates(cr), o = openCards.has(c.id);
-          let body = '';
-          if (o) {
-            const byDate = new Map();
-            cr.forEach((r, i) => { const k = r.date || ''; if (!byDate.has(k)) byDate.set(k, []); byDate.get(k).push({ ...r, n: i + 1 }); });
-            const keys = [...byDate.keys()].sort((x, y) => !x ? 1 : !y ? -1 : x.localeCompare(y));
-            body = `<div class="rc-body"><div class="rc-grid">${keys.map(k => `<div class="rc-day"><div class="rc-date">${k ? esc(fmtDate(k)) : 'Zonder datum'}</div>
-              ${byDate.get(k).map(r => `<div class="rc-ride"><span class="rn">Rit ${r.n}</span><span class="rs">${r.score ? `<span class="spill">★ ${esc(num(r.score))}</span>` : ''}</span><span class="rp">${r.seat ? esc(r.seat) : '<span class="muted">Geen plaats</span>'}</span></div>`).join('')}</div>`).join('')}</div>
-              <button type="button" class="btn soft" data-c="${esc(c.id)}">Ritten bewerken</button></div>`;
-          }
           return `<div class="ride-card${o ? ' open' : ''}"><button type="button" class="rc-head" data-exp="${esc(c.id)}" aria-expanded="${o}"><div class="rc-top"><div class="rc-t"><b>${esc(c.name)}</b><div class="s">${esc([c.maker, c.year, c.type].filter(Boolean).join(' · '))}</div></div>
-            <div class="rc-score">${sc ? `<div class="sc">★ ${esc(num(sc))}</div>` : ''}<small>${cr.length} ${cr.length === 1 ? 'rit' : 'ritten'}</small></div></div>
-            <div class="chips">${dateChips(ds)}<span class="rc-chev">${ic('chev', 18)}</span></div></button>${body}</div>`;
-        }).join('')}</div>` : ''}
+            <div class="rc-score">${sc ? `<div class="sc">★ ${esc(num(sc))}</div>` : ''}<small>${cr.length} ${cr.length === 1 ? 'rit' : 'ritten'}</small></div><span class="rc-chev">${ic('chev', 18)}</span></div>
+            ${o ? '' : `<div class="chips">${dateChips(ds)}</div>`}</button>
+            ${o ? `<div class="rc-body">${rideGroups(cr).map(([k, l]) => `<div class="rc-gh"><b>${k ? esc(fmtDate(k)) : 'Zonder datum'}</b><span>${l.length} ${l.length === 1 ? 'rit' : 'ritten'}</span></div>
+              ${l.map(r => `<button type="button" class="rc-tile" data-ride="${esc(c.id)}:${r.i}"><div class="l1"><b>Rit ${r.i + 1}</b>${r.score ? `<span class="st">★ ${esc(num(r.score))}</span>` : ''}</div><div class="l2">${r.seat ? esc(r.seat) : '<span class="muted">Geen plaats</span>'}</div></button>`).join('')}`).join('')}</div>` : ''}</div>`;
+        }).join('')}</div>
+        <div class="ctable site-only"><div class="ctr cth"><span>Baan</span><span>Fabrikant · jaar</span><span>Score</span><span>Ritten</span><span>Datums</span><span></span></div>
+          ${done.map(c => {
+            const cr = ridesOf(credits[c.id]), sc = avgScore(cr), ds = uniqDates(cr), o = openCards.has(c.id);
+            return `<button type="button" class="ctr${o ? ' open' : ''}" data-exp="${esc(c.id)}" aria-expanded="${o}"><b>${esc(c.name)}</b><span class="muted">${esc([c.maker, c.year].filter(Boolean).join(' · '))}</span><span class="csc">${sc ? '★ ' + esc(num(sc)) : ''}</span><span>${cr.length}</span><span class="cds">${dateChips(ds)}</span><span class="rc-chev">${ic('chev', 18)}</span></button>
+            ${o ? `<div class="csub"><div class="crr crh"><span>Datum</span><span>Rit</span><span>Plaats in de trein</span><span style="text-align:right">Score</span><span></span></div>
+              ${cr.map((r, i) => ({ ...r, i })).sort((x, y) => (x.date || '9').localeCompare(y.date || '9') || x.i - y.i).map(r => `<button type="button" class="crr" data-ride="${esc(c.id)}:${r.i}"><span>${r.date ? esc(fmtDate(r.date)) : '<span class="muted">Zonder datum</span>'}</span><b>Rit ${r.i + 1}</b><span>${r.seat ? esc(r.seat) : '<span class="muted">Geen plaats</span>'}</span><span class="cst">${r.score ? '★ ' + esc(num(r.score)) : ''}</span>${ic('chev', 18)}</button>`).join('')}</div>` : ''}`;
+          }).join('')}</div>` : ''}
         <div class="sec-h"><h2>Nog te rijden</h2><span class="muted">${todo.length}${soon.length ? ` · ${soon.length} binnenkort` : ''}</span></div>
         <div class="groups">${CATS.map(g => {
           const l = todo.filter(c => cat(c) === g), sn = soon.filter(c => cat(c) === g);
@@ -204,6 +211,8 @@ export function mount(el) {
   };
   const onClick = e => {
     if (e.target.closest('[data-new]')) { openPicker(db.filter(c => c.status === 'open')); return; }
+    const rb = e.target.closest('[data-ride]');
+    if (rb) { const [cid, i] = rb.dataset.ride.split(':'); const c = db.find(x => x.id === cid); if (c) openCredit(c, { focus: +i }); return; }
     const ex = e.target.closest('[data-exp]');
     if (ex) { openCards.has(ex.dataset.exp) ? openCards.delete(ex.dataset.exp) : openCards.add(ex.dataset.exp); draw(); return; }
     const g = e.target.closest('[data-g]');
