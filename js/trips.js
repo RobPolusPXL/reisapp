@@ -125,7 +125,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
         ${fld('ref', 'Boekingsreferentie', 'text', f.ref, 'Boekingsreferentie')}`
       : `${fld('name', 'Naam', 'text', draft.name, 'Naam')}
         ${fld('date', 'Datum', 'date', draft.date)}
-        ${t === 'stay' || t === 'food' ? `<div class="field"><label for="i-score">Score</label><select id="i-score" name="score"><option value="">Geen score</option>${[1, 2, 3, 4, 5].map(n => `<option value="${n}"${String(draft.score) === String(n) ? ' selected' : ''}>${'★'.repeat(n)} (${n})</option>`).join('')}</select></div>` : ''}`}
+        <div class="field"><label for="i-score">Score (optioneel)</label><select id="i-score" name="score"><option value="">Geen score</option>${[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map(n => `<option value="${n}"${String(draft.score) === String(n) ? ' selected' : ''}>★ ${String(n).replace('.', ',')}</option>`).join('')}</select></div>`}
       ${fld('note', 'Notitie', 'text', draft.note, 'Notitie')}
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
       <div class="pair">${item ? `<button type="button" class="btn danger" data-del>${ic('trash', 18)}Verwijderen</button>` : '<button type="button" class="btn" data-close>Annuleren</button>'}<button type="submit" class="btn primary">Opslaan</button></div>

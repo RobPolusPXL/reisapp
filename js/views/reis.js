@@ -18,7 +18,7 @@ export function mount(el, { params }) {
       if (route) sub += ` · ${route}`;
       if (i.f?.seat) sub += ` · zitplaats ${i.f.seat}`;
     }
-    const right = i.score ? `★ ${esc(i.score)}` : ic('chev', 20);
+    const right = i.score ? `★ ${esc(String(i.score).replace('.', ','))}` : ic('chev', 20);
     return `<button type="button" class="item" data-item="${esc(i.id)}"><span class="ico">${ic(icon, 22)}</span><span class="grow"><div class="t">${esc(i.name)}</div><div class="s">${esc(sub)}</div></span><span class="r">${right}</span></button>`;
   };
 
