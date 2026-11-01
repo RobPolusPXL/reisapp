@@ -250,7 +250,7 @@ a.list-row { color: inherit; }
 .grp .count { min-width: 28px; height: 28px; padding: 0 8px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
 .grp-body { padding: 0 0 8px 50px; }
 .list-row.sub { min-height: 48px; }
-.ell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ell { overflow-wrap: anywhere; }
 
 /* ---------- Luchthavens zoeken ---------- */
 .ap-results { display: flex; flex-direction: column; margin-top: 6px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); }
@@ -269,3 +269,152 @@ a.list-row { color: inherit; }
 .pax select { grid-column: 1; }
 .pax .icon-btn { grid-column: 2; width: 48px; height: 48px; justify-self: end; }
 .btn.scan { align-self: flex-start; cursor: pointer; }
+
+/* ---------- Achtbanen ---------- */
+.credit-dot { width: 26px; height: 26px; border-radius: 13px; border: 2px solid var(--field); flex: none; display: inline-flex; align-items: center; justify-content: center; }
+.credit-dot.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.ride { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; }
+.ride-h { display: flex; align-items: center; justify-content: space-between; min-height: 40px; }
+
+/* ---------- Trein met zitkeuze ---------- */
+.seatbtn { display: flex; align-items: center; justify-content: space-between; gap: 8px; min-height: 48px; padding: 0 14px; border: 1px solid var(--field); border-radius: 14px; background: var(--surface); color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.seatbtn svg { transition: transform .15s; flex: none; color: var(--muted); }
+.seatbtn[aria-expanded=true] svg { transform: rotate(90deg); }
+.train-wrap { display: flex; flex-direction: column; align-items: center; gap: 6px; margin-top: 10px; padding: 12px; border-radius: 16px; background: var(--bg); max-height: 340px; overflow-y: auto; }
+.train-front { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .04em; }
+.tcar { position: relative; display: flex; flex-direction: column; gap: 6px; padding: 8px 10px; border-radius: 14px; background: var(--surface); border: 1px solid var(--line); }
+.tcarn { position: absolute; left: -26px; top: 50%; transform: translateY(-50%); font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.trow { display: flex; gap: 8px; justify-content: center; }
+.tseat { width: 40px; height: 40px; border-radius: 12px; border: 2px solid var(--field); background: var(--surface); cursor: pointer; padding: 0; }
+.tseat:hover { border-color: var(--accent); }
+.tseat.on { background: var(--accent); border-color: var(--accent); }
+
+/* ---------- Achtbanen: overzicht ---------- */
+.gplus { margin-left: auto; width: 48px; height: 48px; border-radius: 24px; border: 0; background: var(--accent); color: var(--on-accent); display: grid; place-items: center; cursor: pointer; box-shadow: var(--shadow); flex: none; }
+.kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; text-align: center; align-content: center; }
+.kpis b { display: block; font-size: 20px; }
+.kpis span { font-size: 12px; color: var(--muted); }
+.sec-h { display: flex; align-items: baseline; justify-content: space-between; margin: 10px 4px -2px; }
+.sec-h h2 { font-size: 15px; font-weight: 700; }
+.ride-cards { display: flex; flex-direction: column; gap: 10px; }
+.ride-card { background: var(--surface); border-radius: 18px; overflow: hidden; }
+.rc-head { text-align: left; width: 100%; border: 0; background: none; color: inherit; font: inherit; padding: 14px 16px; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; }
+.rc-chev { color: var(--muted); display: inline-flex; align-items: center; align-self: center; margin-left: 2px; transition: transform .15s; flex: none; }
+.ride-card.open .rc-chev, .ctr.open .rc-chev { transform: rotate(90deg); }
+
+.ride-card:hover { outline: 2px solid var(--accent-soft); }
+.rc-top { display: flex; align-items: flex-start; gap: 10px; }
+.rc-t b { font-size: 16px; }
+.rc-t .s { color: var(--muted); font-size: 13px; }
+.rc-score { margin-left: auto; text-align: right; flex: none; }
+.rc-score .sc { font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1; white-space: nowrap; }
+.rc-score small { display: block; color: var(--muted); font-size: 12px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.chip { background: var(--bg); border-radius: 12px; padding: 3px 10px; font-size: 13px; }
+.chip.a { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.groups { display: flex; flex-direction: column; gap: 8px; }
+.grp2 { background: var(--surface); border-radius: 16px; overflow: hidden; }
+.grp2-h { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 16px; border: 0; background: none; color: inherit; font: inherit; font-weight: 600; cursor: pointer; text-align: left; }
+.grp2-h > svg { color: var(--muted); transition: transform .15s; }
+.grp2.open .grp2-h > svg { transform: rotate(90deg); }
+.cnt { margin-left: auto; background: var(--accent-soft); color: var(--accent); border-radius: 12px; padding: 2px 10px; font-size: 13px; }
+.todo { width: 100%; display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 8px 16px; border: 0; border-top: 1px solid var(--line); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.todo .grow { flex: 1; min-width: 0; }
+.todo .t { font-weight: 500; }
+.todo .s { font-size: 12px; color: var(--muted); }
+.todo > svg { color: var(--accent); flex: none; }
+.pick { width: 100%; border: 0; background: none; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+@media (min-width: 900px) {
+  .credits-page { max-width: 1000px; }
+  .groups { display: grid; grid-template-columns: repeat(3, 1fr); align-items: start; }
+}
+
+/* Tekst wordt nooit afgekapt: lange namen en plaatsen lopen door op de volgende regel. */
+.rc-t, .rc-t .s, .chip, .todo .t, .todo .s, .grp2-h > span:not(.cnt), .ap-name, .seatbtn { overflow-wrap: anywhere; min-width: 0; }
+.chip { max-width: 100%; }
+.rc-t { min-width: 0; }
+.todo.soon { opacity: .55; cursor: default; }
+.todo.soon .soon-l { font-size: 13px; flex: none; }
+.credits-page .chips { overflow: visible; padding-bottom: 0; }
+
+
+
+/* Achtbanen: uitgeklapte kaart (app) met tegeltjes */
+.rc-body { padding: 0 16px 14px; }
+.rc-gh { display: flex; align-items: baseline; justify-content: space-between; padding: 12px 0 2px; }
+.rc-gh b { font-size: 13px; color: var(--accent); }
+.rc-gh span { font-size: 12px; color: var(--muted); }
+.rc-tile { display: block; width: 100%; border: 0; background: var(--bg); border-radius: 14px; padding: 10px 14px; margin-top: 8px; text-align: left; color: inherit; font: inherit; cursor: pointer; }
+.rc-tile .l1 { display: flex; align-items: center; gap: 8px; }
+.rc-tile .l1 b { font-weight: 600; }
+.rc-tile .l1 .st { margin-left: auto; font-weight: 700; color: var(--accent); }
+.rc-tile .l2 { font-size: 14px; margin-top: 2px; overflow-wrap: anywhere; }
+.site-only { display: none; }
+/* Achtbanen: tabel (site) */
+.ctable { background: var(--surface); border-radius: 18px; overflow: hidden; }
+.ctr { display: grid; grid-template-columns: 1.3fr 1.3fr 90px 80px 1.7fr 24px; align-items: center; gap: 16px; padding: 0 20px; min-height: 56px; width: 100%; border: 0; border-top: 1px solid var(--line); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ctr.cth { min-height: 42px; border-top: 0; font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; cursor: default; }
+.ctr:not(.cth):hover { background: var(--bg); }
+.ctr.open, .ctr.open:hover { background: var(--accent-soft); }
+.ctr .csc { color: var(--accent); font-weight: 700; }
+.ctr .cds { display: flex; flex-wrap: wrap; gap: 6px; }
+.ctr > span, .ctr > b { min-width: 0; overflow-wrap: anywhere; }
+.csub { background: var(--surface); padding: 4px 20px 12px; border-top: 1px solid var(--line); }
+.crr { display: grid; grid-template-columns: 150px 70px 1fr 90px 24px; align-items: center; gap: 16px; min-height: 46px; width: 100%; padding: 0 4px; border: 0; border-top: 1px solid var(--line); background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.crr.crh { min-height: 34px; border-top: 0; font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: .06em; cursor: default; }
+.crr:not(.crh):hover { background: var(--bg); }
+.crr .cst { font-weight: 700; text-align: right; }
+.crr > svg { color: var(--muted); }
+.crr > span, .crr > b { min-width: 0; overflow-wrap: anywhere; }
+@media (min-width: 900px) {
+  .app-only { display: none; }
+  .site-only { display: block; }
+}
+.ctr.open .cds .chip { background: var(--surface); }
+
+/* Achtbanen: parken openklapbaar */
+.park { background: var(--surface); border-radius: 18px; overflow: hidden; }
+.ph { width: 100%; display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 0; background: none; color: inherit; font: inherit; text-align: left; cursor: pointer; }
+.ph .flag { flex: none; }
+.ph .pn { flex: 1; min-width: 0; }
+.ph .pn b { font-size: 17px; display: block; overflow-wrap: anywhere; }
+.ph .pn small { color: var(--muted); }
+.ph .pc { text-align: right; flex: none; }
+.ph .pc b { font-size: 22px; color: var(--accent); line-height: 1; }
+.ph .pc b i { font-style: normal; font-size: 14px; color: var(--muted); font-weight: 600; }
+.ph .pc small { display: block; color: var(--muted); font-size: 12px; }
+.park.open > .ph .rc-chev { transform: rotate(90deg); }
+.pbar { padding: 0 16px 14px; }
+.pbar .bar { height: 6px; border-radius: 3px; }
+.pb { padding: 0 12px 14px; border-top: 1px solid var(--line); display: flex; flex-direction: column; gap: 10px; }
+.pb > .sec-h { margin-top: 12px; }
+@media (min-width: 900px) { .pb { padding: 0 16px 16px; } }
+.alllink { display: flex; align-items: center; justify-content: space-between; min-height: 48px; padding: 0 16px; border-radius: 14px; background: var(--accent); color: var(--on-accent); font-weight: 600; }
+/* Achtbaanstatistieken */
+.big4 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.big4 > div { background: var(--surface); border-radius: 16px; padding: 14px; text-align: center; }
+.big4 b { display: block; font-size: 26px; color: var(--accent); }
+.big4 span { font-size: 12px; color: var(--muted); }
+.sgrid { display: grid; grid-template-columns: 1fr; gap: 12px; align-items: start; }
+.sc2 h2 { font-size: 15px; margin-bottom: 12px; }
+.brow { display: grid; grid-template-columns: minmax(110px, 38%) 1fr auto; gap: 10px; align-items: center; margin: 10px 0; font-size: 14px; }
+.brow .lbl { overflow-wrap: anywhere; }
+.brow .bar { height: 10px; border-radius: 5px; }
+.brow .n { font-weight: 700; font-variant-numeric: tabular-nums; }
+.rank { display: grid; grid-template-columns: 26px 1fr auto; gap: 10px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+.rank:first-of-type { border-top: 0; }
+.rank .p { width: 26px; height: 26px; border-radius: 13px; background: var(--accent-soft); color: var(--accent); font-weight: 700; display: grid; place-items: center; font-size: 13px; }
+.rank small { color: var(--muted); display: block; font-size: 12px; }
+.rank .v { font-weight: 700; color: var(--accent); }
+@media (min-width: 900px) {
+  .big4 { grid-template-columns: repeat(4, 1fr); }
+  .sgrid { grid-template-columns: 1fr 1fr; }
+  .sgrid .span2 { grid-column: 1 / -1; }
+}
+
+/* In een open park: kaarten grijs op het witte park, tegeltjes wit */
+.pb .ride-card, .pb .grp2 { background: var(--bg); }
+.pb .rc-tile { background: var(--surface); }
+.pb .ctable { border: 1px solid var(--line); }
+.kpis b { font-size: 19px; }
+@media (min-width: 900px) { .kpis b { font-size: 22px; } }

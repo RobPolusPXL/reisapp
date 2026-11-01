@@ -36,13 +36,15 @@ const loaders = {
   reizen: () => import('./views/reizen.js'),
   reis: () => import('./views/reis.js'),
   statistieken: () => import('./views/statistieken.js'),
+  credits: () => import('./views/credits.js'),
+  achtbaanstatistieken: () => import('./views/achtbaanstatistieken.js'),
   instellingen: () => import('./views/instellingen.js'),
 };
 
 async function route() {
   const parts = (location.hash.replace(/^#\/?/, '') || 'kaart').split('/');
   const name = loaders[parts[0]] ? parts[0] : 'kaart';
-  const tab = name === 'reis' || name === 'statistieken' ? 'reizen' : name;
+  const tab = name === 'reis' || name === 'statistieken' ? 'reizen' : name === 'credits' || name === 'achtbaanstatistieken' ? 'paspoort' : name;
   cleanup?.(); cleanup = null;
   view.className = '';
   view.innerHTML = '';

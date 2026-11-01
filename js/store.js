@@ -11,7 +11,8 @@ const blank = () => ({
   countries: {},                       // { BE: { s: 'v' | 'w', y?: 2019 } }
   places: { cities: [], regions: [], airports: [] },
   trips: [],
-  travelers: [],                       // namen die je bij vluchten kunt kiezen
+  travelers: [],
+  credits: {},                         // { coasterId: { date?, rides, score? } }                       // namen die je bij vluchten kunt kiezen
   settings: { theme: 'groen', mode: 'system' },
 });
 
@@ -23,6 +24,7 @@ function normalize(s = {}) {
     places: { ...b.places, ...(s.places || {}) },
     trips: s.trips || [],
     travelers: s.travelers || [],
+    credits: s.credits || {},
     settings: { ...b.settings, ...(s.settings || {}) },
   };
 }
