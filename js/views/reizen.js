@@ -21,12 +21,18 @@ export function mount(el) {
     }).join('');
     el.innerHTML = `<div class="page">
       <header class="page-head"><h1>Reizen</h1><a class="icon-btn" href="#/instellingen" aria-label="Instellingen">${ic('gear', 22)}</a></header>
-      <section class="stat-card" aria-label="Reisstatistieken"><div class="grid">
-        <div><div class="l">Reizen</div><div class="n">${s.trips}</div></div>
-        <div><div class="l">Duur</div><div class="n">${s.days}d</div></div>
-        <div><div class="l">Continenten</div><div class="n">${s.continents}</div></div>
-        <div><div class="l">Landen</div><div class="n">${s.countries}</div></div>
-        <div><div class="l">Steden</div><div class="n">${s.cities}</div></div></div></section>
+      <section class="stat-card" aria-label="Reisstatistieken">
+        <svg class="plane" viewBox="0 0 100 100" aria-hidden="true"><path d="M50 0C54 0 56 6 56 12V38L96 58V66L56 56V80L68 90V96L50 91L32 96V90L44 80V56L4 66V58L44 38V12C44 6 46 0 50 0Z"/></svg>
+        <div class="top">
+          <div><div class="l">${ic('case', 20)}Reizen</div><div class="n">${s.trips}</div></div>
+          <div><div class="l">${ic('clock', 20)}Duur</div><div class="n">${s.days}d</div></div>
+        </div>
+        <div class="bot">
+          <div><div class="l">Continenten</div><div class="n">${s.continents}</div></div>
+          <div><div class="l">Landen</div><div class="n">${s.countries}</div></div>
+          <div><div class="l">Steden</div><div class="n">${s.cities}</div></div>
+        </div>
+      </section>
       ${trips.length ? `<h2 style="font-size:18px">Afgelopen</h2>${cards}` : `<div class="card"><h2>Nog geen reizen</h2><p class="muted">Voeg je eerste reis toe met de knop rechtsonder.</p></div>`}
       <button type="button" class="fab" id="add" aria-label="Reis toevoegen" style="position:fixed;bottom:calc(88px + env(safe-area-inset-bottom))">${ic('plus', 26)}</button>
     </div>`;

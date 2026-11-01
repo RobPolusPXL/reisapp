@@ -201,10 +201,14 @@ svg.map .sel { stroke: var(--ink); stroke-width: 2px; }
 .leg .p { font-size: 17px; font-weight: 600; }
 .leg-dash { margin-left: 15px; height: 14px; border-left: 2px dashed var(--field); }
 .trip-note { display: flex; align-items: center; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); }
-.stat-card { background: var(--accent); color: var(--on-accent); border-radius: 20px; padding: 20px; }
-.stat-card .grid { display: flex; flex-wrap: wrap; gap: 18px 32px; }
-.stat-card .n { font-size: 32px; font-weight: 700; line-height: 1.1; }
-.stat-card .l { font-size: 13px; opacity: .9; }
+.stat-card { position: relative; overflow: hidden; background: var(--accent); color: var(--on-accent); border-radius: 20px; padding: 22px 20px 20px; }
+.stat-card .plane { position: absolute; right: -40px; top: -30px; width: 300px; height: 300px; transform: rotate(-35deg); fill: currentColor; opacity: .13; pointer-events: none; }
+.stat-card .top, .stat-card .bot { position: relative; display: grid; gap: 12px; }
+.stat-card .top { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.stat-card .bot { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 18px; }
+.stat-card .l { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: 500; }
+.stat-card .top .n { font-size: 44px; font-weight: 800; line-height: 1.1; margin-top: 4px; }
+.stat-card .bot .n { font-size: 36px; font-weight: 800; line-height: 1.1; margin-top: 2px; }
 .year { text-align: center; font-size: 14px; font-weight: 600; color: var(--muted); }
 .items { display: flex; flex-direction: column; gap: 10px; }
 .item { display: flex; align-items: center; gap: 14px; min-height: 72px; padding: 12px 16px; background: var(--bg); border-radius: 16px; width: 100%; border: 0; text-align: left; cursor: pointer; }
