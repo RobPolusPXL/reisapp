@@ -1,7 +1,7 @@
 // Statistieken over je achtbaancredits en ritten (alle parken samen).
 import { get, subscribe } from '../store.js';
 import { nameOf } from '../data.js';
-import { esc, ic } from '../ui.js';
+import { esc, ic, scoreH } from '../ui.js';
 import { load, ridesOf, avgScore } from './credits.js';
 
 const num = n => String(Math.round(n * 10) / 10).replace('.', ',');
@@ -35,10 +35,10 @@ export function mount(el) {
     const maxPark = Math.max(1, ...parkStats.map(x => x.total));
     el.innerHTML = `<div class="page credits-page">
       <header class="page-head"><a class="icon-btn" href="#/credits" aria-label="Terug naar Achtbanen">${ic('back', 26)}</a><h1>Achtbaanstatistieken</h1></header>
-      ${done.length ? `<div class="big4"><div><b>${done.length}</b><span>${done.length === 1 ? 'credit' : 'credits'}</span></div><div><b>${rides.length}</b><span>${rides.length === 1 ? 'rit' : 'ritten'}</span></div><div><b>${avg ? '★ ' + esc(num(avg)) : '–'}</b><span>gemiddelde score</span></div><div><b>${parkStats.filter(x => x.got).length}</b><span>${parkStats.filter(x => x.got).length === 1 ? 'park' : 'parken'} in ${countries.size} ${countries.size === 1 ? 'land' : 'landen'}</span></div></div>
+      ${done.length ? `<div class="big4"><div><b>${done.length}</b><span>${done.length === 1 ? 'credit' : 'credits'}</span></div><div><b>${rides.length}</b><span>${rides.length === 1 ? 'rit' : 'ritten'}</span></div><div><b>${avg ? scoreH(num(avg)) : '–'}</b><span>gemiddelde score</span></div><div><b>${parkStats.filter(x => x.got).length}</b><span>${parkStats.filter(x => x.got).length === 1 ? 'park' : 'parken'} in ${countries.size} ${countries.size === 1 ? 'land' : 'landen'}</span></div></div>
       <div class="sgrid">
         <section class="card sc2"><h2>Per park</h2>${parkStats.map(x => bar(x.p, x.got, maxPark, `${x.got} / ${x.total}`)).join('')}</section>
-        <section class="card sc2"><h2>Hoogst gescoord</h2>${top.length ? top.map((x, i) => `<div class="rank"><span class="p">${i + 1}</span><div><b>${esc(x.c.name)}</b><small>${esc(x.c.park)} · ${x.n}×</small></div><span class="v">★ ${esc(num(x.a))}</span></div>`).join('') : '<div class="muted">Nog geen scores.</div>'}</section>
+        <section class="card sc2"><h2>Hoogst gescoord</h2>${top.length ? top.map((x, i) => `<div class="rank"><span class="p">${i + 1}</span><div><b>${esc(x.c.name)}</b><small>${esc(x.c.park)} · ${x.n}×</small></div><span class="v">${scoreH(num(x.a))}</span></div>`).join('') : '<div class="muted">Nog geen scores.</div>'}</section>
         <section class="card sc2"><h2>Ritten per jaar</h2>${yl.length ? yl.map(([y, n]) => bar(y, n, Math.max(...yl.map(v => v[1])))).join('') : '<div class="muted">Nog geen ritten met een datum.</div>'}</section>
         <section class="card sc2"><h2>Meeste credits per fabrikant</h2>${ml.map(([m, n]) => bar(m, n, ml[0][1])).join('')}</section>
         <section class="card sc2 span2"><h2>Credits per land</h2>${ll.map(([c, n]) => bar(nameOf(c), n, ll[0][1])).join('')}</section>
