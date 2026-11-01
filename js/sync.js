@@ -70,14 +70,29 @@ onWrite(() => { if (ref) push(); });
 /** Bij het opstarten: herstel een bestaande login. */
 export function initSync() { if (configured) init(); }
 
+const FOUTEN = {
+  'auth/unauthorized-domain': 'Dit domein staat niet bij de toegestane domeinen in Firebase (Authentication → Settings → Authorized domains).',
+  'auth/network-request-failed': 'Geen verbinding met Firebase. Controleer je internet en probeer opnieuw.',
+  'auth/internal-error': 'Inloggen mislukte door een fout bij Google. Probeer het opnieuw.',
+};
+let bezig = false;
+
 export async function signIn() {
-  const f = await init();
-  if (!f) return;
-  const provider = new f.auth.GoogleAuthProvider();
-  try { await f.auth.signInWithPopup(f.authI, provider); }
-  catch (err) {
-    if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'].includes(err.code)) await f.auth.signInWithRedirect(f.authI, provider);
-    else if (err.code !== 'auth/popup-closed-by-user') setStatus({ state: 'fout', error: err.message });
+  if (bezig) return;                      // tweede tik tijdens het inloggen negeren
+  bezig = true;
+  setStatus({ busy: true, error: '' });
+  try {
+    const f = await init();
+    if (!f) return;
+    const provider = new f.auth.GoogleAuthProvider();
+    try { await f.auth.signInWithPopup(f.authI, provider); }
+    catch (err) {
+      if (['auth/popup-blocked', 'auth/operation-not-supported-in-this-environment'].includes(err.code)) await f.auth.signInWithRedirect(f.authI, provider);
+      else if (!['auth/popup-closed-by-user', 'auth/cancelled-popup-request'].includes(err.code)) setStatus({ state: 'fout', error: FOUTEN[err.code] || err.message });
+    }
+  } finally {
+    bezig = false;
+    setStatus({ busy: false });
   }
 }
 export async function signOut() { const f = await init(); if (f) await f.auth.signOut(f.authI); }
@@ -87,7 +102,7 @@ export function syncCardHtml() {
   const s = status;
   let body;
   if (!configured) body = `<p class="muted" style="margin:0">Synchronisatie staat nog niet aan. Vul <code>js/firebase-config.js</code> in (zie README); tot dan blijven je gegevens alleen op dit toestel.</p>`;
-  else if (!s.user) body = `<p class="muted" style="margin:0 0 12px">Log in om je gegevens op al je toestellen te hebben.</p><button type="button" class="btn primary block" id="sync-in">Inloggen met Google</button>`;
+  else if (!s.user) body = `<p class="muted" style="margin:0 0 12px">Log in om je gegevens op al je toestellen te hebben.</p><button type="button" class="btn primary block" id="sync-in"${s.busy ? ' disabled aria-busy="true"' : ''}>${s.busy ? 'Bezig met inloggen…' : 'Inloggen met Google'}</button>`;
   else body = `<p style="margin:0 0 4px;font-weight:600">${esc(s.user.name)}</p>
     <p class="muted" style="margin:0 0 12px">${{ verbonden: 'Gesynchroniseerd', verbinden: 'Verbinden…', fout: 'Fout bij synchroniseren', uit: 'Niet verbonden' }[s.state] || ''}</p>
     <button type="button" class="btn block" id="sync-out">Uitloggen</button>`;
