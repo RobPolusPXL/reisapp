@@ -78,3 +78,5 @@ scripts/build-data.mjs generator voor kaart- en landendata
 - `data/airlines.json`: [OpenFlights](https://openflights.org/data) (Open Database License; vermelding: © OpenFlights.org).
 - `vendor/zxing/`: [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) (MIT), leest de streepjescode van een boarding pass lokaal in de browser.
 - `data/coasters.json`: [Coasterpedia](https://coasterpedia.net) (CC BY-SA 4.0), achtbanen van Energylandia met treinindeling (wagons, rijen, zitplaatsen per rij).
+
+> **Branch mock/achtbanen-meerdere-parken:** `data/coasters.json` bevat extra voorbeeldparken (Europa-Park, Toverland, Efteling) met banen uit het geheugen, niet geverifieerd en alleen om meerdere parken te testen. Niet mergen naar dev of main.
