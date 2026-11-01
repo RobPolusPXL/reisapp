@@ -174,10 +174,11 @@ export function mount(el) {
         </div>
         ${done.length ? `<div class="sec-h"><h2>Gereden</h2><span class="muted">${done.length}</span></div>
         <div class="ride-cards">${done.map(c => {
-          const cr = ridesOf(credits[c.id]), sc = avgScore(cr), ds = uniqDates(cr), seat = [...cr].reverse().find(r => r.seat)?.seat;
+          const cr = ridesOf(credits[c.id]), sc = avgScore(cr), ds = uniqDates(cr);
+          const seats = cr.map((r, i) => r.seat ? `<span class="chip">${cr.length > 1 ? `Rit ${i + 1} · ` : ''}${esc(r.seat)}</span>` : '').join('');
           return `<button type="button" class="ride-card" data-c="${esc(c.id)}"><div class="rc-top"><div class="rc-t"><b>${esc(c.name)}</b><div class="s">${esc([c.maker, c.year, c.type].filter(Boolean).join(' · '))}</div></div>
             <div class="rc-score">${sc ? `<div class="sc">★ ${esc(num(sc))}</div>` : ''}<small>${cr.length} ${cr.length === 1 ? 'rit' : 'ritten'}</small></div></div>
-            <div class="chips">${dateChips(ds)}${seat ? `<span class="chip">${esc(seat)}</span>` : ''}</div></button>`;
+            <div class="chips">${dateChips(ds)}${seats}</div></button>`;
         }).join('')}</div>` : ''}
         <div class="sec-h"><h2>Nog te rijden</h2><span class="muted">${todo.length}${soon.length ? ` · ${soon.length} binnenkort` : ''}</span></div>
         <div class="groups">${CATS.map(g => {
