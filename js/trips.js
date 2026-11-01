@@ -1,6 +1,7 @@
 // Gedeelde onderdelen voor reizen: vervoer, itemtypes, formulieren
 import { get, update, newId } from './store.js';
 import { list, byCode, nameOf, flag } from './data.js';
+import { loadAirports, airportByCode, attachAirportSearch, ensureMyAirport } from './airports.js';
 import { esc, ic, openSheet, toast, daysBetween } from './ui.js';
 
 export const MODES = {
@@ -111,9 +112,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     } else { draft.name = val(f, 'name'); draft.score = val(f, 'score'); }
   };
   const fld = (n, label, type = 'text', v = '', ph = '', extra = '') => `<div class="field"><label for="i-${n}">${label}</label><input id="i-${n}" name="${n}" type="${type}" value="${esc(v)}" placeholder="${esc(ph)}"${extra}></div>`;
-  // Luchthavens uit Paspoort worden voorgesteld; een andere code of naam intypen kan ook.
-  const apList = () => `<datalist id="ap-list">${get().places.airports.map(a => `<option value="${esc(a.code || a.name)}">${esc([a.code, a.name].filter(Boolean).join(' · '))}</option>`).join('')}</datalist>`;
-  const apAttr = ' list="ap-list" autocomplete="off" autocapitalize="characters"';
+  const apAttr = ' autocomplete="off" autocapitalize="characters"';
   const render = (err = '') => {
     const t = draft.type, f = draft.f;
     sh.setHtml(`<h2>${item ? 'Item bewerken' : 'Item toevoegen'}</h2>
@@ -121,7 +120,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
       <div class="field"><label for="i-type">Soort</label><select id="i-type" name="type">${Object.entries(TYPES).map(([k, [n]]) => `<option value="${k}"${k === t ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
       ${t === 'flight' ? `
         <div class="pair">${fld('airline', 'Maatschappij', 'text', f.airline, 'Maatschappij')}${fld('number', 'Vluchtnummer', 'text', f.number, 'Vluchtnummer')}</div>
-        <div class="pair">${fld('from', 'Van', 'text', f.from, 'Luchthaven of code', apAttr)}${fld('to', 'Naar', 'text', f.to, 'Luchthaven of code', apAttr)}</div>${apList()}
+        <div class="pair">${fld('from', 'Van', 'text', f.from, 'Luchthaven of stad', apAttr)}${fld('to', 'Naar', 'text', f.to, 'Luchthaven of stad', apAttr)}</div>
         ${fld('date', 'Datum', 'date', draft.date)}
         <div class="pair">${fld('dep', 'Vertrek', 'time', f.dep)}${fld('arr', 'Aankomst', 'time', f.arr)}</div>
         <div class="pair">${fld('seat', 'Zitplaats', 'text', f.seat, 'Zitplaats')}
@@ -134,7 +133,9 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
       <div class="pair">${item ? `<button type="button" class="btn danger" data-del>${ic('trash', 18)}Verwijderen</button>` : '<button type="button" class="btn" data-close>Annuleren</button>'}<button type="submit" class="btn primary">Opslaan</button></div>
     </form>`);
+    if (t === 'flight') for (const id of ['i-from', 'i-to']) { const el = sh.el.querySelector('#' + id); if (el) attachAirportSearch(el); }
   };
+  loadAirports();
   render();
   sh.el.addEventListener('change', e => { if (e.target.name === 'type') { read(); render(); } });
   sh.el.addEventListener('click', e => {
@@ -150,6 +151,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     if (draft.type === 'flight') draft.name = [draft.f.airline, draft.f.number].filter(Boolean).join(' ') || 'Vlucht';
     else if (!draft.name) return render('Geef het item een naam.');
     update(st => {
+      if (draft.type === 'flight') for (const k of ['from', 'to']) ensureMyAirport(st, airportByCode(draft.f[k]), newId);
       const t = st.trips.find(x => x.id === tripId);
       if (!t) return;
       t.items ||= [];

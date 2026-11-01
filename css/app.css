@@ -251,3 +251,13 @@ a.list-row { color: inherit; }
 .grp-body { padding: 0 0 8px 50px; }
 .list-row.sub { min-height: 48px; }
 .ell { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ---------- Luchthavens zoeken ---------- */
+.ap-results { display: flex; flex-direction: column; margin-top: 6px; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--surface); }
+.ap-results[hidden] { display: none; }
+.ap-row { display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 6px 12px; border: 0; border-top: 1px solid var(--line); background: none; text-align: left; font: inherit; color: inherit; cursor: pointer; }
+.ap-row:first-child { border-top: 0; }
+.ap-row:hover, .ap-row:focus-visible { background: var(--accent-soft); }
+.ap-code { font: 700 13px ui-monospace, Consolas, monospace; color: var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 3px 8px; letter-spacing: .05em; }
+.ap-name { display: flex; flex-direction: column; min-width: 0; }
+.ap-name small { color: var(--muted); font-size: 12px; }
