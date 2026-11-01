@@ -444,3 +444,35 @@ a.list-row { color: inherit; }
 }
 /* Ruim scherm: de plus-knop staat helemaal naast de kaarten, niet erover */
 @media (min-width: 1300px) { .page > .fab { margin-right: -76px; } }
+
+/* ===== Site op breed scherm (>= 1500px): kolommen in plaats van één smalle kolom ===== */
+@media (min-width: 1500px) {
+  .page.pas, .page.rz, .credits-page { max-width: 2100px; padding: 32px 56px 72px; }
+  .credits-page { max-width: 1700px; }
+
+  /* Paspoort */
+  .page.pas { gap: 22px; }
+  .pas-hero { display: grid; grid-template-columns: 2fr 1fr; gap: 22px; align-items: stretch; }
+  .pas-hero > .cols { flex-wrap: nowrap; }
+  .pas-hero > .cols > .map-plain { flex: 1.1 1 0; }
+  .pas-hero > .cols > .card { flex: 1 1 0; }
+  .pas-hero > .cols:last-child > .card { width: 100%; }
+  .pas-masonry { display: block; column-count: 3; column-gap: 22px; }
+  .pas-masonry > *, .pas-places > * { break-inside: avoid; margin: 0 0 22px; display: block; width: 100%; }
+  .pas-places { display: contents; }
+
+  /* Reizen: statistieken links, reizen in twee kolommen rechts */
+  .page.rz { display: grid; grid-template-columns: 560px minmax(0, 1fr); gap: 22px 32px; align-items: start; }
+  .page.rz > .page-head { grid-column: 1 / -1; }
+  .page.rz > .stat-card { position: sticky; top: 24px; }
+  .rz-list { display: block; column-count: 2; column-gap: 22px; }
+  .rz-list > h2 { column-span: all; margin: 0 0 14px; }
+  .rz-list > .year { column-span: all; margin: 6px 0 12px; }
+  .rz-list > a { break-inside: avoid; margin: 0 0 22px; display: block; }
+}
+@media (min-width: 1500px) {
+  .pas-masonry > a.card.list-row { display: flex; }
+  .pas-hero > .cols > .card, .pas-hero > .cols:last-child > .card { display: flex; flex-direction: column; justify-content: center; }
+  .page.rz > .fab { right: 56px !important; left: auto; }
+}
+@media (min-width: 1500px) { .pas-hero > .cols:last-child > .card { justify-content: flex-start; } }

@@ -88,9 +88,9 @@ export function mount(el) {
     const conts = contVisited.size, contPct = Math.round((conts / contTotal) * 100);
     const top = Object.keys(CONT).filter(k => s.cont[k].got).sort((a, b) => s.cont[b].got - s.cont[a].got)[0] || null;
     const wish = Object.entries(st.countries).filter(([, v]) => v.s === 'w').map(([c]) => byCode.get(c)).filter(Boolean).sort((a, b) => a.n.localeCompare(b.n, 'nl'));
-    el.innerHTML = `<div class="page">
+    el.innerHTML = `<div class="page pas">
       <header class="page-head"><h1>Paspoort</h1><a class="icon-btn" href="#/instellingen" aria-label="Instellingen">${ic('gear', 22)}</a></header>
-      <div class="cols">
+      <div class="pas-hero"><div class="cols">
         <div class="map-plain"><div class="map-host mini plain" id="mini"></div></div>
         <section class="card" aria-roledescription="carrousel" aria-label="Statistieken">
           <div class="carousel" id="car" tabindex="0">
@@ -126,14 +126,16 @@ export function mount(el) {
         <section class="card"><div class="card-head"><h2>Mijn continenten</h2></div>
           ${Object.entries(CONT).filter(([k]) => s.cont[k].total).map(([k, n]) => `<div class="bar-row"><span class="name">${n}</span><div class="bar"><i style="width:${s.cont[k].pct}%;${s.cont[k].got ? 'min-width:6px' : ''}"></i></div><span class="num">${s.cont[k].got}/${s.cont[k].total}</span></div>`).join('')}
         </section>
-      </div>
+      </div></div>
+      <div class="pas-masonry">
       <section class="card"><div class="card-head"><div><h2>Mijn landen</h2><div class="muted">en niet-VN-gebieden</div></div><button type="button" class="btn soft" id="addc">${ic('plus', 18)}Toevoegen</button></div>
         ${shown.length ? `<div class="list">${shown.map(c => `<button type="button" class="list-row" style="width:100%;border:0;background:none;text-align:left;cursor:pointer;border-top:1px solid var(--line)" data-c="${c.c}">${flag(c.c)}<div class="grow"><div class="t">${esc(c.n)}</div><div class="s">${st.countries[c.c]?.y ? esc(st.countries[c.c].y) : ''}${c.u ? '' : ' niet-VN-gebied'}</div></div></button>`).join('')}</div>` : '<div class="empty">Nog geen landen. Tik op de kaart of voeg er een toe.</div>'}
         ${visited.length > 5 ? `<button type="button" class="btn block" id="more" style="margin-top:10px">${showAll ? 'Minder tonen' : `+ ${visited.length - 5} meer`}</button>` : ''}
       </section>
       ${wish.length ? `<section class="card"><div class="card-head"><h2>Wil ik zien</h2></div><div class="list">${wish.map(c => `<button type="button" class="list-row" style="width:100%;border:0;background:none;text-align:left;cursor:pointer;border-top:1px solid var(--line)" data-c="${c.c}">${flag(c.c)}<div class="grow"><div class="t">${esc(c.n)}</div></div></button>`).join('')}</div></section>` : ''}
       <a class="card list-row" href="#/credits" style="padding:14px 20px"><span class="ico-sm">${ic('snor', 22)}</span><div class="grow"><div class="t">Mijn achtbanen</div><div class="s">${Object.keys(st.credits || {}).length} ${Object.keys(st.credits || {}).length === 1 ? 'credit' : 'credits'}</div></div>${ic('chev', 20)}</a>
-      <div class="cols">${placeCard('cities')}${placeCard('regions')}${placeCard('airports')}</div>
+      <div class="cols pas-places">${placeCard('cities')}${placeCard('regions')}${placeCard('airports')}</div>
+      </div>
     </div>`;
     map?.destroy();
     map = createMap(el.querySelector('#mini'), { interactive: false });
