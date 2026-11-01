@@ -424,7 +424,7 @@ a.list-row { color: inherit; }
 @media (min-width: 900px) { .kpis b { font-size: 22px; } }
 
 /* Snorren in plaats van sterren: silhouet van de blogsnor in themakleur */
-.score { display: inline-flex; align-items: center; gap: .32em; white-space: nowrap; }
+.score { display: inline-flex; align-items: center; gap: .5em; white-space: nowrap; }
 .snor-i { display: inline-block; flex: none; height: .6em; aspect-ratio: 240 / 76; background: var(--accent); -webkit-mask: url(../assets/snor.webp) center / contain no-repeat; mask: url(../assets/snor.webp) center / contain no-repeat; }
 .score .sn { min-width: 2.35ch; text-align: left; font-variant-numeric: tabular-nums; line-height: 1; }
 .rc-score .sc .score, .sc .v .score { justify-content: flex-end; }
