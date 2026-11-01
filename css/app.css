@@ -300,7 +300,17 @@ a.list-row { color: inherit; }
 .sec-h { display: flex; align-items: baseline; justify-content: space-between; margin: 10px 4px -2px; }
 .sec-h h2 { font-size: 15px; font-weight: 700; }
 .ride-cards { display: flex; flex-direction: column; gap: 10px; }
-.ride-card { text-align: left; width: 100%; border: 0; background: var(--surface); color: inherit; font: inherit; border-radius: 18px; padding: 14px 16px; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; }
+.ride-card { background: var(--surface); border-radius: 18px; overflow: hidden; }
+.rc-head { text-align: left; width: 100%; border: 0; background: none; color: inherit; font: inherit; padding: 14px 16px; cursor: pointer; display: flex; flex-direction: column; justify-content: flex-start; align-items: stretch; }
+.rc-chev { margin-left: auto; color: var(--muted); display: inline-flex; align-items: center; transition: transform .15s; }
+.ride-card.open .rc-chev { transform: rotate(90deg); }
+.rc-body { padding: 2px 16px 14px; display: flex; flex-direction: column; gap: 10px; border-top: 1px solid var(--line); margin-top: -2px; padding-top: 12px; }
+.rc-date { font-size: 13px; font-weight: 700; color: var(--accent); margin-bottom: 4px; }
+.rc-ride { display: grid; grid-template-columns: 52px 56px 1fr; gap: 10px; align-items: baseline; padding: 4px 0; }
+.rc-ride .rn { font-weight: 600; }
+.rc-ride .rs { font-weight: 700; white-space: nowrap; }
+.rc-ride .rp { overflow-wrap: anywhere; min-width: 0; }
+.rc-body .btn { align-self: flex-start; }
 .ride-card:hover { outline: 2px solid var(--accent-soft); }
 .rc-top { display: flex; align-items: flex-start; gap: 10px; }
 .rc-t b { font-size: 16px; }
@@ -326,8 +336,7 @@ a.list-row { color: inherit; }
 @media (min-width: 900px) {
   .credits-page { max-width: 1000px; }
   .hero2 { display: grid; grid-template-columns: 1.3fr 1fr; align-items: stretch; }
-  .ride-cards { display: grid; grid-template-columns: repeat(3, 1fr); }
-  .ride-cards .ride-card { height: 100%; }
+  .ride-cards { display: grid; grid-template-columns: repeat(3, 1fr); align-items: start; }
   .groups { display: grid; grid-template-columns: repeat(3, 1fr); align-items: start; }
 }
 

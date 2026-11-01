@@ -147,6 +147,7 @@ function openPicker(coasters) {
 export function mount(el) {
   let off = false;
   const openGroups = new Set(['Thrill']);
+  const openCards = new Set();
   const draw = () => {
     if (off || !db) return;
     const credits = get().credits;
@@ -174,11 +175,19 @@ export function mount(el) {
         </div>
         ${done.length ? `<div class="sec-h"><h2>Gereden</h2><span class="muted">${done.length}</span></div>
         <div class="ride-cards">${done.map(c => {
-          const cr = ridesOf(credits[c.id]), sc = avgScore(cr), ds = uniqDates(cr);
-          const seats = cr.map((r, i) => r.seat ? `<span class="chip">${cr.length > 1 ? `Rit ${i + 1} · ` : ''}${esc(r.seat)}</span>` : '').join('');
-          return `<button type="button" class="ride-card" data-c="${esc(c.id)}"><div class="rc-top"><div class="rc-t"><b>${esc(c.name)}</b><div class="s">${esc([c.maker, c.year, c.type].filter(Boolean).join(' · '))}</div></div>
+          const cr = ridesOf(credits[c.id]), sc = avgScore(cr), ds = uniqDates(cr), o = openCards.has(c.id);
+          let body = '';
+          if (o) {
+            const byDate = new Map();
+            cr.forEach((r, i) => { const k = r.date || ''; if (!byDate.has(k)) byDate.set(k, []); byDate.get(k).push({ ...r, n: i + 1 }); });
+            const keys = [...byDate.keys()].sort((x, y) => !x ? 1 : !y ? -1 : x.localeCompare(y));
+            body = `<div class="rc-body">${keys.map(k => `<div class="rc-day"><div class="rc-date">${k ? esc(fmtDate(k)) : 'Zonder datum'}</div>
+              ${byDate.get(k).map(r => `<div class="rc-ride"><span class="rn">Rit ${r.n}</span><span class="rs">${r.score ? '★ ' + esc(num(r.score)) : ''}</span><span class="rp">${r.seat ? esc(r.seat) : '<span class="muted">Geen plaats</span>'}</span></div>`).join('')}</div>`).join('')}
+              <button type="button" class="btn soft" data-c="${esc(c.id)}">Ritten bewerken</button></div>`;
+          }
+          return `<div class="ride-card${o ? ' open' : ''}"><button type="button" class="rc-head" data-exp="${esc(c.id)}" aria-expanded="${o}"><div class="rc-top"><div class="rc-t"><b>${esc(c.name)}</b><div class="s">${esc([c.maker, c.year, c.type].filter(Boolean).join(' · '))}</div></div>
             <div class="rc-score">${sc ? `<div class="sc">★ ${esc(num(sc))}</div>` : ''}<small>${cr.length} ${cr.length === 1 ? 'rit' : 'ritten'}</small></div></div>
-            <div class="chips">${dateChips(ds)}${seats}</div></button>`;
+            <div class="chips">${dateChips(ds)}<span class="rc-chev">${ic('chev', 18)}</span></div></button>${body}</div>`;
         }).join('')}</div>` : ''}
         <div class="sec-h"><h2>Nog te rijden</h2><span class="muted">${todo.length}${soon.length ? ` · ${soon.length} binnenkort` : ''}</span></div>
         <div class="groups">${CATS.map(g => {
@@ -195,6 +204,8 @@ export function mount(el) {
   };
   const onClick = e => {
     if (e.target.closest('[data-new]')) { openPicker(db.filter(c => c.status === 'open')); return; }
+    const ex = e.target.closest('[data-exp]');
+    if (ex) { openCards.has(ex.dataset.exp) ? openCards.delete(ex.dataset.exp) : openCards.add(ex.dataset.exp); draw(); return; }
     const g = e.target.closest('[data-g]');
     if (g) { openGroups.has(g.dataset.g) ? openGroups.delete(g.dataset.g) : openGroups.add(g.dataset.g); draw(); return; }
     const b = e.target.closest('[data-c]');
