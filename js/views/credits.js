@@ -20,7 +20,21 @@ export function ridesOf(cr) {
   const n = Math.max(1, parseInt(cr.rides, 10) || 1);
   return Array.from({ length: n }, (_, i) => i === 0 ? { date: cr.date || '', score: cr.score || '', seat: '' } : { date: '', score: '', seat: '' });
 }
-const lastScore = rides => [...rides].reverse().find(r => r.score)?.score || '';
+/** Gemiddelde van de scores van alle ritten (op één decimaal), of '' zonder scores. */
+const avgScore = rides => {
+  const v = rides.map(r => parseFloat(r.score)).filter(n => !isNaN(n));
+  return v.length ? Math.round(v.reduce((a, b) => a + b, 0) / v.length * 10) / 10 : '';
+};
+const uniqDates = rides => [...new Set(rides.map(r => r.date).filter(Boolean))].sort();
+/** '8 sep, 10 sep 2026' (jaar alleen achteraan als alle datums in hetzelfde jaar liggen). */
+const datesText = ds => {
+  if (!ds.length) return '';
+  const shown = ds.slice(0, 4).map(fmtDate), more = ds.length - shown.length;
+  const sameYear = new Set(ds.map(d => d.slice(0, 4))).size === 1;
+  const out = sameYear ? shown.map((t, i) => i < shown.length - 1 || more ? t.replace(/ \d{4}$/, '') : t) : shown;
+  return out.join(', ') + (more ? ` +${more}` : '');
+};
+
 const lastDate = rides => rides.map(r => r.date).filter(Boolean).sort().pop() || '';
 
 function openCredit(c) {
@@ -52,7 +66,7 @@ function openCredit(c) {
     </form>`);
   render();
   sh.el.addEventListener('click', e => {
-    if (e.target.closest('[data-addride]')) { read(); draft.push({ date: '', score: '', seat: '' }); render(); sh.el.querySelectorAll('[data-ride]')[draft.length - 1]?.querySelector('[name=date]').focus(); return; }
+    if (e.target.closest('[data-addride]')) { read(); draft.push({ date: [...draft].reverse().find(r => r.date)?.date || '', score: '', seat: '' }); render(); sh.el.querySelectorAll('[data-ride]')[draft.length - 1]?.querySelector('[name=date]').focus(); return; }
     const d = e.target.closest('[data-delride]');
     if (d) { read(); const i = [...sh.el.querySelectorAll('[data-ride]')].indexOf(d.closest('[data-ride]')); draft.splice(i, 1); render(); return; }
     if (e.target.closest('[data-del]')) { update(st => { delete st.credits[c.id]; }); sh.close(); toast('Credit verwijderd'); }
@@ -60,6 +74,7 @@ function openCredit(c) {
   sh.el.addEventListener('submit', e => {
     e.preventDefault();
     read();
+    for (let i = 1; i < draft.length; i++) if (!draft[i].date) draft[i].date = draft[i - 1].date;
     update(st => { st.credits[c.id] = { rides: draft }; });
     sh.close();
     toast(cur ? 'Opgeslagen' : 'Credit toegevoegd');
@@ -90,13 +105,13 @@ export function mount(el) {
             <div style="text-align:right"><span class="big" style="font-size:36px">${got}<small> / ${open.length}</small></span></div></div>
           <div class="bar" style="height:10px;border-radius:5px;margin-bottom:12px"><i style="width:${pct}%"></i></div>
           <div class="list">${list.map(c => {
-            const cr = ridesOf(credits[c.id]), planned = c.status !== 'open', sc = lastScore(cr), ld = lastDate(cr);
+            const cr = ridesOf(credits[c.id]), planned = c.status !== 'open', sc = avgScore(cr), ld = lastDate(cr), ds = uniqDates(cr);
             const sub = [c.maker, c.year, c.type].filter(Boolean).join(' · ');
             const right = planned ? '<span class="muted">Nog niet open</span>'
-              : cr.length ? `<span style="display:flex;flex-direction:column;align-items:flex-end;font-size:13px;color:var(--muted)">${sc ? `<strong style="color:var(--ink)">★ ${esc(num(sc))}</strong>` : ''}<span>${cr.length > 1 ? cr.length + '× · ' : ''}${ld ? esc(fmtDate(ld)) : ''}</span></span>` : ic('plus', 20);
+              : cr.length ? `<span style="display:flex;flex-direction:column;align-items:flex-end;font-size:13px;color:var(--muted)">${sc ? `<strong style="color:var(--ink)">★ ${esc(num(sc))}</strong>` : ''}<span>${cr.length > 1 ? cr.length + '×' : ''}${cr.length === 1 && ld ? esc(fmtDate(ld)) : ''}</span></span>` : ic('plus', 20);
             return `<button type="button" class="list-row" style="width:100%;border:0;background:none;text-align:left;cursor:${planned ? 'default' : 'pointer'};border-top:1px solid var(--line);${planned ? 'opacity:.55' : ''}" ${planned ? 'disabled' : `data-c="${esc(c.id)}"`}>
               <span class="credit-dot${cr.length ? ' on' : ''}" aria-hidden="true">${cr.length ? ic('check', 16) : ''}</span>
-              <div class="grow"><div class="t">${esc(c.name)}</div><div class="s">${esc(sub)}</div></div>${right}</button>`;
+              <div class="grow"><div class="t">${esc(c.name)}</div><div class="s">${esc(sub)}</div>${cr.length && ds.length > 1 ? `<div class="s" style="color:var(--accent)">${esc(datesText(ds))}</div>` : ''}</div>${right}</button>`;
           }).join('')}</div>
         </section>`;
       }).join('')}
