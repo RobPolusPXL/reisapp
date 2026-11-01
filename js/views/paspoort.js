@@ -40,6 +40,7 @@ function openPlaceForm(kind) {
 
 export function mount(el) {
   let showAll = false;
+  let slide = 0;
   let map = null;
 
   const placeCard = kind => {
@@ -56,19 +57,46 @@ export function mount(el) {
     const s = statsFor(st);
     const visited = s.visited.map(c => byCode.get(c)).sort((a, b) => a.n.localeCompare(b.n, 'nl'));
     const shown = showAll ? visited : visited.slice(0, 5);
+    const contVisited = new Set(s.visited.map(c => byCode.get(c)?.k).filter(Boolean));
+    const contTotal = Object.keys(CONT).length;
+    const conts = contVisited.size, contPct = Math.round((conts / contTotal) * 100);
+    const top = Object.keys(CONT).filter(k => s.cont[k].got).sort((a, b) => s.cont[b].got - s.cont[a].got)[0] || null;
     const wish = Object.entries(st.countries).filter(([, v]) => v.s === 'w').map(([c]) => byCode.get(c)).filter(Boolean).sort((a, b) => a.n.localeCompare(b.n, 'nl'));
     el.innerHTML = `<div class="page">
       <header class="page-head"><h1>Paspoort</h1><a class="icon-btn" href="#/instellingen" aria-label="Instellingen">${ic('gear', 22)}</a></header>
       <div class="cols">
-        <section class="card" style="padding:12px 20px 20px">
-          <div class="map-host mini" id="mini"></div>
-          <div style="display:flex;align-items:flex-end;gap:24px;margin-top:18px">
-            <div><span class="big">${s.un.length}</span><span class="big"><small> / ${s.totalUN}</small></span><div class="muted">landen</div></div>
-            <div style="margin-left:auto;text-align:right"><span class="big">${s.pct}<small>%</small></span><div class="muted">van de wereld</div></div>
+        <section class="card" style="padding:12px"><div class="map-host mini" id="mini"></div></section>
+        <section class="card" aria-roledescription="carrousel" aria-label="Statistieken">
+          <div class="carousel" id="car" tabindex="0">
+            <div class="slide" role="group" aria-roledescription="kaart" aria-label="1 van 3: In totaal">
+              <h2>In totaal</h2>
+              <div style="display:flex;align-items:flex-end;gap:24px;margin-top:16px">
+                <div><span class="big">${s.un.length}</span><span class="big"><small> / ${s.totalUN}</small></span><div class="muted">landen</div></div>
+                <div style="margin-left:auto;text-align:right"><span class="big">${s.pct}<small>%</small></span><div class="muted">van de wereld</div></div>
+              </div>
+              <div class="bar" style="height:12px;margin-top:16px;border-radius:6px"><i style="width:${s.pct}%"></i></div>
+              <p class="muted" style="margin:10px 0 0;text-align:center;font-size:13px">Gebaseerd op ${s.totalUN} VN-landen</p>
+            </div>
+            <div class="slide" role="group" aria-roledescription="kaart" aria-label="2 van 3: Continenten">
+              <h2>Continenten</h2>
+              <div style="display:flex;align-items:flex-end;gap:24px;margin-top:16px">
+                <div><span class="big">${conts}</span><span class="big"><small> / ${contTotal}</small></span><div class="muted">bezocht</div></div>
+                <div style="margin-left:auto;text-align:right"><span class="big">${contPct}<small>%</small></span><div class="muted">verkend</div></div>
+              </div>
+              <div class="bar" style="height:12px;margin-top:16px;border-radius:6px"><i style="width:${contPct}%"></i></div>
+            </div>
+            <div class="slide" role="group" aria-roledescription="kaart" aria-label="3 van 3: Meest bezochte continent">
+              <h2>Meest bezochte continent</h2>
+              ${top ? `<div style="font-size:30px;font-weight:700;color:var(--muted);margin-top:14px">${CONT[top]}</div>
+              <div><span class="big">${s.cont[top].got}</span><span class="big"><small> / ${s.cont[top].total}</small></span></div>
+              <div class="muted">landen</div>
+              <div class="bar" style="height:12px;margin-top:14px;border-radius:6px"><i style="width:${s.cont[top].pct}%"></i></div>` : '<p class="muted" style="margin-top:14px">Nog geen landen bezocht.</p>'}
+            </div>
           </div>
-          <div class="bar" style="height:12px;margin-top:16px;border-radius:6px"><i style="width:${s.pct}%"></i></div>
-          <p class="muted" style="margin:10px 0 0;text-align:center;font-size:13px">Gebaseerd op ${s.totalUN} VN-landen</p>
+          <div class="dots" role="group" aria-label="Kies een kaart">${[0, 1, 2].map(i => `<button type="button" data-dot="${i}" aria-label="Kaart ${i + 1} van 3" aria-current="${i === slide}"></button>`).join('')}</div>
         </section>
+      </div>
+      <div class="cols">
         <section class="card"><div class="card-head"><h2>Mijn continenten</h2></div>
           ${Object.entries(CONT).filter(([k]) => s.cont[k].total).map(([k, n]) => `<div class="bar-row"><span class="name">${n}</span><div class="bar"><i style="width:${s.cont[k].pct}%;${s.cont[k].got ? 'min-width:6px' : ''}"></i></div><span class="num">${s.cont[k].got}/${s.cont[k].total}</span></div>`).join('')}
         </section>
@@ -82,11 +110,28 @@ export function mount(el) {
     </div>`;
     map?.destroy();
     map = createMap(el.querySelector('#mini'), { interactive: false });
+    const car = el.querySelector('#car');
+    car.scrollLeft = slide * car.clientWidth;
+    let raf = 0;
+    car.addEventListener('scroll', () => {
+      cancelAnimationFrame(raf);
+      raf = requestAnimationFrame(() => {
+        slide = Math.round(car.scrollLeft / car.clientWidth);
+        el.querySelectorAll('[data-dot]').forEach(d => d.setAttribute('aria-current', String(+d.dataset.dot === slide)));
+      });
+    });
+    car.addEventListener('keydown', e => {
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      const i = Math.max(0, Math.min(2, slide + (e.key === 'ArrowRight' ? 1 : -1)));
+      car.scrollTo({ left: i * car.clientWidth, behavior: 'smooth' });
+    });
   };
   draw();
   const unsub = subscribe(draw);
 
   const onClick = e => {
+    const dot = e.target.closest('[data-dot]');
+    if (dot) { const car = el.querySelector('#car'); car.scrollTo({ left: +dot.dataset.dot * car.clientWidth, behavior: 'smooth' }); return; }
     const c = e.target.closest('[data-c]');
     if (c) { openCountrySheet(c.dataset.c); return; }
     const a = e.target.closest('[data-add]');
