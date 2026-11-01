@@ -485,3 +485,6 @@ a.list-row { color: inherit; }
 .ip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 .ip-b { aspect-ratio: 1; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 12px; display: grid; place-items: center; cursor: pointer; min-height: 44px; }
 .ip-b.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+/* Vlucht in de reis: datum, route en zitplaatsen elk op een eigen regel */
+.item .s-route { color: var(--ink); font-size: 15px; font-weight: 600; letter-spacing: .02em; }
