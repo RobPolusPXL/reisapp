@@ -29,6 +29,18 @@ export const ICONS = {
   edit: '<path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/>',
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
   heart: '<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>',
+  coaster: '<path d="M2 20c2-9 4-14 6-14s2 7 4 7 2-4 3-4 3 5 7 11"/><path d="M2 20h20M6 20v-3M12 20v-5M18 20v-4"/>',
+  ticket: '<path d="M4 8a2 2 0 0 0 0 4v0a2 2 0 0 1 0 4v2h16v-2a2 2 0 0 1 0-4v0a2 2 0 0 0 0-4V6H4z"/><path d="M14 6v12" stroke-dasharray="2 2"/>',
+  hike: '<circle cx="13" cy="4.5" r="1.8"/><path d="m10 21 2-6-2-3 1-4 3 3 3 1M8 13l3-4M7 21l2-4"/>',
+  museum: '<path d="M3 9 12 4l9 5zM5 10v8M9.5 10v8M14.5 10v8M19 10v8M3 20h18"/>',
+  beach: '<path d="M4 20h16M12 20V9"/><path d="M4 11a8 7 0 0 1 16 0z"/>',
+  bike: '<circle cx="6" cy="16" r="3.5"/><circle cx="18" cy="16" r="3.5"/><path d="M6 16l4-8h5l3 8M10 8 12 16M9 6h3"/>',
+  music: '<path d="M9 18V5l11-2v13"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/>',
+  camera: '<path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13.5" r="3.5"/>',
+  mountain: '<path d="m3 19 6.5-11L13 14l2.5-4L21 19z"/>',
+  ball: '<circle cx="12" cy="12" r="8.5"/><path d="M12 3.5v17M3.5 12h17M6 6c3 3 3 9 0 12M18 6c-3 3-3 9 0 12"/>',
+  swim: '<circle cx="16" cy="6" r="1.8"/><path d="m4 12 5-3 4 3 3-2M3 17c2 1.5 4 1.5 6 0s4-1.5 6 0 4 1.5 6 0"/>',
+  star: '<path d="m12 3.5 2.7 5.6 6.1.8-4.5 4.2 1.1 6-5.4-3-5.4 3 1.1-6L3.2 9.9l6.1-.8z"/>',
   pin: '<path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2"/>',
 };
 export const ic = (n, s = 24) =>
@@ -91,5 +103,16 @@ export function daysBetween(a, b) {
 
 /** Score met een snor (silhouet van het blog, in themakleur) en een getal met vaste breedte, zodat alles netjes onder elkaar staat. */
 export const scoreH = v => `<span class="score"><span class="snor-i" aria-hidden="true"></span><span class="sn">${esc(String(v))}</span></span>`;
+/** Iconen die je bij een activiteit kunt kiezen. */
+export const ACT_ICONS = ['ticket', 'coaster', 'hike', 'mountain', 'beach', 'swim', 'bike', 'museum', 'music', 'camera', 'ball', 'star'];
+/** Icoonkiezer (raster); hidden input name=icon houdt de keuze vast. */
+export const iconPick = v => `<div class="ip" role="group" aria-label="Icoon"><input type="hidden" name="icon" value="${esc(String(v || 'ticket'))}">${ACT_ICONS.map(n => `<button type="button" class="ip-b${(v || 'ticket') === n ? ' on' : ''}" data-ip="${n}" aria-pressed="${(v || 'ticket') === n}" aria-label="${n}">${ic(n, 24)}</button>`).join('')}</div>`;
+document.addEventListener('click', e => {
+  const b = e.target.closest('.ip-b'); if (!b) return;
+  const ip = b.closest('.ip');
+  ip.querySelectorAll('.ip-b').forEach(x => { x.classList.remove('on'); x.setAttribute('aria-pressed', 'false'); });
+  b.classList.add('on'); b.setAttribute('aria-pressed', 'true');
+  ip.querySelector('input').value = b.dataset.ip;
+});
 /** Tekst voor een scorekeuze: 1 snor, 3,5 snorren. */
 export const snorTxt = n => `${String(n).replace('.', ',')} ${Number(n) === 1 ? 'snor' : 'snorren'}`;

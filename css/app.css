@@ -481,3 +481,7 @@ a.list-row { color: inherit; }
 .s-cb { display: grid; grid-template-columns: 130px 1fr 60px; gap: 16px; align-items: center; padding: 11px 0; border-bottom: 1px solid var(--line); }
 .s-cb div { height: 6px; background: var(--line); border-radius: 3px; } .s-cb u { display: block; height: 100%; background: var(--accent); border-radius: 3px; min-width: 5px; } .s-cb b { text-align: right; }
 @media (max-width: 1700px) { .site-stats b { font-size: 36px; } }
+/* Icoonkiezer bij activiteiten */
+.ip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.ip-b { aspect-ratio: 1; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 12px; display: grid; place-items: center; cursor: pointer; min-height: 44px; }
+.ip-b.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }

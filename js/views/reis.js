@@ -1,6 +1,6 @@
 import { get, subscribe, getTrip, update } from '../store.js';
 import { nameOf } from '../data.js';
-import { esc, ic, fmtRange, fmtDate, daysBetween, scoreH } from '../ui.js';
+import { esc, ic, ICONS, fmtRange, fmtDate, daysBetween, scoreH } from '../ui.js';
 import { legsHtml, TYPES, openTripForm, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
 
 const FILTERS = [['all', 'Alles'], ['flight', 'Vluchten'], ['stay', 'Verblijf'], ['food', 'Eten'], ['activity', 'Activiteit']];
@@ -10,7 +10,8 @@ export function mount(el, { params }) {
   let filter = 'all';
 
   const itemRow = i => {
-    const [label, icon] = TYPES[i.type] || ['Item', 'dots'];
+    const [label, baseIcon] = TYPES[i.type] || ['Item', 'dots'];
+    const icon = i.type === 'activity' && i.icon && ICONS[i.icon] ? i.icon : baseIcon;
     let sub = label;
     if (i.type === 'stay' && i.date && i.dateEnd && i.dateEnd !== i.date) {
       sub += ` · ${fmtRange(i.date, i.dateEnd)}`;
