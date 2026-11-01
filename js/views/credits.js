@@ -182,13 +182,13 @@ export function mount(el) {
         }).join('')}</div>` : ''}
         <div class="sec-h"><h2>Nog te rijden</h2><span class="muted">${todo.length}${soon.length ? ` · ${soon.length} binnenkort` : ''}</span></div>
         <div class="groups">${CATS.map(g => {
-          const l = todo.filter(c => cat(c) === g);
-          if (!l.length) return '';
+          const l = todo.filter(c => cat(c) === g), sn = soon.filter(c => cat(c) === g);
+          if (!l.length && !sn.length) return '';
           const o = openGroups.has(g);
           return `<div class="grp2${o ? ' open' : ''}"><button type="button" class="grp2-h" data-g="${g}" aria-expanded="${o}">${ic('chev', 18)}<span>${g}</span><span class="cnt">${l.length}</span></button>
-            ${o ? l.map(c => `<button type="button" class="todo" data-c="${esc(c.id)}"><div class="grow"><div class="t">${esc(c.name)}</div><div class="s">${esc([c.maker, c.year].filter(Boolean).join(' · '))}</div></div>${ic('plus', 20)}</button>`).join('') : ''}</div>`;
-        }).join('')}</div>
-        ${soon.length ? `<p class="muted" style="margin:10px 4px 0;font-size:13px">Binnenkort: ${soon.map(c => esc(c.name)).join(', ')}</p>` : ''}`;
+            ${o ? l.map(c => `<button type="button" class="todo" data-c="${esc(c.id)}"><div class="grow"><div class="t">${esc(c.name)}</div><div class="s">${esc([c.maker, c.year].filter(Boolean).join(' · '))}</div></div>${ic('plus', 20)}</button>`).join('')
+              + sn.map(c => `<div class="todo soon" aria-disabled="true"><div class="grow"><div class="t">${esc(c.name)}</div><div class="s">${esc(c.maker || '')}</div></div><span class="muted soon-l">Binnenkort</span></div>`).join('') : ''}</div>`;
+        }).join('')}</div>`;
       }).join('')}
       <p class="muted" style="text-align:center;font-size:13px;margin-top:16px">Data: <a href="https://coasterpedia.net" target="_blank" rel="noopener" style="color:inherit">Coasterpedia</a> (CC BY-SA 4.0)</p>
     </div>`;

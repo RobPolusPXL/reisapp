@@ -335,3 +335,5 @@ a.list-row { color: inherit; }
 .rc-t, .rc-t .s, .chip, .todo .t, .todo .s, .grp2-h > span:not(.cnt), .ap-name, .seatbtn, .park-row h2, .park-row .muted { overflow-wrap: anywhere; min-width: 0; }
 .chip { max-width: 100%; }
 .rc-t { min-width: 0; }
+.todo.soon { opacity: .55; cursor: default; }
+.todo.soon .soon-l { font-size: 13px; flex: none; }
