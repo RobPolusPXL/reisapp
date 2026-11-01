@@ -438,3 +438,7 @@ a.list-row { color: inherit; }
 .ride-card.open .rc-head { padding-bottom: 0; }
 .ride-card.open .rc-gh:first-child { padding-top: 7px; }
 .kpis b .score .sn, .big4 b .score .sn { min-width: 0; }
+/* Laptop: de plus-knop blijft binnen de inhoudskolom (rechterrand van de kaarten) in plaats van aan de rand van het scherm */
+@media (min-width: 900px) {
+  .page > .fab { position: sticky !important; bottom: 24px !important; right: auto; align-self: flex-end; flex: none; margin: -8px -40px 0 0; }
+}
