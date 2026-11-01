@@ -62,7 +62,11 @@ h1, h2, h3 { margin: 0; }
     display: flex; flex-direction: column; gap: 6px; flex: 0 0 220px; padding: 24px 16px;
     background: var(--surface); border-right: 1px solid var(--line);
   }
-  #side .brand { font-size: 20px; font-weight: 700; color: var(--accent); padding: 0 14px 18px; }
+  #side .brand { display: flex; justify-content: center; align-items: center; height: auto; padding: 4px 8px 20px; }
+#side .brand img { width: 170px; height: auto; }
+#side .logo-l { display: none; }
+[data-scheme=dark] #side .logo-d { display: none; }
+[data-scheme=dark] #side .logo-l { display: block; }
   #side a {
     display: flex; align-items: center; gap: 12px; height: 48px; padding: 0 14px;
     border-radius: 12px; font-weight: 500;
