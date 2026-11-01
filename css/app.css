@@ -436,4 +436,4 @@ a.list-row { color: inherit; }
 .kpis b .score .sn { color: var(--ink); }
 /* Zelfde afstand onder de score: ingeklapt (chips) en uitgeklapt (datumregel) */
 .ride-card.open .rc-head { padding-bottom: 0; }
-.ride-card.open .rc-gh:first-child { padding-top: 10px; }
+.ride-card.open .rc-gh:first-child { padding-top: 7px; }
