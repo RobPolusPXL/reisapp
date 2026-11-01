@@ -269,3 +269,7 @@ a.list-row { color: inherit; }
 .pax select { grid-column: 1; }
 .pax .icon-btn { grid-column: 2; width: 48px; height: 48px; justify-self: end; }
 .btn.scan { align-self: flex-start; cursor: pointer; }
+
+/* ---------- Achtbanen ---------- */
+.credit-dot { width: 26px; height: 26px; border-radius: 13px; border: 2px solid var(--field); flex: none; display: inline-flex; align-items: center; justify-content: center; }
+.credit-dot.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
