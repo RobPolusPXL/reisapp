@@ -116,7 +116,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     if (!f) return;
     draft.type = val(f, 'type') || draft.type;
     draft.date = val(f, 'date'); draft.note = val(f, 'note');
-    if (draft.type === 'stay') draft.dateEnd = val(f, 'dateEnd'); else delete draft.dateEnd;
+    if (draft.type === 'stay' || draft.type === 'activity') draft.dateEnd = val(f, 'dateEnd'); else delete draft.dateEnd;
     if (draft.type === 'flight') {
       for (const k of ['airline', 'number', 'from', 'to', 'dep', 'arr', 'ref']) draft.f[k] = val(f, k);
       draft.f.pax = [...f.querySelectorAll('[data-pax]')].map(r => ({
@@ -128,6 +128,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
   };
   const fld = (n, label, type = 'text', v = '', ph = '', extra = '') => `<div class="field"><label for="i-${n}">${label}</label><input id="i-${n}" name="${n}" type="${type}" value="${esc(v)}" placeholder="${esc(ph)}"${extra}></div>`;
   const apAttr = ' autocomplete="off" autocapitalize="characters"';
+  let endOpen = false;
   const paxRow = (x = {}) => `<div class="pax" data-pax>
       <input name="pname" list="trav-list" value="${esc(x.name || '')}" placeholder="Naam" aria-label="Naam reiziger" autocomplete="off">
       <input name="pseat" value="${esc(x.seat || '')}" placeholder="Plaats" aria-label="Zitplaats" autocapitalize="characters" autocomplete="off">
@@ -153,7 +154,10 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
         ${t === 'stay'
           ? `<div class="pair">${fld('date', 'Inchecken', 'date', draft.date)}${fld('dateEnd', 'Uitchecken', 'date', draft.dateEnd || '')}</div>
              <p class="muted" id="i-nights" style="margin:-4px 0 0;font-weight:600;color:var(--accent)">${(n => n === null ? '' : esc(nightsLabel(n)))(nightsBetween(draft.date, draft.dateEnd))}</p>`
-          : fld('date', 'Datum', 'date', draft.date)}
+          : t === 'activity' && (endOpen || draft.dateEnd)
+            ? `<div class="pair">${fld('date', 'Begint op', 'date', draft.date)}${fld('dateEnd', 'Eindigt op', 'date', draft.dateEnd || '')}</div>
+               <button type="button" class="btn soft" data-noend style="align-self:flex-start">${ic('trash', 18)}Eén dag</button>`
+            : `${fld('date', 'Datum', 'date', draft.date)}${t === 'activity' ? `<button type="button" class="btn soft" data-endday style="align-self:flex-start">${ic('plus', 18)}Eindigt op een andere dag</button>` : ''}`}
         <div class="field"><label for="i-score">Score (optioneel)</label><select id="i-score" name="score"><option value="">Geen score</option>${[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map(n => `<option value="${n}"${String(draft.score) === String(n) ? ' selected' : ''}>★ ${String(n).replace('.', ',')}</option>`).join('')}</select></div>`}
       ${fld('note', 'Notitie', 'text', draft.note, 'Notitie')}
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
@@ -195,6 +199,8 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     if (e.target.id === 'bp-file' && e.target.files[0]) { const f = e.target.files[0]; e.target.value = ''; scan(f); }
   });
   sh.el.addEventListener('click', e => {
+    if (e.target.closest('[data-endday]')) { read(); endOpen = true; render(); sh.el.querySelector('#i-dateEnd')?.focus(); return; }
+    if (e.target.closest('[data-noend]')) { read(); endOpen = false; draft.dateEnd = ''; render(); return; }
     if (e.target.closest('[data-addpax]')) { read(); draft.f.pax.push({}); render(); sh.el.querySelectorAll('[name=pname]')[draft.f.pax.length - 1]?.focus(); return; }
     const dp = e.target.closest('[data-delpax]');
     if (dp) { const rows = [...sh.el.querySelectorAll('[data-pax]')]; const i = rows.indexOf(dp.closest('[data-pax]')); rows[i].querySelector('[name=pname]').value = ''; rows[i].querySelector('[name=pseat]').value = ''; rows[i].querySelector('[name=pcls]').value = ''; read(); render(); return; }
@@ -210,7 +216,8 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     if (draft.type === 'flight') { const a = airlineByName(draft.f.airline); if (a) draft.f.airlineCode = a.code; else delete draft.f.airlineCode; }
     if (draft.type === 'flight') draft.name = [draft.f.airline, draft.f.number].filter(Boolean).join(' ') || 'Vlucht';
     else if (!draft.name) return render('Geef het item een naam.');
-    if (draft.type === 'stay' && draft.date && draft.dateEnd && draft.dateEnd < draft.date) return render('Uitchecken ligt voor inchecken.');
+    if ((draft.type === 'stay' || draft.type === 'activity') && draft.date && draft.dateEnd && draft.dateEnd < draft.date) return render(draft.type === 'stay' ? 'Uitchecken ligt voor inchecken.' : 'De einddatum ligt voor de begindatum.');
+    if (!draft.dateEnd) delete draft.dateEnd;
     update(st => {
       if (draft.type === 'flight') {
         for (const k of ['from', 'to']) ensureMyAirport(st, airportByCode(draft.f[k]), newId);

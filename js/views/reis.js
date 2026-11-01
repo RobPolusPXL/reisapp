@@ -16,7 +16,8 @@ export function mount(el, { params }) {
       sub += ` · ${fmtRange(i.date, i.dateEnd)}`;
       const n = nightsBetween(i.date, i.dateEnd);
       if (n) sub += ` · ${nightsLabel(n)}`;
-    } else if (i.date) sub += ` · ${fmtDate(i.date)}`;
+    } else if (i.type === 'activity' && i.date && i.dateEnd && i.dateEnd !== i.date) sub += ` · ${fmtRange(i.date, i.dateEnd)}`;
+    else if (i.date) sub += ` · ${fmtDate(i.date)}`;
     if (i.type === 'flight') {
       const route = [i.f?.from, i.f?.to].filter(Boolean).join(' → ');
       if (route) sub += ` · ${route}`;
