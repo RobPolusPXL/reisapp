@@ -16,7 +16,7 @@ export const ICONS = {
   dots: '<circle cx="6" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="18" cy="12" r="1.4"/>',
   bed: '<path d="M3 18V6M3 14h18v4M21 14v-3a3 3 0 0 0-3-3h-7v6"/>',
   fork: '<path d="M7 3v7a2 2 0 0 0 2 2v9M11 3v7a2 2 0 0 1-2 2M17 21V3c-2 1-3.5 3.5-3.5 7v3H17"/>',
-  star: '<path d="m12 3 2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z"/>',
+  snor: '<path d="M12 10.2c-1.4-1.9-3.9-2.6-6.1-1.7-1.7.7-2.7 2-2.9 3.7.3 1.7 1.5 2.8 3.3 2.8 1.8 0 3-1 3.8-2.2.6-.8 1.1-1.2 1.9-1.2s1.3.4 1.9 1.2c.8 1.2 2 2.2 3.8 2.2 1.8 0 3-1.1 3.3-2.8-.2-1.7-1.2-3-2.9-3.7-2.2-.9-4.7-.2-6.1 1.7z"/>',
   chev: '<path d="m9 6 6 6-6 6"/>',
   back: '<path d="m15 6-6 6 6 6"/>',
   share: '<path d="M12 16V4M7 9l5-5 5 5M5 14v5h14v-5"/>',
@@ -88,3 +88,8 @@ export function daysBetween(a, b) {
   if (!da || !db) return 0;
   return Math.round((db - da) / 86400000) + 1;
 }
+
+/** Kleine snor in plaats van een ster, voor scores. */
+export const SNOR = '<img class="snor-i" src="assets/snor.webp" alt="" width="38" height="12">';
+/** Tekst voor een scorekeuze: 1 snor, 3,5 snorren. */
+export const snorTxt = n => `${String(n).replace('.', ',')} ${Number(n) === 1 ? 'snor' : 'snorren'}`;

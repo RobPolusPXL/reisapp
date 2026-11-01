@@ -422,3 +422,9 @@ a.list-row { color: inherit; }
 .pb .ctable { border: 1px solid var(--line); }
 .kpis b { font-size: 19px; }
 @media (min-width: 900px) { .kpis b { font-size: 22px; } }
+
+/* Snorren in plaats van sterren */
+.snor-i { height: .62em; width: auto; vertical-align: -.02em; margin-right: .3em; }
+.rc-score .sc .snor-i, .sc .v .snor-i { height: .46em; vertical-align: .04em; }
+.kpis b .snor-i, .big4 b .snor-i { height: .42em; vertical-align: .08em; }
+.rc-tile .st .snor-i, .crr .cst .snor-i, .brow .snor-i, .rank .v .snor-i { height: .74em; }
