@@ -32,6 +32,7 @@ export function mount(el) {
           <div><div class="l">Landen</div><div class="n">${s.countries}</div></div>
           <div><div class="l">Steden</div><div class="n">${s.cities}</div></div>
         </div>
+        <a class="all" href="#/statistieken">Alle reisstatistieken${ic('chev', 20)}</a>
       </section>
       ${trips.length ? `<h2 style="font-size:18px">Afgelopen</h2>${cards}` : `<div class="card"><h2>Nog geen reizen</h2><p class="muted">Voeg je eerste reis toe met de knop rechtsonder.</p></div>`}
       <button type="button" class="fab" id="add" aria-label="Reis toevoegen" style="position:fixed;bottom:calc(88px + env(safe-area-inset-bottom))">${ic('plus', 26)}</button>
