@@ -227,3 +227,8 @@ svg.map.static circle:not(.v):not(.w) { display: none; }
 .dots button { width: 28px; height: 28px; border: 0; background: transparent; padding: 0; cursor: pointer; display: flex; align-items: center; justify-content: center; }
 .dots button::before { content: ""; width: 10px; height: 10px; border-radius: 5px; background: var(--field); }
 .dots button[aria-current=true]::before { background: var(--accent); }
+
+/* Paspoort: wereldkaart los op de achtergrond, zonder kader of zeekleur */
+.map-plain { display: flex; align-items: center; }
+.map-plain .map-host.mini { width: 100%; border-radius: 0; }
+.map-host.plain svg.map { background: transparent; }
