@@ -1,7 +1,7 @@
 // Achtbanen en credits (test: Energylandia). Bron van de data: Coasterpedia (CC BY-SA 4.0).
 import { get, subscribe, update } from '../store.js';
 import { flag, nameOf } from '../data.js';
-import { esc, ic, openSheet, toast, fmtDate } from '../ui.js';
+import { esc, ic, openSheet, toast, fmtDate, fmtRange } from '../ui.js';
 
 const SCORES = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 const num = n => String(n).replace('.', ',');
@@ -134,7 +134,16 @@ function rideGroups(cr) {
   cr.forEach((r, i) => { const k = r.date || ''; if (!m.has(k)) m.set(k, []); m.get(k).push({ ...r, i }); });
   return [...m].sort((x, y) => !x[0] ? 1 : !y[0] ? -1 : x[0].localeCompare(y[0]));
 }
-const dateChips = ds => ds.map(d => `<span class="chip a">${esc(fmtDate(d))}</span>`).join('');
+/** Opeenvolgende dagen samengevoegd tot één label: 9–10 sep 2026; losse dagen blijven apart. */
+const dateChips = ds => {
+  const day = d => Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10));
+  const runs = [];
+  for (const d of ds) {
+    const last = runs[runs.length - 1];
+    if (last && day(d) - day(last.to) === 86400000) last.to = d; else runs.push({ from: d, to: d });
+  }
+  return runs.map(r => `<span class="chip a">${esc(r.from === r.to ? fmtDate(r.from) : fmtRange(r.from, r.to))}</span>`).join('');
+};
 
 function openPicker(coasters) {
   const sh = openSheet(`<h2>Nieuwe rit</h2><p class="muted" style="margin:-6px 0 12px">Kies de baan</p>
