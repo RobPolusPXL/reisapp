@@ -1,6 +1,7 @@
 import { loadData } from './data.js';
 import { get, subscribe } from './store.js';
 import { ic, esc } from './ui.js';
+import { initSync } from './sync.js';
 
 const TABS = [['kaart', 'Kaart', 'map'], ['paspoort', 'Paspoort', 'book'], ['reizen', 'Reizen', 'case']];
 const view = document.getElementById('view');
@@ -59,6 +60,7 @@ async function route() {
   await loadData();
   window.addEventListener('hashchange', route);
   await route();
+  initSync();
   if ('serviceWorker' in navigator && location.protocol !== 'file:') {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
