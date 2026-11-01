@@ -273,3 +273,5 @@ a.list-row { color: inherit; }
 /* ---------- Achtbanen ---------- */
 .credit-dot { width: 26px; height: 26px; border-radius: 13px; border: 2px solid var(--field); flex: none; display: inline-flex; align-items: center; justify-content: center; }
 .credit-dot.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
+.ride { display: flex; flex-direction: column; gap: 10px; padding: 14px; border: 1px solid var(--line); border-radius: 16px; }
+.ride-h { display: flex; align-items: center; justify-content: space-between; min-height: 40px; }
