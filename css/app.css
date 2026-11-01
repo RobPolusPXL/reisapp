@@ -203,6 +203,7 @@ svg.map .sel { stroke: var(--ink); stroke-width: 2px; }
 .trip-note { display: flex; align-items: center; gap: 8px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); color: var(--muted); }
 .stat-card { position: relative; overflow: hidden; background: var(--accent); color: var(--on-accent); border-radius: 20px; padding: 22px 20px 20px; }
 .stat-card .plane { position: absolute; right: -40px; top: -30px; width: 300px; height: 300px; transform: rotate(-35deg); fill: currentColor; opacity: .13; pointer-events: none; }
+.stat-card .top, .stat-card .bot, .stat-card .all { position: relative; }
 .stat-card .top, .stat-card .bot { position: relative; display: grid; gap: 12px; }
 .stat-card .top { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 .stat-card .bot { grid-template-columns: repeat(3, minmax(0, 1fr)); margin-top: 18px; }
@@ -236,3 +237,6 @@ svg.map.static circle:not(.v):not(.w) { display: none; }
 .map-plain { display: flex; align-items: center; }
 .map-plain .map-host.mini { width: 100%; border-radius: 0; }
 .map-host.plain svg.map { background: transparent; }
+.stat-card .all { display: flex; align-items: center; justify-content: space-between; margin-top: 18px; min-height: 48px; padding: 0 16px; border-radius: 12px; background: color-mix(in srgb, currentColor 18%, transparent); font-weight: 600; }
+.ico-sm { width: 36px; height: 36px; border-radius: 18px; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; flex: none; }
+a.list-row { color: inherit; }
