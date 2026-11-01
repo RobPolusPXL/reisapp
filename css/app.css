@@ -261,3 +261,11 @@ a.list-row { color: inherit; }
 .ap-code { font: 700 13px ui-monospace, Consolas, monospace; color: var(--accent); background: var(--accent-soft); border-radius: 8px; padding: 3px 8px; letter-spacing: .05em; }
 .ap-name { display: flex; flex-direction: column; min-width: 0; }
 .ap-name small { color: var(--muted); font-size: 12px; }
+
+/* ---------- Reizigers bij een vlucht ---------- */
+.pax { display: grid; grid-template-columns: 1fr 76px; gap: 8px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.pax:first-child { border-top: 0; padding-top: 0; }
+.pax input, .pax select { min-width: 0; min-height: 48px; padding: 0 12px; border: 1px solid var(--field); border-radius: 14px; background: var(--surface); color: inherit; font: inherit; }
+.pax select { grid-column: 1; }
+.pax .icon-btn { grid-column: 2; width: 48px; height: 48px; justify-self: end; }
+.btn.scan { align-self: flex-start; cursor: pointer; }

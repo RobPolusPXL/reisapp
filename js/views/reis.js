@@ -16,7 +16,9 @@ export function mount(el, { params }) {
     if (i.type === 'flight') {
       const route = [i.f?.from, i.f?.to].filter(Boolean).join(' → ');
       if (route) sub += ` · ${route}`;
-      if (i.f?.seat) sub += ` · zitplaats ${i.f.seat}`;
+      const px = i.f?.pax?.length ? i.f.pax : (i.f?.seat ? [{ seat: i.f.seat }] : []);
+      const seats = px.filter(x => x.seat).map(x => x.name ? `${x.name.split(' ')[0]} ${x.seat}` : x.seat);
+      if (seats.length) sub += ` · ${seats.join(', ')}`;
     }
     const right = i.score ? `★ ${esc(String(i.score).replace('.', ','))}` : ic('chev', 20);
     return `<button type="button" class="item" data-item="${esc(i.id)}"><span class="ico">${ic(icon, 22)}</span><span class="grow"><div class="t">${esc(i.name)}</div><div class="s">${esc(sub)}</div></span><span class="r">${right}</span></button>`;
