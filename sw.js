@@ -2,11 +2,11 @@
 // - Code (HTML, JS, CSS): netwerk eerst, met controle bij de server; offline uit de cache.
 // - Grote data (kaart, landen, vlaggen, iconen): cache eerst, op de achtergrond bijwerken.
 // - Het manifest gaat altijd rechtstreeks naar het netwerk.
-const V = 'reisapp-v12';
+const V = 'reisapp-v14';
 const CORE = [
   './', 'index.html', 'css/app.css',
   'js/main.js', 'js/store.js', 'js/data.js', 'js/ui.js', 'js/map.js', 'js/sheets.js','js/airports.js','data/airports.json','js/airlines.js','data/airlines.json','js/boardingpass.js','vendor/zxing/reader.js','vendor/zxing/share.js','vendor/zxing/zxing_reader.wasm', 'js/trips.js', 'js/sync.js', 'js/firebase-config.js',
-  'js/views/kaart.js', 'js/views/paspoort.js', 'js/views/reizen.js', 'js/views/reis.js', 'js/views/statistieken.js', 'js/views/instellingen.js',
+  'js/views/kaart.js', 'js/views/paspoort.js', 'js/views/reizen.js', 'js/views/reis.js', 'js/views/statistieken.js', 'js/views/credits.js', 'js/views/achtbaanstatistieken.js', 'data/coasters.json', 'js/views/instellingen.js',
   'data/map.json', 'data/countries.json', 'assets/icons/icon.svg', 'assets/icons/icon-192.png', 'assets/icons/icon-512.png',
 ];
 

@@ -77,3 +77,4 @@ scripts/build-data.mjs generator voor kaart- en landendata
 - `data/airports.json`: [OurAirports](https://ourairports.com/data/) (publiek domein).
 - `data/airlines.json`: [OpenFlights](https://openflights.org/data) (Open Database License; vermelding: © OpenFlights.org).
 - `vendor/zxing/`: [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) (MIT), leest de streepjescode van een boarding pass lokaal in de browser.
+- `data/coasters.json`: [Coasterpedia](https://coasterpedia.net) (CC BY-SA 4.0), achtbanen van Energylandia met treinindeling (wagons, rijen, zitplaatsen per rij).
