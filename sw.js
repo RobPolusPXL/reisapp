@@ -1,8 +1,8 @@
 // Service worker: de app werkt offline. Stale-while-revalidate voor bestanden van deze site.
-const V = 'reisapp-v4';
+const V = 'reisapp-v5';
 const CORE = [
   './', 'index.html', 'css/app.css',
-  'js/main.js', 'js/store.js', 'js/data.js', 'js/ui.js', 'js/map.js', 'js/sheets.js', 'js/trips.js', 'js/sync.js', 'js/seed.js', 'js/firebase-config.js',
+  'js/main.js', 'js/store.js', 'js/data.js', 'js/ui.js', 'js/map.js', 'js/sheets.js', 'js/trips.js', 'js/sync.js', 'js/firebase-config.js',
   'js/views/kaart.js', 'js/views/paspoort.js', 'js/views/reizen.js', 'js/views/reis.js', 'js/views/instellingen.js',
   'data/map.json', 'data/countries.json', 'assets/icons/icon.svg', 'assets/icons/icon-192.png', 'assets/icons/icon-512.png',
 ];
