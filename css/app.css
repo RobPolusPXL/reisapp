@@ -444,3 +444,8 @@ a.list-row { color: inherit; }
 }
 /* Ruim scherm: de plus-knop staat helemaal naast de kaarten, niet erover */
 @media (min-width: 1300px) { .page > .fab { margin-right: -76px; } }
+
+/* Icoonkiezer bij activiteiten */
+.ip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
+.ip-b { aspect-ratio: 1; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 12px; display: grid; place-items: center; cursor: pointer; min-height: 44px; }
+.ip-b.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }

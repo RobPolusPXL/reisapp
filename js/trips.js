@@ -4,14 +4,14 @@ import { list, byCode, nameOf, flag } from './data.js';
 import { loadAirlines, airlineByName, attachAirlineSearch } from './airlines.js';
 import { scanBoardingPass } from './boardingpass.js';
 import { loadAirports, airportByCode, attachAirportSearch, ensureMyAirport } from './airports.js';
-import { esc, ic, openSheet, toast, daysBetween, snorTxt } from './ui.js';
+import { esc, ic, openSheet, toast, daysBetween, snorTxt, iconPick } from './ui.js';
 
 export const MODES = {
   plane: ['Vliegtuig', 'plane'], car: ['Auto', 'car'], train: ['Trein', 'train'],
   bus: ['Bus', 'bus'], boat: ['Boot', 'boat'], other: ['Anders', 'dots'],
 };
 export const TYPES = {
-  flight: ['Vlucht', 'plane'], stay: ['Verblijf', 'bed'], food: ['Restaurant', 'fork'], activity: ['Activiteit', 'snor'],
+  flight: ['Vlucht', 'plane'], stay: ['Verblijf', 'bed'], food: ['Restaurant', 'fork'], activity: ['Activiteit', 'ticket'],
 };
 /** Aantal nachten tussen inchecken en uitchecken, of null als dat niet kan. */
 export function nightsBetween(a, b) {
@@ -116,6 +116,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     if (!f) return;
     draft.type = val(f, 'type') || draft.type;
     draft.date = val(f, 'date'); draft.note = val(f, 'note');
+    if (draft.type === 'activity') draft.icon = val(f, 'icon') || 'ticket'; else delete draft.icon;
     if (draft.type === 'stay' || draft.type === 'activity') draft.dateEnd = val(f, 'dateEnd'); else delete draft.dateEnd;
     if (draft.type === 'flight') {
       for (const k of ['airline', 'number', 'from', 'to', 'dep', 'arr', 'ref']) draft.f[k] = val(f, k);
@@ -159,6 +160,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
                <button type="button" class="btn soft" data-noend style="align-self:flex-start">${ic('trash', 18)}Eén dag</button>`
             : `${fld('date', 'Datum', 'date', draft.date)}${t === 'activity' ? `<button type="button" class="btn soft" data-endday style="align-self:flex-start">${ic('plus', 18)}Eindigt op een andere dag</button>` : ''}`}
         <div class="field"><label for="i-score">Score (optioneel)</label><select id="i-score" name="score"><option value="">Geen score</option>${[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map(n => `<option value="${n}"${String(draft.score) === String(n) ? ' selected' : ''}>${snorTxt(n)}</option>`).join('')}</select></div>`}
+      ${t === 'activity' ? `<div class="field"><label>Icoon</label>${iconPick(draft.icon)}</div>` : ''}
       ${fld('note', 'Notitie', 'text', draft.note, 'Notitie')}
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
       <div class="pair">${item ? `<button type="button" class="btn danger" data-del>${ic('trash', 18)}Verwijderen</button>` : '<button type="button" class="btn" data-close>Annuleren</button>'}<button type="submit" class="btn primary">Opslaan</button></div>

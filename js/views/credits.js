@@ -184,7 +184,7 @@ export function mount(el) {
     const parkN = parks.filter(pk => db.some(c => c.park === pk && c.status === 'open' && ridesOf(credits[c.id]).length)).length;
     if (!inited) { inited = true; const best = parks.map(pk => [pk, lastDate(db.filter(c => c.park === pk).flatMap(c => ridesOf(credits[c.id])))]).sort((x, y) => y[1].localeCompare(x[1]))[0]; openParks.add(parks.length === 1 || !best || !best[1] ? parks[0] : best[0]); }
     el.innerHTML = `<div class="page credits-page">
-      <header class="page-head"><a class="icon-btn" href="#/paspoort" aria-label="Terug naar Paspoort">${ic('back', 26)}</a><h1>Achtbanen</h1>
+      <header class="page-head"><a class="icon-btn" href="#/paspoort" aria-label="Terug naar Paspoort">${ic('back', 26)}</a><h1>Pretparken</h1>
         <button type="button" class="gplus" data-new aria-label="Nieuwe rit toevoegen">${ic('plus', 24)}</button></header>
       <section class="card kpis"><div><b>${creditN}</b><span>${creditN === 1 ? 'credit' : 'credits'}</span></div><div><b>${allRides.length}</b><span>${allRides.length === 1 ? 'rit' : 'ritten'}</span></div><div><b>${kAvg ? scoreH(num(kAvg)) : '–'}</b><span>gemiddeld</span></div><div><b>${parkN}</b><span>${parkN === 1 ? 'park' : 'parken'}</span></div></section>
       <a class="alllink" href="#/achtbaanstatistieken"><span>Alle statistieken</span>${ic('chev', 20)}</a>
