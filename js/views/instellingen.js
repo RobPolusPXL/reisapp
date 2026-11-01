@@ -45,7 +45,7 @@ export function mount(el) {
       const blob = new Blob([JSON.stringify(get(), null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `reisapp-${new Date().toISOString().slice(0, 10)}.json`;
+      a.download = `mustache-passport-${new Date().toISOString().slice(0, 10)}.json`;
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 1000);
     }
@@ -55,7 +55,7 @@ export function mount(el) {
     e.target.files[0].text().then(txt => {
       try {
         const data = JSON.parse(txt);
-        if (!data || typeof data !== 'object' || !('countries' in data || 'trips' in data)) throw new Error('geen reisapp-bestand');
+        if (!data || typeof data !== 'object' || !('countries' in data || 'trips' in data)) throw new Error('geen Mustache Passport-bestand');
         replaceAll(data);
         toast('Gegevens teruggezet');
       } catch { toast('Dit bestand kan niet gelezen worden'); }

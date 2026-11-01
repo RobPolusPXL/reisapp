@@ -26,7 +26,7 @@ function drawNav(active) {
   const links = TABS.map(([id, label, icon]) => `<a href="#/${id}" ${active === id ? 'aria-current="page"' : ''}>${ic(icon, 24)}${label}</a>`).join('');
   document.getElementById('tabs').innerHTML = links;
   document.getElementById('side').innerHTML =
-    `<div class="brand">Reisapp</div>${TABS.map(([id, label, icon]) => `<a href="#/${id}" ${active === id ? 'aria-current="page"' : ''}>${ic(icon, 22)}${label}</a>`).join('')}
+    `<div class="brand"><img src="assets/snor.webp" alt="" width="36" height="11"><span>Mustache Passport</span></div>${TABS.map(([id, label, icon]) => `<a href="#/${id}" ${active === id ? 'aria-current="page"' : ''}>${ic(icon, 22)}${label}</a>`).join('')}
      <div class="spacer"></div><a href="#/instellingen" ${active === 'instellingen' ? 'aria-current="page"' : ''}>${ic('gear', 22)}Instellingen</a>`;
 }
 
