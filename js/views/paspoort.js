@@ -132,7 +132,7 @@ export function mount(el) {
         ${visited.length > 5 ? `<button type="button" class="btn block" id="more" style="margin-top:10px">${showAll ? 'Minder tonen' : `+ ${visited.length - 5} meer`}</button>` : ''}
       </section>
       ${wish.length ? `<section class="card"><div class="card-head"><h2>Wil ik zien</h2></div><div class="list">${wish.map(c => `<button type="button" class="list-row" style="width:100%;border:0;background:none;text-align:left;cursor:pointer;border-top:1px solid var(--line)" data-c="${c.c}">${flag(c.c)}<div class="grow"><div class="t">${esc(c.n)}</div></div></button>`).join('')}</div></section>` : ''}
-      <a class="card list-row" href="#/credits" style="padding:14px 20px"><span class="ico-sm">${ic('star', 22)}</span><div class="grow"><div class="t">Mijn achtbanen</div><div class="s">${Object.keys(st.credits || {}).length} ${Object.keys(st.credits || {}).length === 1 ? 'credit' : 'credits'}</div></div>${ic('chev', 20)}</a>
+      <a class="card list-row" href="#/credits" style="padding:14px 20px"><span class="ico-sm">${ic('snor', 22)}</span><div class="grow"><div class="t">Mijn achtbanen</div><div class="s">${Object.keys(st.credits || {}).length} ${Object.keys(st.credits || {}).length === 1 ? 'credit' : 'credits'}</div></div>${ic('chev', 20)}</a>
       <div class="cols">${placeCard('cities')}${placeCard('regions')}${placeCard('airports')}</div>
     </div>`;
     map?.destroy();

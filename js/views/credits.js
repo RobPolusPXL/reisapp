@@ -1,7 +1,7 @@
 // Achtbanen en credits (test: Energylandia). Bron van de data: Coasterpedia (CC BY-SA 4.0).
 import { get, subscribe, update } from '../store.js';
 import { flag, nameOf, norm } from '../data.js';
-import { esc, ic, openSheet, toast, fmtDate, fmtRange } from '../ui.js';
+import { esc, ic, openSheet, toast, fmtDate, fmtRange, scoreH, snorTxt } from '../ui.js';
 
 const SCORES = [1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 const num = n => String(n).replace('.', ',');
@@ -77,7 +77,7 @@ function openCredit(c, { addRide = false, focus = -1 } = {}) {
       <div class="ride-h"><strong>Rit ${i + 1}</strong>${draft.length > 1 ? `<button type="button" class="icon-btn" data-delride aria-label="Rit ${i + 1} verwijderen" style="background:var(--bg);width:40px;height:40px">${ic('trash', 18)}</button>` : ''}</div>
       <div class="pair">
         <div class="field"><label>Datum</label><input name="date" type="date" value="${esc(r.date || '')}"></div>
-        <div class="field"><label>Score (optioneel)</label><select name="score"><option value="">Geen score</option>${SCORES.map(n => `<option value="${n}"${String(r.score) === String(n) ? ' selected' : ''}>★ ${num(n)}</option>`).join('')}</select></div>
+        <div class="field"><label>Score (optioneel)</label><select name="score"><option value="">Geen score</option>${SCORES.map(n => `<option value="${n}"${String(r.score) === String(n) ? ' selected' : ''}>${snorTxt(n)}</option>`).join('')}</select></div>
       </div>
       ${c.train ? `<div class="field"><label>Plaats in de trein (optioneel)</label>
         <button type="button" class="seatbtn" data-pick="${i}" aria-expanded="${openIdx === i}">${r.pos ? esc(seatLabel(c.train, r.pos)) : '<span class="muted">Kies je plaats in de trein</span>'}${ic('chev', 18)}</button>
@@ -186,7 +186,7 @@ export function mount(el) {
     el.innerHTML = `<div class="page credits-page">
       <header class="page-head"><a class="icon-btn" href="#/paspoort" aria-label="Terug naar Paspoort">${ic('back', 26)}</a><h1>Achtbanen</h1>
         <button type="button" class="gplus" data-new aria-label="Nieuwe rit toevoegen">${ic('plus', 24)}</button></header>
-      <section class="card kpis"><div><b>${creditN}</b><span>${creditN === 1 ? 'credit' : 'credits'}</span></div><div><b>${allRides.length}</b><span>${allRides.length === 1 ? 'rit' : 'ritten'}</span></div><div><b>${kAvg ? '★ ' + esc(num(kAvg)) : '–'}</b><span>gemiddeld</span></div><div><b>${parkN}</b><span>${parkN === 1 ? 'park' : 'parken'}</span></div></section>
+      <section class="card kpis"><div><b>${creditN}</b><span>${creditN === 1 ? 'credit' : 'credits'}</span></div><div><b>${allRides.length}</b><span>${allRides.length === 1 ? 'rit' : 'ritten'}</span></div><div><b>${kAvg ? scoreH(num(kAvg)) : '–'}</b><span>gemiddeld</span></div><div><b>${parkN}</b><span>${parkN === 1 ? 'park' : 'parken'}</span></div></section>
       <a class="alllink" href="#/achtbaanstatistieken"><span>Alle statistieken</span>${ic('chev', 20)}</a>
       ${parks.map(park => {
         const list = db.filter(c => c.park === park);
@@ -205,17 +205,17 @@ export function mount(el) {
         <div class="ride-cards app-only">${done.map(c => {
           const cr = ridesOf(credits[c.id]), sc = avgScore(cr), ds = uniqDates(cr), o = openCards.has(c.id);
           return `<div class="ride-card${o ? ' open' : ''}"><button type="button" class="rc-head" data-exp="${esc(c.id)}" aria-expanded="${o}"><div class="rc-top"><div class="rc-t"><b>${esc(c.name)}</b><div class="s">${esc([c.maker, c.year, c.type].filter(Boolean).join(' · '))}</div></div>
-            <div class="rc-score">${sc ? `<div class="sc">★ ${esc(num(sc))}</div>` : ''}<small>${cr.length} ${cr.length === 1 ? 'rit' : 'ritten'}</small></div><span class="rc-chev">${ic('chev', 18)}</span></div>
+            <div class="rc-score">${sc ? `<div class="sc">${scoreH(num(sc))}</div>` : ''}<small>${cr.length} ${cr.length === 1 ? 'rit' : 'ritten'}</small></div><span class="rc-chev">${ic('chev', 18)}</span></div>
             ${o ? '' : `<div class="chips">${dateChips(ds)}</div>`}</button>
             ${o ? `<div class="rc-body">${rideGroups(cr).map(([k, l]) => `<div class="rc-gh"><b>${k ? esc(fmtDate(k)) : 'Zonder datum'}</b><span>${l.length} ${l.length === 1 ? 'rit' : 'ritten'}</span></div>
-              ${l.map(r => `<button type="button" class="rc-tile" data-ride="${esc(c.id)}:${r.i}"><div class="l1"><b>Rit ${r.i + 1}</b>${r.score ? `<span class="st">★ ${esc(num(r.score))}</span>` : ''}</div><div class="l2">${r.seat ? esc(r.seat) : '<span class="muted">Geen plaats</span>'}</div></button>`).join('')}`).join('')}</div>` : ''}</div>`;
+              ${l.map(r => `<button type="button" class="rc-tile" data-ride="${esc(c.id)}:${r.i}"><div class="l1"><b>Rit ${r.i + 1}</b>${r.score ? `<span class="st">${scoreH(num(r.score))}</span>` : ''}</div><div class="l2">${r.seat ? esc(r.seat) : '<span class="muted">Geen plaats</span>'}</div></button>`).join('')}`).join('')}</div>` : ''}</div>`;
         }).join('')}</div>
         <div class="ctable site-only"><div class="ctr cth"><span>Baan</span><span>Fabrikant · jaar</span><span>Score</span><span>Ritten</span><span>Datums</span><span></span></div>
           ${done.map(c => {
             const cr = ridesOf(credits[c.id]), sc = avgScore(cr), ds = uniqDates(cr), o = openCards.has(c.id);
-            return `<button type="button" class="ctr${o ? ' open' : ''}" data-exp="${esc(c.id)}" aria-expanded="${o}"><b>${esc(c.name)}</b><span class="muted">${esc([c.maker, c.year].filter(Boolean).join(' · '))}</span><span class="csc">${sc ? '★ ' + esc(num(sc)) : ''}</span><span>${cr.length}</span><span class="cds">${dateChips(ds)}</span><span class="rc-chev">${ic('chev', 18)}</span></button>
+            return `<button type="button" class="ctr${o ? ' open' : ''}" data-exp="${esc(c.id)}" aria-expanded="${o}"><b>${esc(c.name)}</b><span class="muted">${esc([c.maker, c.year].filter(Boolean).join(' · '))}</span><span class="csc">${sc ? scoreH(num(sc)) : ''}</span><span>${cr.length}</span><span class="cds">${dateChips(ds)}</span><span class="rc-chev">${ic('chev', 18)}</span></button>
             ${o ? `<div class="csub"><div class="crr crh"><span>Datum</span><span>Rit</span><span>Plaats in de trein</span><span style="text-align:right">Score</span><span></span></div>
-              ${cr.map((r, i) => ({ ...r, i })).sort((x, y) => (x.date || '9').localeCompare(y.date || '9') || x.i - y.i).map(r => `<button type="button" class="crr" data-ride="${esc(c.id)}:${r.i}"><span>${r.date ? esc(fmtDate(r.date)) : '<span class="muted">Zonder datum</span>'}</span><b>Rit ${r.i + 1}</b><span>${r.seat ? esc(r.seat) : '<span class="muted">Geen plaats</span>'}</span><span class="cst">${r.score ? '★ ' + esc(num(r.score)) : ''}</span>${ic('chev', 18)}</button>`).join('')}</div>` : ''}`;
+              ${cr.map((r, i) => ({ ...r, i })).sort((x, y) => (x.date || '9').localeCompare(y.date || '9') || x.i - y.i).map(r => `<button type="button" class="crr" data-ride="${esc(c.id)}:${r.i}"><span>${r.date ? esc(fmtDate(r.date)) : '<span class="muted">Zonder datum</span>'}</span><b>Rit ${r.i + 1}</b><span>${r.seat ? esc(r.seat) : '<span class="muted">Geen plaats</span>'}</span><span class="cst">${r.score ? scoreH(num(r.score)) : ''}</span>${ic('chev', 18)}</button>`).join('')}</div>` : ''}`;
           }).join('')}</div>` : ''}
         <div class="sec-h"><h2>Nog te rijden</h2><span class="muted">${todo.length}${soon.length ? ` · ${soon.length} binnenkort` : ''}</span></div>
         <div class="groups">${CATS.map(g => {
