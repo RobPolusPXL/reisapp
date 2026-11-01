@@ -43,12 +43,28 @@ export function mount(el) {
   let slide = 0;
   let map = null;
 
+  const open = new Set();
+  const delBtn = (kind, p) => `<button type="button" class="icon-btn" style="background:var(--bg)" data-del="${kind}:${esc(p.id)}" aria-label="${esc(p.name || p.code)} verwijderen">${ic('trash', 20)}</button>`;
+
+  // Steden staan gegroepeerd per land: één rij per land, openklappen voor de steden.
+  const citiesList = items => {
+    const groups = new Map();
+    for (const p of items) { if (!groups.has(p.c)) groups.set(p.c, []); groups.get(p.c).push(p); }
+    const sorted = [...groups].sort((a, b) => b[1].length - a[1].length || nameOf(a[0]).localeCompare(nameOf(b[0]), 'nl'));
+    return `<div class="list">${sorted.map(([c, ps]) => {
+      const isOpen = open.has(c);
+      return `<div class="grp${isOpen ? ' open' : ''}"><button type="button" class="list-row grp-head" data-grp="${esc(c)}" aria-expanded="${isOpen}">${flag(c)}<div class="grow"><div class="t">${esc(nameOf(c))}</div>${isOpen ? '' : `<div class="s ell">${esc(ps.map(p => p.name).join(', '))}</div>`}</div><span class="count">${ps.length}</span>${ic('chev', 20)}</button>
+        ${isOpen ? `<div class="grp-body">${ps.map(p => `<div class="list-row sub"><div class="grow"><div class="t">${esc(p.name)}</div></div>${delBtn('cities', p)}</div>`).join('')}</div>` : ''}</div>`;
+    }).join('')}</div>`;
+  };
+
   const placeCard = kind => {
     const cfg = PLACES[kind];
     const items = get().places[kind];
-    return `<section class="card"><div class="card-head"><h2>${cfg.title}</h2><button type="button" class="btn soft" data-add="${kind}">${ic('plus', 18)}Toevoegen</button></div>
-      ${items.length ? `<div class="list">${items.map(p => `<div class="list-row">${flag(p.c)}<div class="grow"><div class="t">${esc(kind === 'airports' ? [p.code, p.name].filter(Boolean).join(' · ') : p.name)}</div><div class="s">${esc(nameOf(p.c))}</div></div>
-        <button type="button" class="icon-btn" style="background:var(--bg)" data-del="${kind}:${esc(p.id)}" aria-label="${esc(p.name || p.code)} verwijderen">${ic('trash', 20)}</button></div>`).join('')}</div>` : `<div class="empty">${cfg.empty}</div>`}
+    const n = items.length, l = new Set(items.map(p => p.c)).size;
+    const sub = kind === 'cities' && n ? `<div class="muted">${n} ${n === 1 ? 'stad' : 'steden'} in ${l} ${l === 1 ? 'land' : 'landen'}</div>` : '';
+    return `<section class="card"><div class="card-head"><div><h2>${cfg.title}</h2>${sub}</div><button type="button" class="btn soft" data-add="${kind}">${ic('plus', 18)}Toevoegen</button></div>
+      ${!n ? `<div class="empty">${cfg.empty}</div>` : kind === 'cities' ? citiesList(items) : `<div class="list">${items.map(p => `<div class="list-row">${flag(p.c)}<div class="grow"><div class="t">${esc(kind === 'airports' ? [p.code, p.name].filter(Boolean).join(' · ') : p.name)}</div><div class="s">${esc(nameOf(p.c))}</div></div>${delBtn(kind, p)}</div>`).join('')}</div>`}
     </section>`;
   };
 
@@ -134,6 +150,8 @@ export function mount(el) {
     if (dot) { const car = el.querySelector('#car'); car.scrollTo({ left: +dot.dataset.dot * car.clientWidth, behavior: 'smooth' }); return; }
     const c = e.target.closest('[data-c]');
     if (c) { openCountrySheet(c.dataset.c); return; }
+    const g = e.target.closest('[data-grp]');
+    if (g) { const c = g.dataset.grp; open.has(c) ? open.delete(c) : open.add(c); draw(); return; }
     const a = e.target.closest('[data-add]');
     if (a) { openPlaceForm(a.dataset.add); return; }
     const d = e.target.closest('[data-del]');
