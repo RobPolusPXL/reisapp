@@ -13,6 +13,13 @@ export const MODES = {
 export const TYPES = {
   flight: ['Vlucht', 'plane'], stay: ['Verblijf', 'bed'], food: ['Restaurant', 'fork'], activity: ['Activiteit', 'star'],
 };
+/** Aantal nachten tussen inchecken en uitchecken, of null als dat niet kan. */
+export function nightsBetween(a, b) {
+  if (!a || !b) return null;
+  const n = daysBetween(a, b) - 1;
+  return n >= 0 ? n : null;
+}
+export const nightsLabel = n => `${n} ${n === 1 ? 'nacht' : 'nachten'}`;
 export const CLASSES = ['Economy', 'Premium economy', 'Business', 'First'];
 
 export const countryOptions = sel =>
@@ -109,6 +116,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     if (!f) return;
     draft.type = val(f, 'type') || draft.type;
     draft.date = val(f, 'date'); draft.note = val(f, 'note');
+    if (draft.type === 'stay') draft.dateEnd = val(f, 'dateEnd'); else delete draft.dateEnd;
     if (draft.type === 'flight') {
       for (const k of ['airline', 'number', 'from', 'to', 'dep', 'arr', 'ref']) draft.f[k] = val(f, k);
       draft.f.pax = [...f.querySelectorAll('[data-pax]')].map(r => ({
@@ -142,7 +150,10 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
           <datalist id="trav-list">${get().travelers.map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist></div>
         ${fld('ref', 'Boekingsreferentie', 'text', f.ref, 'Boekingsreferentie')}`
       : `${fld('name', 'Naam', 'text', draft.name, 'Naam')}
-        ${fld('date', 'Datum', 'date', draft.date)}
+        ${t === 'stay'
+          ? `<div class="pair">${fld('date', 'Inchecken', 'date', draft.date)}${fld('dateEnd', 'Uitchecken', 'date', draft.dateEnd || '')}</div>
+             <p class="muted" id="i-nights" style="margin:-4px 0 0;font-weight:600;color:var(--accent)">${(n => n === null ? '' : esc(nightsLabel(n)))(nightsBetween(draft.date, draft.dateEnd))}</p>`
+          : fld('date', 'Datum', 'date', draft.date)}
         <div class="field"><label for="i-score">Score (optioneel)</label><select id="i-score" name="score"><option value="">Geen score</option>${[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map(n => `<option value="${n}"${String(draft.score) === String(n) ? ' selected' : ''}>★ ${String(n).replace('.', ',')}</option>`).join('')}</select></div>`}
       ${fld('note', 'Notitie', 'text', draft.note, 'Notitie')}
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
@@ -173,6 +184,12 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     render();
     toast(`${bp.name} · ${bp.number} ingelezen`);
   };
+  sh.el.addEventListener('input', e => {
+    if (e.target.name !== 'date' && e.target.name !== 'dateEnd') return;
+    const out = sh.el.querySelector('#i-nights'); if (!out) return;
+    const f = sh.el.querySelector('form'), n = nightsBetween(val(f, 'date'), val(f, 'dateEnd'));
+    out.textContent = n === null ? '' : nightsLabel(n);
+  });
   sh.el.addEventListener('change', e => {
     if (e.target.name === 'type') { read(); render(); return; }
     if (e.target.id === 'bp-file' && e.target.files[0]) { const f = e.target.files[0]; e.target.value = ''; scan(f); }
@@ -193,6 +210,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     if (draft.type === 'flight') { const a = airlineByName(draft.f.airline); if (a) draft.f.airlineCode = a.code; else delete draft.f.airlineCode; }
     if (draft.type === 'flight') draft.name = [draft.f.airline, draft.f.number].filter(Boolean).join(' ') || 'Vlucht';
     else if (!draft.name) return render('Geef het item een naam.');
+    if (draft.type === 'stay' && draft.date && draft.dateEnd && draft.dateEnd < draft.date) return render('Uitchecken ligt voor inchecken.');
     update(st => {
       if (draft.type === 'flight') {
         for (const k of ['from', 'to']) ensureMyAirport(st, airportByCode(draft.f[k]), newId);
