@@ -1,5 +1,5 @@
 // Service worker: de app werkt offline. Stale-while-revalidate voor bestanden van deze site.
-const V = 'reisapp-v2';
+const V = 'reisapp-v3';
 const CORE = [
   './', 'index.html', 'manifest.webmanifest', 'css/app.css',
   'js/main.js', 'js/store.js', 'js/data.js', 'js/ui.js', 'js/map.js', 'js/sheets.js', 'js/trips.js', 'js/sync.js', 'js/seed.js', 'js/firebase-config.js',
