@@ -442,3 +442,5 @@ a.list-row { color: inherit; }
 @media (min-width: 900px) {
   .page > .fab { position: sticky !important; bottom: 24px !important; right: auto; align-self: flex-end; flex: none; margin: -8px -40px 0 0; }
 }
+/* Ruim scherm: de plus-knop staat helemaal naast de kaarten, niet erover */
+@media (min-width: 1300px) { .page > .fab { margin-right: -76px; } }
