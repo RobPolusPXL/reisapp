@@ -65,7 +65,7 @@ export function mount(el) {
     el.innerHTML = `<div class="page">
       <header class="page-head"><h1>Paspoort</h1><a class="icon-btn" href="#/instellingen" aria-label="Instellingen">${ic('gear', 22)}</a></header>
       <div class="cols">
-        <section class="card" style="padding:12px"><div class="map-host mini" id="mini"></div></section>
+        <div class="map-plain"><div class="map-host mini plain" id="mini"></div></div>
         <section class="card" aria-roledescription="carrousel" aria-label="Statistieken">
           <div class="carousel" id="car" tabindex="0">
             <div class="slide" role="group" aria-roledescription="kaart" aria-label="1 van 3: In totaal">
