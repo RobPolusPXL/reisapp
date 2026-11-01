@@ -1,0 +1,39 @@
+import { get, subscribe } from '../store.js';
+import { esc, ic, fmtRange, daysBetween } from '../ui.js';
+import { legsHtml, tripStats, openTripForm } from '../trips.js';
+
+export function mount(el) {
+  const draw = () => {
+    const st = get();
+    const s = tripStats(st);
+    const trips = [...st.trips].sort((a, b) => (b.start || '').localeCompare(a.start || ''));
+    let lastYear = null;
+    const cards = trips.map(t => {
+      const y = (t.start || '').slice(0, 4);
+      const head = y !== lastYear && lastYear !== null ? `<div class="year">${y}</div>` : '';
+      lastYear = y;
+      const d = daysBetween(t.start, t.end);
+      return `${head}<a class="card card-link" href="#/reis/${esc(t.id)}">
+        <div class="trip-head"><span>${ic('cal', 18)}${esc(fmtRange(t.start, t.end))}</span><span>Duur <strong>${d} ${d === 1 ? 'dag' : 'dagen'}</strong></span></div>
+        ${legsHtml(t.legs)}
+        ${t.title ? `<div class="trip-note">${ic('doc', 18)}${esc(t.title)}</div>` : ''}
+      </a>`;
+    }).join('');
+    el.innerHTML = `<div class="page">
+      <header class="page-head"><h1>Reizen</h1><a class="icon-btn" href="#/instellingen" aria-label="Instellingen">${ic('gear', 22)}</a></header>
+      <section class="stat-card" aria-label="Reisstatistieken"><div class="grid">
+        <div><div class="l">Reizen</div><div class="n">${s.trips}</div></div>
+        <div><div class="l">Duur</div><div class="n">${s.days}d</div></div>
+        <div><div class="l">Continenten</div><div class="n">${s.continents}</div></div>
+        <div><div class="l">Landen</div><div class="n">${s.countries}</div></div>
+        <div><div class="l">Steden</div><div class="n">${s.cities}</div></div></div></section>
+      ${trips.length ? `<h2 style="font-size:18px">Afgelopen</h2>${cards}` : `<div class="card"><h2>Nog geen reizen</h2><p class="muted">Voeg je eerste reis toe met de knop rechtsonder.</p></div>`}
+      <button type="button" class="fab" id="add" aria-label="Reis toevoegen" style="position:fixed;bottom:calc(88px + env(safe-area-inset-bottom))">${ic('plus', 26)}</button>
+    </div>`;
+  };
+  draw();
+  const unsub = subscribe(draw);
+  const onClick = e => { if (e.target.closest('#add')) openTripForm(null); };
+  el.addEventListener('click', onClick);
+  return () => { unsub(); el.removeEventListener('click', onClick); };
+}
