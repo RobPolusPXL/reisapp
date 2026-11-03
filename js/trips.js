@@ -29,7 +29,21 @@ export const countryOptions = sel =>
 export function routeOf(trip) {
   const legs = (trip.legs || []).map(l => ({ kind: 'c', mode: l.mode, c: l.c }));
   if (!legs.length) return legs;
-  const flights = (trip.items || []).filter(i => i.type === 'flight' && i.f?.from).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
+  const up = x => String(x || '').trim().toUpperCase();
+  // Vluchten op volgorde van datum en vertrektijd; dubbele vluchten (zelfde reizigers apart ingevoerd) tellen één keer; aansluitende vluchten op dezelfde dag staan achter elkaar.
+  const seen = new Set();
+  const flights = (trip.items || []).filter(i => i.type === 'flight' && i.f?.from)
+    .filter(i => { const k = `${i.date}|${up(i.f.from)}|${up(i.f.to)}`; if (seen.has(k)) return false; seen.add(k); return true; })
+    .sort((a, b) => (a.date || '9').localeCompare(b.date || '9') || String(a.f.dep || '').localeCompare(String(b.f.dep || '')));
+  for (let pass = 0; pass < flights.length; pass++) {
+    let moved = false;
+    for (let i = 0; i < flights.length; i++) for (let j = i + 1; j < flights.length; j++) {
+      if (flights[j].date === flights[i].date && up(flights[j].f.to) === up(flights[i].f.from) && up(flights[i].f.to) !== up(flights[j].f.from)) {
+        flights.splice(i, 0, flights.splice(j, 1)[0]); moved = true;
+      }
+    }
+    if (!moved) break;
+  }
   const fromAp = airportByCode(flights[0]?.f.from);
   if (!fromAp) return legs;
   const ap = (code, layover) => {
@@ -54,6 +68,8 @@ export function routeOf(trip) {
     while (k > 0 && same(rest[k - 1].f.to, rest[k].f.from) && near(rest[k - 1], rest[k])) k--;
     for (let m = k + 1; m < rest.length; m++) { const x = ap(rest[m].f.from, true); if (x && x.c !== legs[legs.length - 1].c) back.push(x); }
   }
+  // Landt de laatste vlucht niet in het land van vertrek (bv. terug in Frankfurt), dan is dat een overstap vóór de thuisreis.
+  if (lastIn && airportByCode(lastIn.f.to)?.c !== fromAp.c) { const x = ap(lastIn.f.to, true); if (x && x.c !== legs[legs.length - 1].c) back.push(x); }
   if (out[out.length - 1].c !== fromAp.c || back.length) out.push(...back, { ...end, mode: 'plane' });
   return out;
 }
