@@ -501,3 +501,9 @@ a.list-row { color: inherit; }
 .croute { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 3px; margin: 10px 0 2px; }
 .croute .flag { width: 28px; height: 21px; border-radius: 4px; }
 .cm2 { display: inline-flex; color: var(--muted); }
+/* Stops van een reis verslepen */
+.legs { display: flex; flex-direction: column; gap: 10px; }
+.legrow { display: flex; align-items: center; gap: 6px; border-radius: 14px; background: var(--surface); }
+.legrow.dragging { box-shadow: 0 8px 24px rgba(0, 0, 0, .22); outline: 2px solid var(--accent); position: relative; z-index: 2; }
+.grip { flex: none; width: 36px; height: 48px; border: 0; background: none; color: var(--muted); cursor: grab; touch-action: none; display: grid; place-items: center; border-radius: 10px; }
+.grip:active { cursor: grabbing; color: var(--accent); }
