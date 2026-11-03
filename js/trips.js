@@ -25,9 +25,27 @@ export const CLASSES = ['Economy', 'Premium economy', 'Business', 'First'];
 export const countryOptions = sel =>
   '<option value="">Kies een land</option>' + list.map(c => `<option value="${c.c}"${c.c === sel ? ' selected' : ''}>${esc(c.n)}</option>`).join('');
 
+/** Route van een reis: de stops die je invulde, met het land van de vertrekluchthaven (eerste vlucht) vooraan en als terugreis achteraan. */
+export function routeOf(trip) {
+  const legs = (trip.legs || []).map(l => ({ mode: l.mode, c: l.c }));
+  if (!legs.length) return legs;
+  const flights = (trip.items || []).filter(i => i.type === 'flight' && i.f?.from).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
+  const origin = flights.length ? airportByCode(flights[0].f.from)?.c : '';
+  if (!origin) return legs;
+  const out = legs[0].c === origin ? legs : [{ mode: legs[0].mode, c: origin }, ...legs];
+  if (out[out.length - 1].c !== origin) out.push({ mode: 'plane', c: origin });
+  return out;
+}
+
+/** Route in de reis zelf (en op laptop): landen onder elkaar, het vervoer op de lijn ertussen. */
 export function legsHtml(legs) {
-  return legs.map((l, i) => `${i ? '<div class="leg-dash"></div>' : ''}
-    <div class="leg">${flag(l.c)}<div><div class="m">${ic(MODES[l.mode]?.[1] || 'dots', 16)}${MODES[l.mode]?.[0] || ''}</div><div class="p">${esc(nameOf(l.c))}</div></div></div>`).join('');
+  return legs.map((l, i) => `${i ? `<div class="conn"><span class="cl"></span><span class="cm">${ic(MODES[l.mode]?.[1] || 'dots', 16)}${MODES[l.mode]?.[0] || ''}</span></div>` : ''}
+    <div class="leg2">${flag(l.c)}<div class="p">${esc(nameOf(l.c))}</div></div>`).join('');
+}
+
+/** Route op één regel (overzicht op mobiel): vlaggen met het vervoer ertussen. */
+export function legsCompact(legs) {
+  return `<div class="croute">${legs.map((l, i) => `${i ? `<span class="cm2" title="${esc(MODES[l.mode]?.[0] || '')}">${ic(MODES[l.mode]?.[1] || 'dots', 16)}</span>` : ''}${flag(l.c)}`).join('')}</div>`;
 }
 
 export function tripStats(state) {
