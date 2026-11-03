@@ -25,27 +25,61 @@ export const CLASSES = ['Economy', 'Premium economy', 'Business', 'First'];
 export const countryOptions = sel =>
   '<option value="">Kies een land</option>' + list.map(c => `<option value="${c.c}"${c.c === sel ? ' selected' : ''}>${esc(c.n)}</option>`).join('');
 
-/** Route van een reis: de stops die je invulde, met het land van de vertrekluchthaven (eerste vlucht) vooraan en als terugreis achteraan. */
+/** Route van een reis: begin- en eindluchthaven uit je vluchten, overstappen (vluchten die aansluiten) en daartussen de stops die je invulde. */
 export function routeOf(trip) {
-  const legs = (trip.legs || []).map(l => ({ mode: l.mode, c: l.c }));
+  const legs = (trip.legs || []).map(l => ({ kind: 'c', mode: l.mode, c: l.c }));
   if (!legs.length) return legs;
   const flights = (trip.items || []).filter(i => i.type === 'flight' && i.f?.from).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
-  const origin = flights.length ? airportByCode(flights[0].f.from)?.c : '';
-  if (!origin) return legs;
-  const out = legs[0].c === origin ? legs : [{ mode: legs[0].mode, c: origin }, ...legs];
-  if (out[out.length - 1].c !== origin) out.push({ mode: 'plane', c: origin });
+  const fromAp = airportByCode(flights[0]?.f.from);
+  if (!fromAp) return legs;
+  const ap = (code, layover) => {
+    const a = airportByCode(code);
+    return a ? { kind: 'ap', mode: 'plane', c: a.c, code: a.code, name: cityNl(a.city || a.name), layover } : null;
+  };
+  const near = (x, y) => x.date && y.date && daysBetween(x.date, y.date) <= 2 && daysBetween(x.date, y.date) >= 1;
+  const same = (x, y) => String(x || '').toUpperCase() === String(y || '').toUpperCase();
+  // heenreis: aansluitende vluchten vanaf de eerste vlucht
+  let n = 1;
+  while (n < flights.length && same(flights[n - 1].f.to, flights[n].f.from) && near(flights[n - 1], flights[n])) n++;
+  const outStops = flights.slice(0, n - 1).map(f => ap(f.f.to, true)).filter(x => x && x.c !== legs[0].c);
+  const out = [{ ...ap(fromAp.code, false), mode: legs[0].mode }, ...outStops, ...legs];
+  if (legs[0].c === fromAp.c && !outStops.length) out.shift();
+  // terugreis: aansluitende vluchten naar het land van vertrek
+  const rest = flights.slice(n);
+  const end = ap(fromAp.code, false);
+  const lastIn = rest[rest.length - 1];
+  const back = [];
+  if (lastIn && airportByCode(lastIn.f.to)?.c === fromAp.c) {
+    let k = rest.length - 1;
+    while (k > 0 && same(rest[k - 1].f.to, rest[k].f.from) && near(rest[k - 1], rest[k])) k--;
+    for (let m = k + 1; m < rest.length; m++) { const x = ap(rest[m].f.from, true); if (x && x.c !== legs[legs.length - 1].c) back.push(x); }
+  }
+  if (out[out.length - 1].c !== fromAp.c || back.length) out.push(...back, { ...end, mode: 'plane' });
   return out;
 }
 
-/** Route in de reis zelf (en op laptop): landen onder elkaar, het vervoer op de lijn ertussen. */
-export function legsHtml(legs) {
-  return legs.map((l, i) => `${i ? `<div class="conn"><span class="cl"></span><span class="cm">${ic(MODES[l.mode]?.[1] || 'dots', 16)}${MODES[l.mode]?.[0] || ''}</span></div>` : ''}
-    <div class="leg2">${flag(l.c)}<div class="p">${esc(nameOf(l.c))}</div></div>`).join('');
+// Nederlandse namen voor veelvoorkomende luchthavensteden (de bron heeft Engelse namen).
+const NL_CITY = {
+  Brussels: 'Brussel', Vienna: 'Wenen', Lisbon: 'Lissabon', Prague: 'Praag', Cologne: 'Keulen', Warsaw: 'Warschau', Athens: 'Athene',
+  Copenhagen: 'Kopenhagen', Munich: 'München', Geneva: 'Genève', Rome: 'Rome', Venice: 'Venetië', Florence: 'Florence', Naples: 'Napels',
+  Seville: 'Sevilla', Zurich: 'Zürich', Moscow: 'Moskou', 'Saint Petersburg': 'Sint-Petersburg', Bucharest: 'Boekarest', Belgrade: 'Belgrado',
+  Brasov: 'Brașov', Cairo: 'Caïro', Edinburgh: 'Edinburgh', 'New York': 'New York', Marrakesh: 'Marrakech', Dubrovnik: 'Dubrovnik',
+};
+const cityNl = c => NL_CITY[c] || c;
+const nm = c => esc(nameOf(c));
+/** Route in de reis zelf (en op laptop): stops onder elkaar, het vervoer op de lijn ertussen; een luchthaven met zijn naam, een overstap iets lichter. */
+export function legsHtml(items) {
+  return items.map((l, i) => `${i ? `<div class="conn${l.layover ? ' light' : ''}"><span class="cl"></span><span class="cm">${ic(MODES[l.mode]?.[1] || 'dots', 16)}${MODES[l.mode]?.[0] || ''}</span></div>` : ''}
+    <div class="leg2${l.layover ? ' light' : ''}">${flag(l.c)}<div>${l.kind === 'ap'
+      ? `<div class="p">${esc(l.name)} (${esc(l.code)})</div><div class="sub">${l.layover ? 'Overstap · ' : ''}${nm(l.c)}</div>`
+      : `<div class="p">${nm(l.c)}</div>`}</div></div>`).join('');
 }
 
-/** Route op één regel (overzicht op mobiel): vlaggen met het vervoer ertussen. */
-export function legsCompact(legs) {
-  return `<div class="croute">${legs.map((l, i) => `${i ? `<span class="cm2" title="${esc(MODES[l.mode]?.[0] || '')}">${ic(MODES[l.mode]?.[1] || 'dots', 16)}</span>` : ''}${flag(l.c)}`).join('')}</div>`;
+/** Route op één regel (overzicht op mobiel): landen als vlag, luchthavens als label met de code en de vlag als watermerk. */
+export function legsCompact(items) {
+  return `<div class="croute">${items.map((l, i) => `${i ? `<span class="cm2" title="${esc(MODES[l.mode]?.[0] || '')}">${ic(MODES[l.mode]?.[1] || 'dots', 16)}</span>` : ''}${l.kind === 'ap'
+    ? `<span class="ac${l.layover ? ' lt' : ''}" title="${esc(l.name)}, ${esc(nameOf(l.c))}"><img class="wm" src="assets/flags/${esc(String(l.c).toLowerCase())}.svg" alt="" aria-hidden="true"><b>${esc(l.code)}</b></span>`
+    : flag(l.c)}`).join('')}</div>`;
 }
 
 export function tripStats(state) {
