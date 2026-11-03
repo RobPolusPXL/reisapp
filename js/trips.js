@@ -65,11 +65,11 @@ export function openTripForm(trip = null, { onSaved } = {}) {
       <div class="pair"><div class="field"><label for="f-start">Start</label><input id="f-start" name="start" type="date" value="${esc(draft.start)}"></div>
       <div class="field"><label for="f-einde">Einde</label><input id="f-einde" name="einde" type="date" value="${esc(draft.end)}"></div></div>
       <div class="label">Route</div>
-      ${draft.legs.map((l, i) => `<div class="pair" style="align-items:center">
+      <div class="legs">${draft.legs.map((l, i) => `<div class="legrow" data-leg="${i}"><button type="button" class="grip" aria-label="Stop ${i + 1} verslepen" title="Sleep om te verplaatsen"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button><div class="pair" style="align-items:center;flex:1;min-width:0">
         <div class="field"><select name="mode-${i}" aria-label="Vervoer stop ${i + 1}">${Object.entries(MODES).map(([k, [n]]) => `<option value="${k}"${k === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
         <div class="field"><select name="land-${i}" aria-label="Land stop ${i + 1}">${countryOptions(l.c)}</select></div>
         ${draft.legs.length > 1 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${i}" aria-label="Stop ${i + 1} verwijderen">${ic('x', 20)}</button>` : ''}
-      </div>`).join('')}
+      </div></div>`).join('')}</div>
       <button type="button" class="btn soft" data-add>${ic('plus', 18)}Stop toevoegen</button>
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
       <div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="submit" class="btn primary">Opslaan</button></div>
@@ -83,6 +83,51 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     read();
     if (rm) draft.legs.splice(+rm.dataset.rm, 1); else draft.legs.push({ mode: 'car', c: '' });
     render();
+  });
+  // Stops verslepen: pak het handvat vast en sleep de rij omhoog of omlaag. De rij zelf verhuist pas bij het loslaten.
+  sh.el.addEventListener('pointerdown', e => {
+    const grip = e.target.closest('.grip');
+    if (!grip) return;
+    const box = sh.el.querySelector('.legs'), row = grip.closest('.legrow');
+    if (!box || !row || box.children.length < 2) return;
+    e.preventDefault();
+    grip.setPointerCapture(e.pointerId);
+    const rows = [...box.children];
+    const from = rows.indexOf(row), startY = e.clientY;
+    const mids = rows.map(r => { const b = r.getBoundingClientRect(); return b.top + b.height / 2; });
+    const step = rows.length > 1 ? mids[1] - mids[0] : 0;
+    let to = from;
+    row.classList.add('dragging');
+    rows.forEach(r => { if (r !== row) r.style.transition = 'transform .15s'; });
+    const move = ev => {
+      const dy = ev.clientY - startY;
+      row.style.transform = `translateY(${dy}px)`;
+      const pos = mids[from] + dy;
+      to = 0;
+      rows.forEach((r, k) => { if (k !== from && mids[k] < pos) to++; });
+      rows.forEach((r, k) => {
+        if (k === from) return;
+        let shift = 0;
+        if (from < to && k > from && k <= to) shift = -step;
+        if (from > to && k < from && k >= to) shift = step;
+        r.style.transform = shift ? `translateY(${shift}px)` : '';
+      });
+    };
+    const end = () => {
+      grip.removeEventListener('pointermove', move);
+      grip.removeEventListener('pointerup', end);
+      grip.removeEventListener('pointercancel', end);
+      rows.forEach(r => { r.style.transform = ''; r.style.transition = ''; });
+      row.classList.toggle('dragging', false);
+      if (to === from) return;
+      read();
+      const [moved] = draft.legs.splice(from, 1);
+      draft.legs.splice(to, 0, moved);
+      render();
+    };
+    grip.addEventListener('pointermove', move);
+    grip.addEventListener('pointerup', end);
+    grip.addEventListener('pointercancel', end);
   });
   sh.el.addEventListener('submit', e => {
     e.preventDefault();
