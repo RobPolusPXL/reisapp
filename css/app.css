@@ -516,3 +516,5 @@ a.list-row { color: inherit; }
 .leg2 .sub { font-size: 13px; color: var(--muted); margin-top: 1px; }
 .leg2.light { opacity: .72; } .leg2.light .p { font-weight: 500; }
 .conn.light .cm { opacity: .65; } .conn.light .cl::before { border-left-style: dotted; }
+
+.field[hidden] { display: none; }
