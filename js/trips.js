@@ -56,7 +56,12 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     const f = sh.el.querySelector('form');
     if (!f) return;
     draft.title = val(f, 'titel'); draft.start = val(f, 'start'); draft.end = val(f, 'einde');
-    draft.legs = draft.legs.map((_, i) => ({ mode: val(f, `mode-${i}`) || 'plane', c: val(f, `land-${i}`) }));
+    draft.legs = draft.legs.map((_, i) => {
+      const mode = val(f, `mode-${i}`) || 'plane';
+      const leg = { mode, c: val(f, `land-${i}`) };
+      if (mode === 'plane' && f.elements[`transit-${i}`]?.checked) leg.transit = true;
+      return leg;
+    });
   };
   const render = (err = '') => {
     sh.setHtml(`<h2>${trip ? 'Reis bewerken' : 'Nieuwe reis'}</h2>
@@ -69,7 +74,8 @@ export function openTripForm(trip = null, { onSaved } = {}) {
         <div class="field"><select name="mode-${i}" aria-label="Vervoer stop ${i + 1}">${Object.entries(MODES).map(([k, [n]]) => `<option value="${k}"${k === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
         <div class="field"><select name="land-${i}" aria-label="Land stop ${i + 1}">${countryOptions(l.c)}</select></div>
         ${draft.legs.length > 1 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${i}" aria-label="Stop ${i + 1} verwijderen">${ic('x', 20)}</button>` : ''}
-      </div>`).join('')}
+      </div>
+      <label class="transit"${l.mode === 'plane' ? '' : ' hidden'} data-transit="${i}"><input type="checkbox" name="transit-${i}"${l.transit ? ' checked' : ''}> Enkel overstap met het vliegtuig (land telt niet mee als bezocht)</label>`).join('')}
       <button type="button" class="btn soft" data-add>${ic('plus', 18)}Stop toevoegen</button>
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
       <div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="submit" class="btn primary">Opslaan</button></div>
@@ -84,6 +90,12 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     if (rm) draft.legs.splice(+rm.dataset.rm, 1); else draft.legs.push({ mode: 'car', c: '' });
     render();
   });
+  sh.el.addEventListener('change', e => {
+    const m = /^mode-(\d+)$/.exec(e.target.name || '');
+    if (!m) return;
+    const lab = sh.el.querySelector(`[data-transit="${m[1]}"]`);
+    if (lab) { lab.hidden = e.target.value !== 'plane'; if (lab.hidden) lab.querySelector('input').checked = false; }
+  });
   sh.el.addEventListener('submit', e => {
     e.preventDefault();
     read();
@@ -96,7 +108,13 @@ export function openTripForm(trip = null, { onSaved } = {}) {
       const i = st.trips.findIndex(t => t.id === clean.id);
       if (i >= 0) st.trips[i] = clean; else st.trips.push(clean);
       const y = parseInt(clean.start.slice(0, 4), 10);
-      for (const l of legs) if (st.countries[l.c]?.s !== 'v') st.countries[l.c] = { ...(st.countries[l.c] || {}), s: 'v', y };
+      // Een land telt als bezocht, tenzij alle stops in dat land enkel een overstap met het vliegtuig zijn.
+      const counted = new Set(legs.filter(l => !l.transit).map(l => l.c));
+      for (const c of counted) {
+        const cur = st.countries[c] || {};
+        if (cur.s !== 'v') st.countries[c] = { ...cur, s: 'v', y };
+        else if (!cur.y) st.countries[c] = { ...cur, y };
+      }
     });
     sh.close();
     toast('Reis opgeslagen');

@@ -489,3 +489,6 @@ a.list-row { color: inherit; }
 /* Vlucht in de reis: datum, route en zitplaatsen elk op een eigen regel */
 .item .s-route { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 15px; font-weight: 600; letter-spacing: .02em; }
 .s-arr { flex: none; color: var(--muted); }
+
+.transit { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin: -4px 0 4px; }
+.transit[hidden] { display: none; }
