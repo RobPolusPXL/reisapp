@@ -492,3 +492,31 @@ a.list-row { color: inherit; }
 
 .transit { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin: -4px 0 4px; }
 .transit[hidden] { display: none; }
+/* Route: landen onder elkaar met het vervoer op de lijn ertussen; op mobiel in het overzicht op één regel */
+.leg2 { display: flex; align-items: center; gap: 14px; }
+.leg2 .p { font-size: 17px; font-weight: 600; overflow-wrap: anywhere; }
+.conn { display: flex; align-items: center; gap: 14px; height: 40px; }
+.conn .cl { width: 32px; display: flex; justify-content: center; height: 100%; position: relative; flex: none; }
+.conn .cl::before { content: ""; position: absolute; top: 0; bottom: 0; left: 50%; border-left: 2px dashed var(--field); }
+.conn .cm { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 13px; background: var(--bg); border-radius: 12px; padding: 3px 10px; }
+.card .conn .cm { background: var(--bg); }
+.croute { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 3px; margin: 10px 0 2px; }
+.croute .flag { width: 28px; height: 21px; border-radius: 4px; }
+.cm2 { display: inline-flex; color: var(--muted); }
+/* Stops van een reis verslepen */
+.legs { display: flex; flex-direction: column; gap: 10px; }
+.legrow { display: flex; align-items: center; gap: 6px; border-radius: 14px; background: var(--surface); }
+.legrow.dragging { box-shadow: 0 8px 24px rgba(0, 0, 0, .22); outline: 2px solid var(--accent); position: relative; z-index: 2; }
+.grip { flex: none; width: 36px; height: 48px; border: 0; background: none; color: var(--muted); cursor: grab; touch-action: none; display: grid; place-items: center; border-radius: 10px; }
+.grip:active { cursor: grabbing; color: var(--accent); }
+
+/* Luchthaven in de compacte route: code met de vlag als watermerk; een overstap is lichter */
+.croute .ac { position: relative; display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 8px; overflow: hidden; background: var(--bg); color: var(--ink); font-size: 13px; letter-spacing: .04em; box-shadow: inset 0 0 0 1px var(--line); }
+.croute .ac .wm { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .22; border-radius: 0; }
+.croute .ac b { position: relative; }
+.croute .ac.lt { opacity: .65; }
+.leg2 .sub { font-size: 13px; color: var(--muted); margin-top: 1px; }
+.leg2.light { opacity: .72; } .leg2.light .p { font-weight: 500; }
+.conn.light .cm { opacity: .65; } .conn.light .cl::before { border-left-style: dotted; }
+
+.field[hidden] { display: none; }
