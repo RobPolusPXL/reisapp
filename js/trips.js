@@ -38,7 +38,7 @@ export function homeCountry(state = get()) {
 
 /** Route van een reis: begin- en eindluchthaven uit je vluchten, overstappen (vluchten die aansluiten) en daartussen de stops die je invulde. */
 export function routeOf(trip) {
-  const legs = (trip.legs || []).map(l => ({ kind: 'c', mode: l.mode, c: l.c }));
+  let legs = (trip.legs || []).map(l => ({ kind: 'c', mode: l.mode, c: l.c }));
   if (!legs.length) return legs;
   const up = x => String(x || '').trim().toUpperCase();
   // Vluchten op volgorde van datum en vertrektijd; dubbele vluchten (zelfde reizigers apart ingevoerd) tellen één keer; aansluitende vluchten op dezelfde dag staan achter elkaar.
@@ -56,6 +56,16 @@ export function routeOf(trip) {
     if (!moved) break;
   }
   const fromAp = airportByCode(flights[0]?.f.from);
+  // Per vliegtuig bereikt zonder vlucht naar dat land (bv. een stop in Lissabon op weg naar Florida): toon de opgeslagen luchthaven van dat land.
+  if (flights.length) {
+    const flownTo = new Set(flights.map(f => airportByCode(f.f.to)?.c).filter(Boolean));
+    const saved = get().places?.airports || [];
+    legs = legs.map(l => {
+      if (l.mode !== 'plane' || flownTo.has(l.c)) return l;
+      const aps = saved.filter(a => a.c === l.c);
+      return aps.length === 1 ? { kind: 'ap', mode: 'plane', c: l.c, code: aps[0].code, name: cityNl(aps[0].name) } : l;
+    });
+  }
   if (!fromAp) {
     // Geen vlucht: begin in het gekozen vertrekland (of je thuisland) als je er niet met het vliegtuig vertrekt.
     const start = trip.from || homeCountry();
