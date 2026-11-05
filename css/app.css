@@ -530,3 +530,10 @@ svg.globe .g-k { fill: color-mix(in srgb, var(--muted) 55%, var(--land)); }
 svg.globe .g-v { fill: var(--accent); }
 svg.globe path { stroke: var(--sea); stroke-width: .25px; stroke-linejoin: round; }
 svg.globe .g-rim { fill: none; stroke: var(--field); stroke-width: 1px; }
+
+.mates { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.mate { display: inline-flex; align-items: center; gap: 2px; padding: 4px 4px 4px 12px; border-radius: 999px; background: var(--accent-soft); color: var(--accent); font-weight: 600; font-size: 14px; }
+.mate button { width: 24px; height: 24px; border: 0; background: transparent; color: inherit; display: inline-flex; align-items: center; justify-content: center; border-radius: 50%; padding: 0; cursor: pointer; }
+.mate-add { display: flex; gap: 8px; align-items: stretch; }
+.mate-add input { flex: 1; min-width: 0; }
+.mate-add .btn { flex: none; }

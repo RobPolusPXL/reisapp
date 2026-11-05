@@ -2,7 +2,7 @@ import { get, subscribe, getTrip, update } from '../store.js';
 import { nameOf } from '../data.js';
 import { loadAirports } from '../airports.js';
 import { esc, ic, ICONS, fmtRange, fmtDate, daysBetween, scoreH } from '../ui.js';
-import { legsHtml, routeOf, TYPES, openTripForm, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
+import { matesText, legsHtml, routeOf, TYPES, openTripForm, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
 
 const FILTERS = [['all', 'Alles'], ['flight', 'Vluchten'], ['stay', 'Verblijf'], ['food', 'Eten'], ['activity', 'Activiteit']];
 
@@ -42,7 +42,7 @@ export function mount(el, { params }) {
     el.innerHTML = `<div class="page">
       <header class="page-head"><a class="icon-btn" href="#/reizen" aria-label="Terug naar reizen">${ic('back', 26)}</a>
         <div style="flex:1;min-width:0"><h1 style="font-size:22px">${esc(t.title || countries || 'Reis')}</h1>
-        <div class="sub">${esc(fmtRange(t.start, t.end))} · ${d} ${d === 1 ? 'dag' : 'dagen'}${countries ? ' · ' + esc(countries) : ''}</div></div>
+        <div class="sub">${esc(fmtRange(t.start, t.end))} · ${d} ${d === 1 ? 'dag' : 'dagen'}${countries ? ' · ' + esc(countries) : ''}</div>${t.mates?.length ? `<div class="sub">Met ${esc(matesText(t.mates))}</div>` : ''}</div>
         <button type="button" class="icon-btn" id="edit" aria-label="Reis bewerken">${ic('edit', 22)}</button>
         <button type="button" class="icon-btn" id="del" aria-label="Reis verwijderen">${ic('trash', 22)}</button>
       </header>
