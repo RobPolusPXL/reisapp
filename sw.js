@@ -2,7 +2,7 @@
 // - Code (HTML, JS, CSS): netwerk eerst, met controle bij de server; offline uit de cache.
 // - Grote data (kaart, landen, vlaggen, iconen): cache eerst, op de achtergrond bijwerken.
 // - Het manifest gaat altijd rechtstreeks naar het netwerk.
-const V = 'mustache-passport-v44';
+const V = 'mustache-passport-v46';
 const CORE = [
   './', 'index.html', 'css/app.css',
   'js/main.js', 'js/store.js', 'js/data.js', 'js/ui.js', 'js/map.js', 'js/sheets.js','js/airports.js','data/airports.json','js/airlines.js','data/airlines.json','js/boardingpass.js','vendor/zxing/reader.js','vendor/zxing/share.js','vendor/zxing/zxing_reader.wasm', 'js/trips.js', 'js/sync.js', 'js/firebase-config.js',
@@ -12,7 +12,13 @@ const CORE = [
 
 self.addEventListener('install', e => {
   // cache: 'reload' slaat de HTTP-cache van de browser over, zodat er echt nieuwe bestanden in komen
-  e.waitUntil(caches.open(V).then(c => c.addAll(CORE.map(u => new Request(u, { cache: 'reload' })))).then(() => self.skipWaiting()));
+  // Tolerant: één bestand dat tijdelijk niet bereikbaar is (bv. direct na een deploy) mag de hele installatie niet laten mislukken
+  e.waitUntil((async () => {
+    const c = await caches.open(V);
+    const res = await Promise.allSettled(CORE.map(u => c.add(new Request(u, { cache: 'reload' }))));
+    res.forEach((r, i) => { if (r.status === 'rejected') console.warn('Precache mislukt:', CORE[i]); });
+    await self.skipWaiting();
+  })());
 });
 self.addEventListener('activate', e => {
   e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== V).map(k => caches.delete(k)))).then(() => self.clients.claim()));
