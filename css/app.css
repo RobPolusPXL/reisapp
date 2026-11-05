@@ -251,7 +251,7 @@ a.list-row { color: inherit; }
 .grp-head { width: 100%; border: 0 !important; background: none; text-align: left; cursor: pointer; color: inherit; font: inherit; }
 .grp-head > svg:last-child { color: var(--muted); transition: transform .15s; flex: none; }
 .grp.open .grp-head > svg:last-child { transform: rotate(90deg); }
-.grp .count { min-width: 28px; height: 28px; padding: 0 8px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
+.grp .count, .list-row > .count { min-width: 28px; height: 28px; padding: 0 8px; border-radius: 14px; background: var(--accent-soft); color: var(--accent); font-weight: 700; font-size: 14px; display: inline-flex; align-items: center; justify-content: center; }
 .grp-body { padding: 0 0 8px 50px; }
 .list-row.sub { min-height: 48px; }
 .ell { overflow-wrap: anywhere; }
