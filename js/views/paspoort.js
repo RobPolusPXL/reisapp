@@ -54,9 +54,10 @@ function openPlaceForm(kind) {
 
 export function mount(el) {
   let coasters = [];
-  loadCoasters().then(db => { coasters = db; if (wideNow()) draw(); });
+  loadCoasters().then(db => { coasters = db; draw(); });
   const mq = window.matchMedia('(min-width: 1100px)');
   let showAll = false;
+  let showAllParks = false;
   const openSitePark = new Set();
   let slide = 0;
   let map = null;
@@ -74,6 +75,18 @@ export function mount(el) {
       return `<div class="grp${isOpen ? ' open' : ''}"><button type="button" class="list-row grp-head" data-grp="${esc(c)}" aria-expanded="${isOpen}">${flag(c)}<div class="grow"><div class="t">${esc(nameOf(c))}</div>${isOpen ? '' : `<div class="s ell">${esc(ps.map(p => p.name).join(', '))}</div>`}</div><span class="count">${ps.length}</span>${ic('chev', 20)}</button>
         ${isOpen ? `<div class="grp-body">${ps.map(p => `<div class="list-row sub"><div class="grow"><div class="t">${esc(p.name)}</div></div>${delBtn('cities', p)}</div>`).join('')}</div>` : ''}</div>`;
     }).join('')}</div>`;
+  };
+
+  // "Mijn pretparken": zelfde opbouw als "Mijn landen".
+  const parksCard = st => {
+    const parks = parkOverview(coasters, st.credits || {});
+    const credits = parks.reduce((n, pk) => n + pk.got, 0);
+    const shownP = showAllParks ? parks : parks.slice(0, 5);
+    const sub = parks.length ? `${parks.length} ${parks.length === 1 ? 'pretpark' : 'pretparken'} · ${credits} ${credits === 1 ? 'credit' : 'credits'}` : '';
+    return `<section class="card"><div class="card-head"><div><h2>Mijn pretparken</h2>${sub ? `<div class="muted">${sub}</div>` : ''}</div><a class="btn soft" href="#/credits">${ic('plus', 18)}Toevoegen</a></div>
+      ${shownP.length ? `<div class="list">${shownP.map(pk => `<a class="list-row" href="#/credits" style="border-top:1px solid var(--line)">${pk.country ? flag(pk.country) : ''}<div class="grow"><div class="t">${esc(pk.park)}</div><div class="s">${pk.country ? esc(nameOf(pk.country)) : ''}${pk.last ? `${pk.country ? ' · ' : ''}${esc(fmtDate(pk.last))}` : ''}</div></div><span class="count">${pk.got}</span></a>`).join('')}</div>` : `<div class="empty">${Object.keys(st.credits || {}).length ? 'Pretparken laden…' : 'Nog geen pretparken.'}</div>`}
+      ${parks.length > 5 ? `<button type="button" class="btn block" id="morep" style="margin-top:10px">${showAllParks ? 'Minder tonen' : `+ ${parks.length - 5} meer`}</button>` : ''}
+    </section>`;
   };
 
   const placeCard = kind => {
@@ -174,7 +187,7 @@ export function mount(el) {
         ${visited.length > 5 ? `<button type="button" class="btn block" id="more" style="margin-top:10px">${showAll ? 'Minder tonen' : `+ ${visited.length - 5} meer`}</button>` : ''}
       </section>
       ${wish.length ? `<section class="card"><div class="card-head"><h2>Wil ik zien</h2></div><div class="list">${wish.map(c => `<button type="button" class="list-row" style="width:100%;border:0;background:none;text-align:left;cursor:pointer;border-top:1px solid var(--line)" data-c="${c.c}">${flag(c.c)}<div class="grow"><div class="t">${esc(c.n)}</div></div></button>`).join('')}</div></section>` : ''}
-      <a class="card list-row" href="#/credits" style="padding:14px 20px"><span class="ico-sm">${ic('coaster', 22)}</span><div class="grow"><div class="t">Mijn pretparken</div><div class="s">${Object.keys(st.credits || {}).length} ${Object.keys(st.credits || {}).length === 1 ? 'credit' : 'credits'}</div></div>${ic('chev', 20)}</a>
+      ${parksCard(st)}
       <div class="cols">${placeCard('cities')}${placeCard('regions')}${placeCard('airports')}</div>
     </div>`;
     map?.destroy();
@@ -218,6 +231,7 @@ export function mount(el) {
     }
     if (e.target.closest('#addc')) { openCountryPicker(); return; }
     if (e.target.closest('#more')) { showAll = !showAll; draw(); }
+    if (e.target.closest('#morep')) { showAllParks = !showAllParks; draw(); }
   };
   el.addEventListener('click', onClick);
   return () => { unsub(); mq.removeEventListener('change', draw); map?.destroy(); el.removeEventListener('click', onClick); };
