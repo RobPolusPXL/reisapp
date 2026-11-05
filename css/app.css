@@ -511,9 +511,9 @@ a.list-row { color: inherit; }
 .grip:active { cursor: grabbing; color: var(--accent); }
 
 /* Luchthaven in de compacte route: code met de vlag als watermerk; een overstap is lichter */
-.croute .ac { position: relative; display: inline-flex; align-items: center; height: 24px; padding: 0 8px; border-radius: 8px; overflow: hidden; background: var(--bg); color: var(--ink); font-size: 13px; letter-spacing: .04em; box-shadow: inset 0 0 0 1px var(--line); }
-.croute .ac .wm { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: .22; border-radius: 0; }
-.croute .ac b { position: relative; }
+.croute .ac { position: relative; display: inline-flex; align-items: center; justify-content: center; height: 26px; min-width: 42px; padding: 0 6px; border-radius: 7px; overflow: hidden; background: var(--bg); color: #fff; font-size: 13px; letter-spacing: .05em; }
+.croute .ac .wm { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.78) saturate(.92); border-radius: 0; }
+.croute .ac b { position: relative; font-weight: 600; -webkit-text-stroke: 2px rgba(15, 20, 23, .75); paint-order: stroke fill; }
 .croute .ac.lt { opacity: .65; }
 .leg2 .sub { font-size: 13px; color: var(--muted); margin-top: 1px; }
 .leg2.light { opacity: .72; } .leg2.light .p { font-weight: 500; }
