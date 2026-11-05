@@ -14,8 +14,9 @@ function applyTheme() {
   const isDark = mode === 'dark' || (mode === 'system' && dark.matches);
   document.documentElement.dataset.theme = theme;
   document.documentElement.dataset.scheme = isDark ? 'dark' : 'light';
-  const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
-  document.querySelector('meta[name=theme-color]')?.setAttribute('content', accent);
+  // Systeembalken (status- en navigatiebalk) in de kleur van het oppervlak, niet in de accentkleur.
+  const surface = getComputedStyle(document.documentElement).getPropertyValue('--surface').trim() || '#FFFFFF';
+  document.querySelectorAll('meta[name=theme-color]').forEach(m => m.setAttribute('content', surface));
 }
 dark.addEventListener('change', applyTheme);
 subscribe(applyTheme);
