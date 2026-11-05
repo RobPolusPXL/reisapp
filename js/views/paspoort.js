@@ -1,6 +1,7 @@
 import { get, subscribe, update, newId, setCountry } from '../store.js';
 import { byCode, CONT, flag, nameOf, statsFor } from '../data.js';
 import { createMap } from '../map.js';
+import { globeSvg } from '../globe.js';
 import { esc, ic, openSheet, toast, fmtRange, fmtDate, daysBetween, scoreH } from '../ui.js';
 import { load as loadCoasters, parkOverview, ridesOf, avgScore } from './credits.js';
 import { countryOptions } from '../trips.js';
@@ -168,9 +169,9 @@ export function mount(el) {
             </div>
             <div class="slide" role="group" aria-roledescription="kaart" aria-label="3 van 3: Meest bezochte continent">
               <h2>Meest bezochte continent</h2>
-              ${top ? `<div style="font-size:30px;font-weight:700;color:var(--muted);margin-top:14px">${CONT[top]}</div>
+              ${top ? `<div class="cont-row"><div><div style="font-size:30px;font-weight:700;color:var(--muted);margin-top:14px">${CONT[top]}</div>
               <div><span class="big">${s.cont[top].got}</span><span class="big"><small> / ${s.cont[top].total}</small></span></div>
-              <div class="muted">landen</div>
+              <div class="muted">landen</div></div>${globeSvg(top, new Set(visited.map(c => c.c)), 132)}</div>
               <div class="bar" style="height:12px;margin-top:14px;border-radius:6px"><i style="width:${s.cont[top].pct}%"></i></div>` : '<p class="muted" style="margin-top:14px">Nog geen landen bezocht.</p>'}
             </div>
           </div>
