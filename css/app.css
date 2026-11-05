@@ -521,3 +521,12 @@ a.list-row { color: inherit; }
 .conn.light .cm { opacity: .65; } .conn.light .cl::before { border-left-style: dotted; }
 
 .field[hidden] { display: none; }
+
+.cont-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+svg.globe { flex: none; width: 132px; height: 132px; margin-top: 6px; }
+svg.globe .g-sea { fill: var(--sea); }
+svg.globe .g-o { fill: var(--land); }
+svg.globe .g-k { fill: color-mix(in srgb, var(--muted) 55%, var(--land)); }
+svg.globe .g-v { fill: var(--accent); }
+svg.globe path { stroke: var(--sea); stroke-width: .25px; stroke-linejoin: round; }
+svg.globe .g-rim { fill: none; stroke: var(--field); stroke-width: 1px; }
