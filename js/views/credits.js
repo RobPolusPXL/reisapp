@@ -183,7 +183,7 @@ function openPicker(coasters) {
 
 export function mount(el) {
   let off = false;
-  const openGroups = new Set(['Thrill']);
+  const openGroups = new Set();
   const openCards = new Set();
   const openParks = new Set();
   let inited = false;
@@ -196,7 +196,7 @@ export function mount(el) {
     const kAvg = avgScore(allRides);
     const creditN = all.filter(c => ridesOf(credits[c.id]).length).length;
     const parkN = parks.filter(pk => db.some(c => c.park === pk && c.status === 'open' && ridesOf(credits[c.id]).length)).length;
-    if (!inited) { inited = true; const best = parks.map(pk => [pk, lastDate(db.filter(c => c.park === pk).flatMap(c => ridesOf(credits[c.id])))]).sort((x, y) => y[1].localeCompare(x[1]))[0]; openParks.add(parks.length === 1 || !best || !best[1] ? parks[0] : best[0]); }
+    inited = true;
     el.innerHTML = `<div class="page credits-page">
       <header class="page-head"><a class="icon-btn" href="#/paspoort" aria-label="Terug naar Paspoort">${ic('back', 26)}</a><h1>Pretparken</h1>
         <button type="button" class="gplus" data-new aria-label="Nieuwe rit toevoegen">${ic('plus', 24)}</button></header>
