@@ -143,9 +143,20 @@ export function confirmSheet(text, yesLabel, onYes) {
 const val = (f, n) => (f.elements[n]?.value ?? '').trim();
 
 /** Formulier voor een nieuwe of bestaande reis. */
+/** "Joke", "Joke en Rob", "Joke, Rob en An" */
+export function matesText(mates) {
+  const m = (mates || []).filter(Boolean);
+  return m.length < 2 ? m.join('') : m.slice(0, -1).join(', ') + ' en ' + m[m.length - 1];
+}
+
 export function openTripForm(trip = null, { onSaved } = {}) {
-  const draft = trip ? structuredClone(trip) : { id: newId(), title: '', start: '', end: '', legs: [{ mode: 'plane', c: '' }], items: [] };
+  const draft = trip ? structuredClone(trip) : { id: newId(), title: '', start: '', end: '', legs: [{ mode: 'plane', c: '' }], items: [], mates: [] };
+  draft.mates ||= [];
   const sh = openSheet('', { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
+  const addMate = name => {
+    name = (name || '').trim().replace(/\s+/g, ' ');
+    if (name && !draft.mates.some(m => m.toLowerCase() === name.toLowerCase())) draft.mates.push(name);
+  };
   const read = () => {
     const f = sh.el.querySelector('form');
     if (!f) return;
@@ -164,6 +175,10 @@ export function openTripForm(trip = null, { onSaved } = {}) {
       <div class="field"><label for="f-titel">Titel (optioneel)</label><input id="f-titel" name="titel" value="${esc(draft.title)}" placeholder="Bijvoorbeeld Tatra &amp; Energylandia"></div>
       <div class="pair"><div class="field"><label for="f-start">Start</label><input id="f-start" name="start" type="date" value="${esc(draft.start)}"></div>
       <div class="field"><label for="f-einde">Einde</label><input id="f-einde" name="einde" type="date" value="${esc(draft.end)}"></div></div>
+      <div class="field"><label for="f-mate">Reisgenoten (optioneel)</label>
+        ${draft.mates.length ? `<div class="mates">${draft.mates.map((m, i) => `<span class="mate">${esc(m)}<button type="button" data-rmmate="${i}" aria-label="${esc(m)} verwijderen">${ic('x', 16)}</button></span>`).join('')}</div>` : ''}
+        <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" placeholder="Naam" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
+        <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !draft.mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist></div>
       <div class="label">Route</div>
       <div class="field" data-vertrek${(draft.legs[0]?.mode || 'plane') === 'plane' ? ' hidden' : ''}><label for="f-vertrek">Vertrek uit</label><select id="f-vertrek" name="vertrek">${countryOptions(draft.from || homeCountry())}</select></div>
       <div class="legs">${draft.legs.map((l, i) => `<div class="legrow" data-leg="${i}"><button type="button" class="grip" aria-label="Stop ${i + 1} verslepen" title="Sleep om te verplaatsen"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button><div style="flex:1;min-width:0"><div class="pair" style="align-items:center">
@@ -179,6 +194,15 @@ export function openTripForm(trip = null, { onSaved } = {}) {
   };
   render();
   sh.el.addEventListener('click', e => {
+    const am = e.target.closest('[data-addmate]'), rmm = e.target.closest('[data-rmmate]');
+    if (am || rmm) {
+      read();
+      if (am) addMate(sh.el.querySelector('[name=mate]')?.value);
+      else draft.mates.splice(+rmm.dataset.rmmate, 1);
+      render();
+      if (am) sh.el.querySelector('[name=mate]')?.focus();
+      return;
+    }
     const rm = e.target.closest('[data-rm]');
     const add = e.target.closest('[data-add]');
     if (!rm && !add) return;
@@ -241,15 +265,23 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     const lab = sh.el.querySelector(`[data-transit="${m[1]}"]`);
     if (lab) { lab.hidden = e.target.value !== 'plane'; if (lab.hidden) lab.querySelector('input').checked = false; }
   });
+  sh.el.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.target.name !== 'mate') return;
+    e.preventDefault();
+    read(); addMate(e.target.value); render();
+    sh.el.querySelector('[name=mate]')?.focus();
+  });
   sh.el.addEventListener('submit', e => {
     e.preventDefault();
     read();
+    addMate(sh.el.querySelector('[name=mate]')?.value);   // een ingetypte naam gaat niet verloren
     if (!draft.start) return render('Kies een startdatum.');
     if (draft.end && draft.end < draft.start) return render('Het einde ligt voor de start.');
     const legs = draft.legs.filter(l => l.c);
     if (!draft.title && !legs.length) return render('Geef een titel of kies minstens één land.');
     const clean = { ...draft, legs, end: draft.end || draft.start };
     if (!legs.length || legs[0].mode === 'plane' || !draft.from) delete clean.from;
+    if (!clean.mates?.length) delete clean.mates;
     update(st => {
       const i = st.trips.findIndex(t => t.id === clean.id);
       if (i >= 0) st.trips[i] = clean; else st.trips.push(clean);
