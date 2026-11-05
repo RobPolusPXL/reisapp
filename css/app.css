@@ -537,3 +537,5 @@ svg.globe .g-rim { fill: none; stroke: var(--field); stroke-width: 1px; }
 .mate-add { display: flex; gap: 8px; align-items: stretch; }
 .mate-add input { flex: 1; min-width: 0; }
 .mate-add .btn { flex: none; }
+
+.trip-title { font-size: 17px; font-weight: 700; margin: -4px 0 10px; overflow-wrap: anywhere; }

@@ -29,6 +29,8 @@ export const ICONS = {
   edit: '<path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/>',
   x: '<path d="M6 6l12 12M18 6 6 18"/>',
   heart: '<path d="M12 20s-7-4.5-7-10a4 4 0 0 1 7-2.5A4 4 0 0 1 19 10c0 5.5-7 10-7 10z"/>',
+  user: '<circle cx="12" cy="8" r="4"/><path d="M4.5 21c0-4.2 3.4-6.8 7.5-6.8s7.5 2.6 7.5 6.8"/>',
+  users: '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20.5c0-3.8 2.9-6 6.5-6s6.5 2.2 6.5 6"/><circle cx="17" cy="9" r="2.8"/><path d="M17 14.3c2.7.2 4.5 2.1 4.5 5.4"/>',
   coaster: '<path d="M2 20c2-9 4-14 6-14s2 7 4 7 2-4 3-4 3 5 7 11"/><path d="M2 20h20M6 20v-3M12 20v-5M18 20v-4"/>',
   ticket: '<path d="M4 8a2 2 0 0 0 0 4v0a2 2 0 0 1 0 4v2h16v-2a2 2 0 0 1 0-4v0a2 2 0 0 0 0-4V6H4z"/><path d="M14 6v12" stroke-dasharray="2 2"/>',
   hike: '<circle cx="13" cy="4.5" r="1.8"/><path d="m10 21 2-6-2-3 1-4 3 3 3 1M8 13l3-4M7 21l2-4"/>',

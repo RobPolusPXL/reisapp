@@ -17,9 +17,9 @@ export function mount(el) {
       const d = daysBetween(t.start, t.end);
       return `${head}<a class="card card-link" href="#/reis/${esc(t.id)}">
         <div class="trip-head"><span>${ic('cal', 18)}${esc(fmtRange(t.start, t.end))}</span><span>Duur <strong>${d} ${d === 1 ? 'dag' : 'dagen'}</strong></span></div>
+        ${t.title ? `<div class="trip-title">${esc(t.title)}</div>` : ''}
         <div class="app-only">${legsCompact(routeOf(t))}</div><div class="site-only">${legsHtml(routeOf(t))}</div>
-        ${t.title ? `<div class="trip-note">${ic('doc', 18)}${esc(t.title)}</div>` : ''}
-        ${t.mates?.length ? `<div class="trip-note">${ic('heart', 18)}Met ${esc(matesText(t.mates))}</div>` : ''}
+        ${t.mates?.length ? `<div class="trip-note">${ic(t.mates.length > 1 ? 'users' : 'user', 18)}Met ${esc(matesText(t.mates))}</div>` : ''}
       </a>`;
     }).join('');
     el.innerHTML = `<div class="page">
