@@ -490,7 +490,8 @@ a.list-row { color: inherit; }
 .item .s-route { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 15px; font-weight: 600; letter-spacing: .02em; }
 .s-arr { flex: none; color: var(--muted); }
 
-.transit { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin: -4px 0 4px; }
+.transit { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; line-height: 1.35; color: var(--muted); margin: 10px 0 2px; }
+.transit input { flex: none; margin: 1px 0 0; }
 .transit[hidden] { display: none; }
 /* Route: landen onder elkaar met het vervoer op de lijn ertussen; op mobiel in het overzicht op één regel */
 .leg2 { display: flex; align-items: center; gap: 14px; }
