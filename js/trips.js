@@ -155,8 +155,8 @@ const NL_CITY = {
 const cityNl = c => NL_CITY[c] || c;
 const nm = c => esc(nameOf(c));
 /** Route in de reis zelf (en op laptop): stops onder elkaar, het vervoer op de lijn ertussen; een luchthaven met zijn naam, een overstap iets lichter. */
-export function legsHtml(items) {
-  return items.map((l, i) => `${i ? `<div class="conn${l.layover ? ' light' : ''}"><span class="cl"></span><span class="cm">${ic(MODES[l.mode]?.[1] || 'dots', 16)}${MODES[l.mode]?.[0] || ''}</span></div>` : ''}
+export function legsHtml(items, a = 0, b = items.length) {
+  return items.map((l, i) => i < a || i >= b ? '' : `${i ? `<div class="conn${l.layover ? ' light' : ''}"><span class="cl"></span><span class="cm">${ic(MODES[l.mode]?.[1] || 'dots', 16)}${MODES[l.mode]?.[0] || ''}</span></div>` : ''}
     <div class="leg2${l.layover || l.through ? ' light' : ''}">${flag(l.c)}<div>${l.kind === 'ap'
       ? `<div class="p">${esc(l.name)} (${esc(l.code)})</div><div class="sub">${l.layover ? 'Overstap · ' : ''}${nm(l.c)}</div>`
       : `<div class="p">${nm(l.c)}</div>${l.through ? '<div class="sub">Doorgereden</div>' : ''}`}</div></div>`).join('');
