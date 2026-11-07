@@ -143,37 +143,46 @@ function partHtml(title, date, steps) {
   const row = places.map((p, i) => `${i ? `<span class="rd-ln"></span><span class="rd-mi">${ic(MODES[steps[i - 1].mode]?.[1] || 'dots', 20)}</span><span class="rd-ln"></span>` : ''}${p?.c ? flag(p.c) : ''}${p?.code ? `<b>${esc(p.code)}</b>` : ''}`).join('');
   return `<div class="rd"><h3>${esc(title)}${date ? ` <small>${esc(fmtDate(date))}</small>` : ''}</h3><div class="rd-row">${row}</div><div class="rd-info">${esc(stepsInfo(steps))}</div></div>`;
 }
-/** Reizen van vóór de stappen hebben geen heen en terug: die leiden we af uit de stops en vluchten. */
+/** Heen en terug uit de vluchten (tickets, boarding passes); zonder vluchten uit de vervoerstops van oudere reizen. */
+const dayDiff = (a, b) => (a && b) ? Math.abs(Math.round((new Date(b) - new Date(a)) / 864e5)) : 0;
 function legacyParts(t) {
   const L = t.legs || [], home = homeCountry();
-  if (!L.length) return {};
   const fl = (t.items || []).filter(i => i.type === 'flight' && i.f?.from && i.f?.to).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
   const ctry = c => airportByCode(c)?.c;
+  const step = f => ({ mode: 'plane', from: f.f.from, to: f.f.to, flight: f.id });
   const out = {};
-  if (L[0].mode === 'plane' && fl.length) {
-    const h = [{ mode: 'plane', from: fl[0].f.from, to: fl[0].f.to }];
-    for (const f of fl.slice(1)) { if (f.f.from === h[h.length - 1].to && ctry(h[h.length - 1].to) !== L[0].c) h.push({ mode: 'plane', from: f.f.from, to: f.f.to }); else break; }
-    out.heen = h;
-  } else out.heen = [{ mode: L[0].mode, from: L[0].mode === 'plane' ? '' : (t.from || home), to: L[0].mode === 'plane' ? '' : L[0].c }].filter(x => x.from || x.to);
-  const last = L[L.length - 1];
-  if (L.length >= 2 && last.c === home) {
-    if (last.mode === 'plane' && fl.length) {
-      const k = [], used = new Set((out.heen || []).map(x => x.from + x.to));
-      for (let i = fl.length - 1; i >= 0; i--) {
-        if (used.has(fl[i].f.from + fl[i].f.to)) continue; if (!k.length) { if (ctry(fl[i].f.to) === home) k.unshift({ mode: 'plane', from: fl[i].f.from, to: fl[i].f.to }); } else if (fl[i].f.to === k[0].from) k.unshift({ mode: 'plane', from: fl[i].f.from, to: fl[i].f.to }); else break; }
-      if (k.length) out.terug = k;
-    } else if (last.mode !== 'plane') out.terug = [{ mode: last.mode, from: L[L.length - 2].c, to: home }];
+  const used = new Set();
+  if (fl.length) {
+    // Heen: de eerste vlucht en de vluchten die er direct op aansluiten (zelfde luchthaven, binnen een dag).
+    const h = [fl[0]]; used.add(fl[0].id);
+    for (const f of fl.slice(1)) {
+      const p = h[h.length - 1];
+      if (f.f.from === p.f.to && dayDiff(p.date, f.date) <= 1 && ctry(p.f.to) !== home) { h.push(f); used.add(f.id); } else break;
+    }
+    out.heen = h.map(step);
+    // Terug: de laatste vlucht die in het thuisland landt, met de vluchten die er direct aan voorafgaan.
+    let end = -1;
+    for (let i = fl.length - 1; i >= 0; i--) if (!used.has(fl[i].id) && ctry(fl[i].f.to) === home) { end = i; break; }
+    if (end >= 0) {
+      const k = [fl[end]];
+      for (let i = end - 1; i >= 0; i--) { if (used.has(fl[i].id)) break; if (fl[i].f.to === k[0].f.from && dayDiff(fl[i].date, k[0].date) <= 1) k.unshift(fl[i]); else break; }
+      out.terug = k.map(step);
+    }
+  } else if (L.length) {
+    out.heen = [{ mode: L[0].mode, from: t.from || home, to: L[0].c }].filter(x => x.from && x.to && L[0].mode !== 'plane');
+    const last = L[L.length - 1];
+    if (L.length >= 2 && last.c === home && last.mode !== 'plane') out.terug = [{ mode: last.mode, from: L[L.length - 2].c, to: home }];
   }
   return out;
 }
-export const partsHtml = t => {
-  const l = t.heen || t.terug ? {} : legacyParts(t);
-  return partHtml('Heenreis', t.start, t.heen || l.heen) + partHtml('Terugreis', t.end, t.terug || l.terug);
-};
+/** Heen en terug van een reis: wat is ingevuld, anders afgeleid uit de vluchten of stops. */
+export const partsData = t => { const l = legacyParts(t); return { heen: t.heen?.length ? t.heen : (l.heen || []), terug: t.terug?.length ? t.terug : (l.terug || []) }; };
+export const partsHtml = t => { const d = partsData(t); return partHtml('Heenreis', t.start, d.heen) + partHtml('Terugreis', t.end, d.terug); };
 
 export function openTripForm(trip = null, { onSaved } = {}) {
   const mates = [...(trip?.mates || [])];
-  const st = { heen: structuredClone(trip?.heen || []), terug: structuredClone(trip?.terug || []) };
+  const pd = trip ? partsData(trip) : { heen: [], terug: [] };
+  const st = { heen: structuredClone(pd.heen), terug: structuredClone(pd.terug) };
   for (const w of ['heen', 'terug']) for (const x of st[w]) if (typeof x.flight === 'string') { x.flightId = x.flight; delete x.flight; }
   const sh = openSheet(`<div class="label">Titel</div><input class="titel-in" name="titel" aria-label="Titel" placeholder="Bijvoorbeeld Tatra &amp; Energylandia" value="${esc(trip?.title || '')}"><div class="datums"><div><div class="label">Start</div><input class="titel-in" type="date" name="start" aria-label="Start" value="${esc(trip?.start || '')}"></div><div><div class="label">Einde</div><input class="titel-in" type="date" name="einde" aria-label="Einde" value="${esc(trip?.end || '')}"></div></div><div class="label">Reisgenoten (optioneel)</div><div data-mates></div><div class="label">Heenreis</div><div data-sec="heen"></div><div class="label">Route</div><div class="label">Terugreis</div><div data-sec="terug"></div><p class="muted" role="alert" data-err style="margin:0;color:var(--danger)"></p><div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="button" class="btn primary" data-save>Opslaan</button></div>`, { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
   const addMate = name => {
@@ -263,7 +272,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     const heen = clean(st.heen), terug = clean(st.terug);
     const last = heen[heen.length - 1];
     const dest = last ? placeOf(last.to, last.mode)?.c : '';
-    const out = { ...(trip || {}), id: trip?.id || newId(), title, start, end: end || start, legs: dest ? [{ mode: last.mode, c: dest }] : [], items: [...(trip?.items || []).filter(x => !flights.some(f => f.id === x.id)), ...flights] };
+    const out = { ...(trip || {}), id: trip?.id || newId(), title, start, end: end || start, legs: trip?.legs?.length && !trip.heen ? (dest && !trip.legs.some(l => l.c === dest) ? [...trip.legs, { mode: last.mode, c: dest }] : trip.legs) : (dest ? [{ mode: last.mode, c: dest }] : []), items: [...(trip?.items || []).filter(x => !flights.some(f => f.id === x.id)), ...flights] };
     if (mates.length) out.mates = [...mates]; else delete out.mates;
     if (heen.length) out.heen = heen; else delete out.heen;
     if (terug.length) out.terug = terug; else delete out.terug;
