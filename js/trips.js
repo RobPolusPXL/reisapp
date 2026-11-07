@@ -10,7 +10,6 @@ export const MODES = {
   plane: ['Vliegtuig', 'plane'], car: ['Auto', 'car'], train: ['Trein', 'train'],
   bus: ['Bus', 'bus'], boat: ['Boot', 'boat'], other: ['Anders', 'dots'],
 };
-const transitTxt = m => m === 'plane' ? 'Enkel overstap met het vliegtuig' : 'Enkel doorgereden';
 export const TYPES = {
   flight: ['Vlucht', 'plane'], stay: ['Verblijf', 'bed'], food: ['Restaurant', 'fork'], activity: ['Activiteit', 'ticket'],
 };
@@ -81,69 +80,6 @@ export function homeCountry(state = get()) {
   return Object.entries(count).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
 }
 
-/** Route van een reis: begin- en eindluchthaven uit je vluchten, overstappen (vluchten die aansluiten) en daartussen de stops die je invulde. */
-export function routeOf(trip) {
-  let legs = (trip.legs || []).map(l => ({ kind: 'c', mode: l.mode, c: l.c, ...(l.transit && l.mode !== 'plane' ? { through: true } : {}) }));
-  if (!legs.length) return legs;
-  const up = x => String(x || '').trim().toUpperCase();
-  // Vluchten op volgorde van datum en vertrektijd; dubbele vluchten (zelfde reizigers apart ingevoerd) tellen één keer; aansluitende vluchten op dezelfde dag staan achter elkaar.
-  const seen = new Set();
-  const flights = (trip.items || []).filter(i => i.type === 'flight' && i.f?.from)
-    .filter(i => { const k = `${i.date}|${up(i.f.from)}|${up(i.f.to)}`; if (seen.has(k)) return false; seen.add(k); return true; })
-    .sort((a, b) => (a.date || '9').localeCompare(b.date || '9') || String(a.f.dep || '').localeCompare(String(b.f.dep || '')));
-  for (let pass = 0; pass < flights.length; pass++) {
-    let moved = false;
-    for (let i = 0; i < flights.length; i++) for (let j = i + 1; j < flights.length; j++) {
-      if (flights[j].date === flights[i].date && up(flights[j].f.to) === up(flights[i].f.from) && up(flights[i].f.to) !== up(flights[j].f.from)) {
-        flights.splice(i, 0, flights.splice(j, 1)[0]); moved = true;
-      }
-    }
-    if (!moved) break;
-  }
-  const fromAp = airportByCode(flights[0]?.f.from);
-  // Per vliegtuig bereikt zonder vlucht naar dat land (bv. een stop in Lissabon op weg naar Florida): toon de opgeslagen luchthaven van dat land.
-  if (flights.length) {
-    const flownTo = new Set(flights.map(f => airportByCode(f.f.to)?.c).filter(Boolean));
-    const saved = get().places?.airports || [];
-    legs = legs.map(l => {
-      if (l.mode !== 'plane' || flownTo.has(l.c)) return l;
-      const aps = saved.filter(a => a.c === l.c);
-      return aps.length === 1 ? { kind: 'ap', mode: 'plane', c: l.c, code: aps[0].code, name: cityNl(aps[0].name) } : l;
-    });
-  }
-  if (!fromAp) {
-    // Geen vlucht: begin in het gekozen vertrekland (of je thuisland) als je er niet met het vliegtuig vertrekt.
-    const start = trip.from || homeCountry();
-    if (start && legs[0].mode !== 'plane' && legs[0].c !== start) return [{ kind: 'c', mode: legs[0].mode, c: start }, ...legs];
-    return legs;
-  }
-  const ap = (code, layover) => {
-    const a = airportByCode(code);
-    return a ? { kind: 'ap', mode: 'plane', c: a.c, code: a.code, name: cityNl(a.city || a.name), layover } : null;
-  };
-  const near = (x, y) => x.date && y.date && daysBetween(x.date, y.date) <= 2 && daysBetween(x.date, y.date) >= 1;
-  const same = (x, y) => String(x || '').toUpperCase() === String(y || '').toUpperCase();
-  // heenreis: aansluitende vluchten vanaf de eerste vlucht
-  let n = 1;
-  while (n < flights.length && same(flights[n - 1].f.to, flights[n].f.from) && near(flights[n - 1], flights[n])) n++;
-  const outStops = flights.slice(0, n - 1).map(f => ap(f.f.to, true)).filter(x => x && x.c !== legs[0].c);
-  const out = [{ ...ap(fromAp.code, false), mode: legs[0].mode }, ...outStops, ...legs];
-  if (legs[0].c === fromAp.c && !outStops.length) out.shift();
-  // terugreis: aansluitende vluchten naar het land van vertrek
-  const rest = flights.slice(n);
-  const end = ap(fromAp.code, false);
-  const lastIn = rest[rest.length - 1];
-  const back = [];
-  if (lastIn && airportByCode(lastIn.f.to)?.c === fromAp.c) {
-    let k = rest.length - 1;
-    while (k > 0 && same(rest[k - 1].f.to, rest[k].f.from) && near(rest[k - 1], rest[k])) k--;
-    for (let m = k + 1; m < rest.length; m++) { const x = ap(rest[m].f.from, true); if (x && x.c !== legs[legs.length - 1].c) back.push(x); }
-  }
-  // Landt de laatste vlucht niet in het land van vertrek (bv. terug in Frankfurt), dan is dat een overstap vóór de thuisreis.
-  if (lastIn && airportByCode(lastIn.f.to)?.c !== fromAp.c) { const x = ap(lastIn.f.to, true); if (x && x.c !== legs[legs.length - 1].c) back.push(x); }
-  if (out[out.length - 1].c !== fromAp.c || back.length) out.push(...back, { ...end, mode: 'plane' });
-  return out;
-}
 
 // Nederlandse namen voor veelvoorkomende luchthavensteden (de bron heeft Engelse namen).
 const NL_CITY = {
@@ -154,33 +90,9 @@ const NL_CITY = {
 };
 const cityNl = c => NL_CITY[c] || c;
 const nm = c => esc(nameOf(c));
-/** Route in de reis zelf (en op laptop): stops onder elkaar, het vervoer op de lijn ertussen; een luchthaven met zijn naam, een overstap iets lichter. */
-export function legsHtml(items) {
-  return items.map((l, i) => `${i ? `<div class="conn${l.layover ? ' light' : ''}"><span class="cl"></span><span class="cm">${ic(MODES[l.mode]?.[1] || 'dots', 16)}${MODES[l.mode]?.[0] || ''}</span></div>` : ''}
-    <div class="leg2${l.layover || l.through ? ' light' : ''}">${flag(l.c)}<div>${l.kind === 'ap'
-      ? `<div class="p">${esc(l.name)} (${esc(l.code)})</div><div class="sub">${l.layover ? 'Overstap · ' : ''}${nm(l.c)}</div>`
-      : `<div class="p">${nm(l.c)}</div>${l.through ? '<div class="sub">Doorgereden</div>' : ''}`}</div></div>`).join('');
-}
 
-/** Aantal items van de heenreis: tot en met het eerste land. */
-export function heenEnd(items) {
-  let k = items.findIndex(x => x.kind === 'c');
-  if (k === 0 && items.length > 1) k = 1;
-  return k < 0 ? items.length : k + 1;
-}
 
-/** Terugreis: laatste twee items, als de reis eindigt in het land waar hij begon. Geeft het beginpunt of items.length. */
-export function terugStart(items, n) {
-  const e = items.length;
-  return e - n >= 2 && items[0].c === items[e - 1].c ? e - 2 : e;
-}
 
-/** Route op één regel (overzicht op mobiel): landen als vlag, luchthavens als label met de code en de vlag als watermerk. */
-export function legsCompact(items, a = 0, b = items.length, lead = true) {
-  return `<div class="croute">${items.map((l, i) => i < a || i >= b ? '' : `${i && (lead || i > a) ? `<span class="cm2" title="${esc(MODES[l.mode]?.[0] || '')}">${ic(MODES[l.mode]?.[1] || 'dots', 16)}</span>` : ''}${l.kind === 'ap'
-    ? `<span class="ac${l.layover ? ' lt' : ''}" title="${esc(l.name)}, ${esc(nameOf(l.c))}"><img class="wm" src="assets/flags/${esc(String(l.c).toLowerCase())}.svg" alt="" aria-hidden="true"><b>${esc(l.code)}</b></span>`
-    : l.through ? `<span class="thru" title="Doorgereden">${flag(l.c)}</span>` : flag(l.c)}`).join('')}</div>`;
-}
 
 export function tripStats(state) {
   const countries = new Set();
@@ -219,13 +131,6 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     const f = sh.el.querySelector('form');
     if (!f) return;
     draft.title = val(f, 'titel'); draft.start = val(f, 'start'); draft.end = val(f, 'einde');
-    if (f.elements.vertrek) draft.from = val(f, 'vertrek');
-    draft.legs = draft.legs.map((_, i) => {
-      const mode = val(f, `mode-${i}`) || 'plane';
-      const leg = { mode, c: val(f, `land-${i}`) };
-      if (f.elements[`transit-${i}`]?.checked) leg.transit = true;
-      return leg;
-    });
   };
   const render = (err = '') => {
     sh.setHtml(`<h2>${trip ? 'Reis bewerken' : 'Nieuwe reis'}</h2>
@@ -237,21 +142,11 @@ export function openTripForm(trip = null, { onSaved } = {}) {
         ${draft.mates.length ? `<div class="mates">${draft.mates.map((m, i) => `<span class="mate">${esc(m)}<button type="button" data-rmmate="${i}" aria-label="${esc(m)} verwijderen">${ic('x', 16)}</button></span>`).join('')}</div>` : ''}
         <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" placeholder="Naam" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
         <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !draft.mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist></div>
-      <div class="label legsep">Heenreis</div>
-      <div class="field" data-vertrek${(draft.legs[0]?.mode || 'plane') === 'plane' ? ' hidden' : ''}><label for="f-vertrek">Vertrek uit</label>${countryPick('vertrek', draft.from || homeCountry(), 'Vertrek uit', 'f-vertrek')}</div>
-      <div class="legs">${draft.legs.map((l, i) => `${i === draft.legs.length - 1 && draft.legs.length > 1 && l.c && l.c === (draft.from || homeCountry()) ? '<div class="label legsep">Terugreis</div>' : i === 1 ? '<div class="label legsep">Route</div>' : ''}<div class="legrow" data-leg="${i}"><button type="button" class="grip" aria-label="Stop ${i + 1} verslepen" title="Sleep om te verplaatsen"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button><div style="flex:1;min-width:0"><div class="pair" style="align-items:center">
-        <div class="field"><select name="mode-${i}" aria-label="Vervoer stop ${i + 1}">${Object.entries(MODES).map(([k, [n]]) => `<option value="${k}"${k === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
-        <div class="field">${countryPick(`land-${i}`, l.c, `Land stop ${i + 1}`)}</div>
-        ${draft.legs.length > 1 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${i}" aria-label="Stop ${i + 1} verwijderen">${ic('x', 20)}</button>` : ''}
-      </div>
-      <label class="transit" data-transit="${i}"><input type="checkbox" name="transit-${i}"${l.transit ? ' checked' : ''}> <span>${transitTxt(l.mode)} (land telt niet mee als bezocht)</span></label></div></div>`).join('')}</div>
-      <button type="button" class="btn soft" data-add>${ic('plus', 18)}Stop toevoegen</button>
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
       <div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="submit" class="btn primary">Opslaan</button></div>
     </form>`);
   };
   render();
-  bindCountryPick(sh.el);
   sh.el.addEventListener('click', e => {
     const am = e.target.closest('[data-addmate]'), rmm = e.target.closest('[data-rmmate]');
     if (am || rmm) {
@@ -262,67 +157,6 @@ export function openTripForm(trip = null, { onSaved } = {}) {
       if (am) sh.el.querySelector('[name=mate]')?.focus();
       return;
     }
-    const rm = e.target.closest('[data-rm]');
-    const add = e.target.closest('[data-add]');
-    if (!rm && !add) return;
-    read();
-    if (rm) draft.legs.splice(+rm.dataset.rm, 1); else draft.legs.push({ mode: 'car', c: '' });
-    render();
-  });
-  // Stops verslepen: pak het handvat vast en sleep de rij omhoog of omlaag. De rij zelf verhuist pas bij het loslaten.
-  sh.el.addEventListener('pointerdown', e => {
-    const grip = e.target.closest('.grip');
-    if (!grip) return;
-    const box = sh.el.querySelector('.legs'), row = grip.closest('.legrow');
-    if (!box || !row || box.querySelectorAll('.legrow').length < 2) return;
-    e.preventDefault();
-    grip.setPointerCapture(e.pointerId);
-    const rows = [...box.querySelectorAll('.legrow')];
-    const from = rows.indexOf(row), startY = e.clientY;
-    const mids = rows.map(r => { const b = r.getBoundingClientRect(); return b.top + b.height / 2; });
-    const step = rows.length > 1 ? mids[1] - mids[0] : 0;
-    let to = from;
-    row.classList.add('dragging');
-    rows.forEach(r => { if (r !== row) r.style.transition = 'transform .15s'; });
-    const move = ev => {
-      const dy = ev.clientY - startY;
-      row.style.transform = `translateY(${dy}px)`;
-      const pos = mids[from] + dy;
-      to = 0;
-      rows.forEach((r, k) => { if (k !== from && mids[k] < pos) to++; });
-      rows.forEach((r, k) => {
-        if (k === from) return;
-        let shift = 0;
-        if (from < to && k > from && k <= to) shift = -step;
-        if (from > to && k < from && k >= to) shift = step;
-        r.style.transform = shift ? `translateY(${shift}px)` : '';
-      });
-    };
-    const end = () => {
-      grip.removeEventListener('pointermove', move);
-      grip.removeEventListener('pointerup', end);
-      grip.removeEventListener('pointercancel', end);
-      rows.forEach(r => { r.style.transform = ''; r.style.transition = ''; });
-      row.classList.toggle('dragging', false);
-      if (to === from) return;
-      read();
-      const [moved] = draft.legs.splice(from, 1);
-      draft.legs.splice(to, 0, moved);
-      render();
-    };
-    grip.addEventListener('pointermove', move);
-    grip.addEventListener('pointerup', end);
-    grip.addEventListener('pointercancel', end);
-  });
-  sh.el.addEventListener('change', e => {
-    if (e.target.name === 'mode-0') {
-      const box = sh.el.querySelector('[data-vertrek]');
-      if (box) box.hidden = e.target.value === 'plane';
-    }
-    const m = /^mode-(\d+)$/.exec(e.target.name || '');
-    if (!m) return;
-    const lab = sh.el.querySelector(`[data-transit="${m[1]}"]`);
-    if (lab) lab.querySelector('span').textContent = `${transitTxt(e.target.value)} (land telt niet mee als bezocht)`;
   });
   sh.el.addEventListener('keydown', e => {
     if (e.key !== 'Enter' || e.target.name !== 'mate') return;
@@ -337,7 +171,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     if (!draft.start) return render('Kies een startdatum.');
     if (draft.end && draft.end < draft.start) return render('Het einde ligt voor de start.');
     const legs = draft.legs.filter(l => l.c);
-    if (!draft.title && !legs.length) return render('Geef een titel of kies minstens één land.');
+    if (!draft.title) return render('Geef een titel.');
     const clean = { ...draft, legs, end: draft.end || draft.start };
     if (!legs.length || legs[0].mode === 'plane' || !draft.from) delete clean.from;
     if (!clean.mates?.length) delete clean.mates;
