@@ -561,15 +561,16 @@ export function stationsOf(t) {
 export function metroHtml(t) {
   const st = stationsOf(t);
   if (st.length < 2) return '';
-  const used = new Set();
+  const col = m => MODE_COLOR[m] || MODE_COLOR.other;
+  const seg = (cls, m) => m ? `<span class="${cls}${m === 'boat' ? ' dash' : ''}" style="--c:${col(m)}"></span>` : '';
   const rows = st.map((s, i) => {
-    const next = st[i + 1], seg = next?.mode, col = MODE_COLOR[seg] || MODE_COLOR.other;
-    const dotCol = MODE_COLOR[s.mode || seg] || MODE_COLOR.other;
-    const chg = seg && seg !== s.mode;
-    if (seg) used.add(seg);
-    return `<div class="mst ${s.kind}"><div class="mrail"><span class="mdot" style="--c:${dotCol}"></span>${seg ? `<span class="mseg${seg === 'boat' ? ' dash' : ''}" style="--c:${col}"></span>` : ''}${chg ? `<span class="mchg" style="background:${col}" title="${esc(MODES[seg]?.[0] || '')}">${ic(MODES[seg]?.[1] || 'dots', 13)}</span>` : ''}</div>
-      <div class="mtx">${s.c ? flag(s.c) : ''}<div><b>${esc(s.name)}</b>${s.sub ? `<small>${esc(s.sub)}</small>` : ''}</div></div></div>`;
+    const inc = i ? s.mode : null, out = st[i + 1]?.mode || null;
+    const ring = col(out || inc);
+    const row = `<div class="mst ${s.kind}"><div class="mrail">${seg('mup', inc)}${seg('mdn', out)}<span class="mdot" style="--c:${ring}">${s.c ? flag(s.c) : ''}</span></div>
+      <div class="mtx"><b>${esc(s.name)}</b>${s.kind !== 'home' && s.sub ? `<small>${esc(s.sub)}</small>` : s.kind === 'home' ? `<small>${i ? 'thuis' : 'vertrek'}</small>` : ''}</div>${s.kind === 'home' && s.sub ? `<span class="mdate">${esc(s.sub)}</span>` : ''}</div>`;
+    const chg = out && out !== inc
+      ? `<div class="mchg"><div class="mrail">${seg('mfull', out)}</div><span class="mmode" style="--c:${col(out)}">${ic(MODES[out]?.[1] || 'dots', 15)}${esc(MODES[out]?.[0] || '')}</span></div>` : '';
+    return row + chg;
   }).join('');
-  const leg = [...used].map(m => `<span><i style="background:${MODE_COLOR[m] || MODE_COLOR.other}"></i>${esc((MODES[m]?.[0] || '').toLowerCase())}</span>`).join('');
-  return `<section class="card"><div class="card-head"><h2>Reisweg</h2></div><div class="metro">${rows}</div>${used.size > 1 ? `<div class="mleg">${leg}</div>` : ''}</section>`;
+  return `<section class="card"><div class="card-head"><h2>Reisweg</h2></div><div class="metro">${rows}</div></section>`;
 }
