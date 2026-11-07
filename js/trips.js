@@ -126,8 +126,8 @@ export function openTripForm(trip = null, { onSaved } = {}) {
   const L = draft.legs || [];
   const home = trip?.from || homeCountry();
   const hasTerug = L.length >= 2 && L[L.length - 1].c === home;
-  draft.heen = L[0] ? { mode: L[0].mode, c: L[0].c } : { mode: 'plane', c: '' };
-  draft.terug = hasTerug ? { mode: L[L.length - 1].mode, c: L[L.length - 1].c } : { mode: 'plane', c: '' };
+  draft.heen = L[0] ? { mode: L[0].mode, c: L[0].c } : { mode: '', c: '' };
+  draft.terug = hasTerug ? { mode: L[L.length - 1].mode, c: L[L.length - 1].c } : { mode: '', c: '' };
   draft.route = L.slice(1, hasTerug ? -1 : undefined).map(l => ({ mode: l.mode, c: l.c }));
   const sh = openSheet('', { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
   const addMate = name => {
@@ -138,12 +138,12 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     const f = sh.el.querySelector('form');
     if (!f) return;
     draft.title = val(f, 'titel'); draft.start = val(f, 'start'); draft.end = val(f, 'einde');
-    draft.heen = { mode: val(f, 'heen-mode') || 'plane', c: val(f, 'heen-land') };
-    draft.route = draft.route.map((_, i) => ({ mode: val(f, `route-mode-${i}`) || 'car', c: val(f, `route-land-${i}`) }));
-    draft.terug = { mode: val(f, 'terug-mode') || 'plane', c: val(f, 'terug-land') };
+    draft.heen = { mode: val(f, 'heen-mode'), c: val(f, 'heen-land') };
+    draft.route = draft.route.map((_, i) => ({ mode: val(f, `route-mode-${i}`), c: val(f, `route-land-${i}`) }));
+    draft.terug = { mode: val(f, 'terug-mode'), c: val(f, 'terug-land') };
   };
   const legRow = (k, l, rm = -1) => `<div class="pair" style="align-items:center">
-        <div class="field"><select name="${k.includes('-') ? k.replace('-', '-mode-') : k + '-mode'}" aria-label="Vervoer">${Object.entries(MODES).map(([m, [n]]) => `<option value="${m}"${m === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
+        <div class="field"><select name="${k.includes('-') ? k.replace('-', '-mode-') : k + '-mode'}" aria-label="Vervoer"><option value="">Vervoer</option>${Object.entries(MODES).map(([m, [n]]) => `<option value="${m}"${m === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
         <div class="field">${countryPick(k.includes('-') ? k.replace('-', '-land-') : k + '-land', l.c, 'Land')}</div>
         ${rm >= 0 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${rm}" aria-label="Stop verwijderen">${ic('x', 20)}</button>` : ''}
       </div>`;
@@ -183,7 +183,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     const rm = e.target.closest('[data-rm]'), add = e.target.closest('[data-add]');
     if (!rm && !add) return;
     read();
-    if (rm) draft.route.splice(+rm.dataset.rm, 1); else draft.route.push({ mode: 'car', c: '' });
+    if (rm) draft.route.splice(+rm.dataset.rm, 1); else draft.route.push({ mode: '', c: '' });
     render();
   });
   sh.el.addEventListener('keydown', e => {
@@ -198,7 +198,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     addMate(sh.el.querySelector('[name=mate]')?.value);   // een ingetypte naam gaat niet verloren
     if (!draft.start) return render('Kies een startdatum.');
     if (draft.end && draft.end < draft.start) return render('Het einde ligt voor de start.');
-    const legs = [draft.heen, ...draft.route, draft.terug].filter(l => l.c);
+    const legs = [draft.heen, ...draft.route, draft.terug].filter(l => l.c).map(l => ({ ...l, mode: l.mode || 'car' }));
     if (!draft.title) return render('Geef een titel.');
     const clean = { ...draft, legs, end: draft.end || draft.start };
     delete clean.heen; delete clean.route; delete clean.terug;
