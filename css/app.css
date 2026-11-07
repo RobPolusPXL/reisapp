@@ -538,3 +538,20 @@ svg.globe .g-rim { fill: none; stroke: var(--field); stroke-width: 1px; }
 .rd-p { display: inline-flex; align-items: center; gap: 5px; flex: none; } .rd-p.lt { opacity: .55; }
 .rd:last-child { margin-bottom: 0; }
 .rd-wrap { margin-top: 14px; }
+
+/* ---------- Reisoverzicht: vlaggen met vervoer, vluchten en ritten apart ---------- */
+.fvs { display: flex; flex-wrap: wrap; gap: 12px; margin: 10px 0 4px; }
+.fv { position: relative; display: inline-flex; } .fv .flag { width: 30px; height: 22px; border-radius: 3px; }
+.fm { position: absolute; right: -8px; bottom: -7px; width: 20px; height: 20px; border-radius: 50%; background: var(--accent-soft); color: var(--accent); display: flex; align-items: center; justify-content: center; border: 2px solid var(--surface); }
+.page-head + .fvs { margin: 0 0 14px; }
+.trip-secs { display: flex; flex-direction: column; gap: 14px; max-width: 760px; }
+.trip-secs .card { margin: 0; }
+.fc { display: block; width: 100%; text-align: left; color: inherit; background: none; border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; margin-top: 10px; font: inherit; }
+button.fc { cursor: pointer; } .card-head + .fc { margin-top: 0; }
+.fc-h { display: flex; justify-content: space-between; font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.fc-r { display: flex; align-items: center; gap: 8px; margin: 8px 0; }
+.ap { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; min-width: 64px; } .ap.r { align-items: flex-end; text-align: right; }
+.ap .flag { width: 22px; height: 16px; border-radius: 2px; } .ap b { font-size: 20px; overflow-wrap: anywhere; } .ap small { font-size: 12px; color: var(--muted); }
+.fc-l { flex: 1; display: flex; align-items: center; gap: 6px; color: var(--accent); min-width: 40px; } .fc-l span { flex: 1; height: 2px; background: var(--accent-soft); }
+.fc-f { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; flex-wrap: wrap; }
+.fc-f span { display: flex; align-items: center; gap: 5px; } .via .flag { width: 20px; height: 14px; border-radius: 2px; }
