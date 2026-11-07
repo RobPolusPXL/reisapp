@@ -143,19 +143,19 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     draft.terug = { mode: val(f, 'terug-mode'), c: val(f, 'terug-land') };
   };
   const legRow = (k, l, rm = -1) => `<div class="pair" style="align-items:center">
-        <div class="field"><select name="${k.includes('-') ? k.replace('-', '-mode-') : k + '-mode'}" aria-label="Vervoer"><option value="">Vervoer</option>${Object.entries(MODES).map(([m, [n]]) => `<option value="${m}"${m === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
+        <div class="field"><select name="${k.includes('-') ? k.replace('-', '-mode-') : k + '-mode'}" aria-label="Vervoer"><option value="" aria-label="Vervoer"></option>${Object.entries(MODES).map(([m, [n]]) => `<option value="${m}"${m === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
         <div class="field">${countryPick(k.includes('-') ? k.replace('-', '-land-') : k + '-land', l.c, 'Land')}</div>
         ${rm >= 0 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${rm}" aria-label="Stop verwijderen">${ic('x', 20)}</button>` : ''}
       </div>`;
   const render = (err = '') => {
     sh.setHtml(`<h2>${trip ? 'Reis bewerken' : 'Nieuwe reis'}</h2>
-    <form class="form" novalidate>
-      <div class="field"><label for="f-titel">Titel</label><input id="f-titel" name="titel" value="${esc(draft.title)}" placeholder="Bijvoorbeeld Tatra &amp; Energylandia"></div>
+    <form class="form blank" novalidate>
+      <div class="field"><label for="f-titel">Titel</label><input id="f-titel" name="titel" value="${esc(draft.title)}"></div>
       <div class="pair"><div class="field"><label for="f-start">Start</label><input id="f-start" name="start" type="date" value="${esc(draft.start)}"></div>
       <div class="field"><label for="f-einde">Einde</label><input id="f-einde" name="einde" type="date" value="${esc(draft.end)}"></div></div>
       <div class="field"><label for="f-mate">Reisgenoten (optioneel)</label>
         ${draft.mates.length ? `<div class="mates">${draft.mates.map((m, i) => `<span class="mate">${esc(m)}<button type="button" data-rmmate="${i}" aria-label="${esc(m)} verwijderen">${ic('x', 16)}</button></span>`).join('')}</div>` : ''}
-        <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" placeholder="Naam" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
+        <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
         <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !draft.mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist></div>
       ${trip && 0 ? '' : ''}<div class="label legsep">Heenreis</div>
       ${legRow('heen', draft.heen)}
