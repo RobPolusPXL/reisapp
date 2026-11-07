@@ -1,6 +1,6 @@
 // Gedeelde onderdelen voor reizen: vervoer, itemtypes, formulieren
 import { get, update, newId } from './store.js';
-import { list, byCode, nameOf, flag, searchCountries } from './data.js';
+import { list, byCode, nameOf, flag } from './data.js';
 import { loadAirlines, airlineByName, attachAirlineSearch } from './airlines.js';
 import { scanBoardingPass } from './boardingpass.js';
 import { loadAirports, airportByCode, attachAirportSearch, ensureMyAirport } from './airports.js';
@@ -10,7 +10,6 @@ export const MODES = {
   plane: ['Vliegtuig', 'plane'], car: ['Auto', 'car'], train: ['Trein', 'train'],
   bus: ['Bus', 'bus'], boat: ['Boot', 'boat'], other: ['Anders', 'dots'],
 };
-const transitTxt = m => m === 'plane' ? 'Enkel overstap met het vliegtuig' : 'Enkel doorgereden';
 export const TYPES = {
   flight: ['Vlucht', 'plane'], stay: ['Verblijf', 'bed'], food: ['Restaurant', 'fork'], activity: ['Activiteit', 'ticket'],
 };
@@ -26,50 +25,6 @@ export const CLASSES = ['Economy', 'Premium economy', 'Business', 'First'];
 export const countryOptions = sel =>
   '<option value="">Kies een land</option>' + list.map(c => `<option value="${c.c}"${c.c === sel ? ' selected' : ''}>${esc(c.n)}</option>`).join('');
 
-/** Landkeuze die eruitziet als een gewone keuzelijst; bovenaan de lijst staat een zoekveld. Een verborgen veld houdt de landcode bij (formulieren lezen het gewoon als `name`). */
-export const countryPick = (name, sel, label, id = '') => `<div class="cpick">
-  <input type="hidden" name="${name}" value="${esc(sel || '')}">
-  <button type="button" class="cp-btn${sel ? '' : ' empty'}"${id ? ` id="${id}"` : ''} aria-label="${esc(label)}" aria-haspopup="listbox"><span>${esc(sel ? nameOf(sel) : 'Kies een land')}</span></button>
-  <div class="cp-panel" hidden><input type="search" class="cp-in" placeholder="Zoek een land" aria-label="Zoek een land" autocomplete="off" autocapitalize="words" enterkeyhint="done"><ul class="cp-list"></ul></div></div>`;
-/** Zet een landkeuze (verborgen veld + zichtbare naam) op een code. */
-export function setCountryPick(form, name, code) {
-  const h = form.elements[name]; if (!h) return;
-  h.value = code || '';
-  const btn = h.closest('.cpick')?.querySelector('.cp-btn');
-  if (btn) { btn.querySelector('span').textContent = code ? nameOf(code) : 'Kies een land'; btn.classList.toggle('empty', !code); }
-}
-/** Koppelt alle landkeuzes binnen `root` (ook later toegevoegde). */
-export function bindCountryPick(root) {
-  const closeAll = except => root.querySelectorAll('.cp-panel:not([hidden])').forEach(p => { if (p.parentElement !== except) p.hidden = true; });
-  const draw = box => {
-    const q = box.querySelector('.cp-in').value;
-    const cur = box.querySelector('input[type=hidden]').value;
-    box.querySelector('.cp-list').innerHTML = searchCountries(q, 300).map(c => `<li><button type="button" data-pick="${c.c}"${c.c === cur ? ' aria-selected="true"' : ''}>${flag(c.c)}<span>${esc(c.n)}</span></button></li>`).join('') || '<li class="empty">Geen landen gevonden.</li>';
-  };
-  const pick = (box, code) => { setCountryPick(box.closest('form') || root, box.querySelector('input[type=hidden]').name, code); box.querySelector('.cp-panel').hidden = true; };
-  root.addEventListener('click', e => {
-    const btn = e.target.closest?.('.cp-btn');
-    if (btn) {
-      const box = btn.parentElement, panel = box.querySelector('.cp-panel');
-      closeAll(box);
-      panel.hidden = !panel.hidden;
-      panel.classList.remove('up');
-      if (!panel.hidden) { const inp = panel.querySelector('.cp-in'); inp.value = ''; draw(box); panel.querySelector('[aria-selected]')?.scrollIntoView({ block: 'center' }); const r = panel.getBoundingClientRect(), vh = window.visualViewport?.height || window.innerHeight; if (r.bottom > vh - 8 && btn.getBoundingClientRect().top > r.height + 16) panel.classList.add('up'); inp.focus({ preventScroll: true }); }
-      return;
-    }
-    const it = e.target.closest?.('[data-pick]');
-    if (it) { e.stopPropagation(); pick(it.closest('.cpick'), it.dataset.pick); return; }
-    if (!e.target.closest?.('.cp-panel')) closeAll(null);
-  });
-  root.addEventListener('input', e => { if (e.target.classList?.contains('cp-in')) draw(e.target.closest('.cpick')); });
-  root.addEventListener('keydown', e => {
-    if (!e.target.classList?.contains('cp-in')) return;
-    const box = e.target.closest('.cpick');
-    if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); const f = box.querySelector('[data-pick]'); if (f) pick(box, f.dataset.pick); }
-    if (e.key === 'Escape') { e.stopPropagation(); box.querySelector('.cp-panel').hidden = true; box.querySelector('.cp-btn').focus(); }
-  });
-}
-
 /** Thuisland: het land waar je het vaakst vertrekt volgens de eerste vlucht van elke reis. */
 export function homeCountry(state = get()) {
   const count = {};
@@ -83,7 +38,7 @@ export function homeCountry(state = get()) {
 
 /** Route van een reis: begin- en eindluchthaven uit je vluchten, overstappen (vluchten die aansluiten) en daartussen de stops die je invulde. */
 export function routeOf(trip) {
-  let legs = (trip.legs || []).map(l => ({ kind: 'c', mode: l.mode, c: l.c, ...(l.transit && l.mode !== 'plane' ? { through: true } : {}) }));
+  let legs = (trip.legs || []).map(l => ({ kind: 'c', mode: l.mode, c: l.c }));
   if (!legs.length) return legs;
   const up = x => String(x || '').trim().toUpperCase();
   // Vluchten op volgorde van datum en vertrektijd; dubbele vluchten (zelfde reizigers apart ingevoerd) tellen één keer; aansluitende vluchten op dezelfde dag staan achter elkaar.
@@ -157,16 +112,16 @@ const nm = c => esc(nameOf(c));
 /** Route in de reis zelf (en op laptop): stops onder elkaar, het vervoer op de lijn ertussen; een luchthaven met zijn naam, een overstap iets lichter. */
 export function legsHtml(items) {
   return items.map((l, i) => `${i ? `<div class="conn${l.layover ? ' light' : ''}"><span class="cl"></span><span class="cm">${ic(MODES[l.mode]?.[1] || 'dots', 16)}${MODES[l.mode]?.[0] || ''}</span></div>` : ''}
-    <div class="leg2${l.layover || l.through ? ' light' : ''}">${flag(l.c)}<div>${l.kind === 'ap'
+    <div class="leg2${l.layover ? ' light' : ''}">${flag(l.c)}<div>${l.kind === 'ap'
       ? `<div class="p">${esc(l.name)} (${esc(l.code)})</div><div class="sub">${l.layover ? 'Overstap · ' : ''}${nm(l.c)}</div>`
-      : `<div class="p">${nm(l.c)}</div>${l.through ? '<div class="sub">Doorgereden</div>' : ''}`}</div></div>`).join('');
+      : `<div class="p">${nm(l.c)}</div>`}</div></div>`).join('');
 }
 
 /** Route op één regel (overzicht op mobiel): landen als vlag, luchthavens als label met de code en de vlag als watermerk. */
 export function legsCompact(items) {
   return `<div class="croute">${items.map((l, i) => `${i ? `<span class="cm2" title="${esc(MODES[l.mode]?.[0] || '')}">${ic(MODES[l.mode]?.[1] || 'dots', 16)}</span>` : ''}${l.kind === 'ap'
     ? `<span class="ac${l.layover ? ' lt' : ''}" title="${esc(l.name)}, ${esc(nameOf(l.c))}"><img class="wm" src="assets/flags/${esc(String(l.c).toLowerCase())}.svg" alt="" aria-hidden="true"><b>${esc(l.code)}</b></span>`
-    : l.through ? `<span class="thru" title="Doorgereden">${flag(l.c)}</span>` : flag(l.c)}`).join('')}</div>`;
+    : flag(l.c)}`).join('')}</div>`;
 }
 
 export function tripStats(state) {
@@ -210,7 +165,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     draft.legs = draft.legs.map((_, i) => {
       const mode = val(f, `mode-${i}`) || 'plane';
       const leg = { mode, c: val(f, `land-${i}`) };
-      if (f.elements[`transit-${i}`]?.checked) leg.transit = true;
+      if (mode === 'plane' && f.elements[`transit-${i}`]?.checked) leg.transit = true;
       return leg;
     });
   };
@@ -225,20 +180,19 @@ export function openTripForm(trip = null, { onSaved } = {}) {
         <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" placeholder="Naam" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
         <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !draft.mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist></div>
       <div class="label">Route</div>
-      <div class="field" data-vertrek${(draft.legs[0]?.mode || 'plane') === 'plane' ? ' hidden' : ''}><label for="f-vertrek">Vertrek uit</label>${countryPick('vertrek', draft.from || homeCountry(), 'Vertrek uit', 'f-vertrek')}</div>
+      <div class="field" data-vertrek${(draft.legs[0]?.mode || 'plane') === 'plane' ? ' hidden' : ''}><label for="f-vertrek">Vertrek uit</label><select id="f-vertrek" name="vertrek">${countryOptions(draft.from || homeCountry())}</select></div>
       <div class="legs">${draft.legs.map((l, i) => `<div class="legrow" data-leg="${i}"><button type="button" class="grip" aria-label="Stop ${i + 1} verslepen" title="Sleep om te verplaatsen"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button><div style="flex:1;min-width:0"><div class="pair" style="align-items:center">
         <div class="field"><select name="mode-${i}" aria-label="Vervoer stop ${i + 1}">${Object.entries(MODES).map(([k, [n]]) => `<option value="${k}"${k === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
-        <div class="field">${countryPick(`land-${i}`, l.c, `Land stop ${i + 1}`)}</div>
+        <div class="field"><select name="land-${i}" aria-label="Land stop ${i + 1}">${countryOptions(l.c)}</select></div>
         ${draft.legs.length > 1 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${i}" aria-label="Stop ${i + 1} verwijderen">${ic('x', 20)}</button>` : ''}
       </div>
-      <label class="transit" data-transit="${i}"><input type="checkbox" name="transit-${i}"${l.transit ? ' checked' : ''}> <span>${transitTxt(l.mode)} (land telt niet mee als bezocht)</span></label></div></div>`).join('')}</div>
+      <label class="transit"${l.mode === 'plane' ? '' : ' hidden'} data-transit="${i}"><input type="checkbox" name="transit-${i}"${l.transit ? ' checked' : ''}> Enkel overstap met het vliegtuig (land telt niet mee als bezocht)</label></div></div>`).join('')}</div>
       <button type="button" class="btn soft" data-add>${ic('plus', 18)}Stop toevoegen</button>
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
       <div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="submit" class="btn primary">Opslaan</button></div>
     </form>`);
   };
   render();
-  bindCountryPick(sh.el);
   sh.el.addEventListener('click', e => {
     const am = e.target.closest('[data-addmate]'), rmm = e.target.closest('[data-rmmate]');
     if (am || rmm) {
@@ -309,7 +263,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     const m = /^mode-(\d+)$/.exec(e.target.name || '');
     if (!m) return;
     const lab = sh.el.querySelector(`[data-transit="${m[1]}"]`);
-    if (lab) lab.querySelector('span').textContent = `${transitTxt(e.target.value)} (land telt niet mee als bezocht)`;
+    if (lab) { lab.hidden = e.target.value !== 'plane'; if (lab.hidden) lab.querySelector('input').checked = false; }
   });
   sh.el.addEventListener('keydown', e => {
     if (e.key !== 'Enter' || e.target.name !== 'mate') return;

@@ -60,14 +60,10 @@ export function createMap(host, { interactive = true, onSelect = null , contain 
 
   function update() {
     const cs = get().countries;
-    // Landen waar je enkel doorheen reed (auto, trein, bus, boot): lichte kleur, maar niet als bezocht geteld.
-    const thru = new Set();
-    for (const t of get().trips || []) for (const l of t.legs || []) if (l.transit && l.mode !== 'plane') thru.add(l.c);
     for (const el of els) {
       const s = cs[el.dataset.c]?.s;
       el.classList.toggle('v', s === 'v');
       el.classList.toggle('w', s === 'w');
-      el.classList.toggle('t', s !== 'v' && thru.has(el.dataset.c));
     }
   }
   update();
