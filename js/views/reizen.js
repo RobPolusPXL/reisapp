@@ -1,6 +1,6 @@
 import { get, subscribe } from '../store.js';
 import { esc, ic, fmtRange, daysBetween } from '../ui.js';
-import { matesText, legsHtml, legsCompact, routeOf, tripStats, openTripForm } from '../trips.js';
+import { matesText, legsHtml, legsSplit, routeOf, tripStats, openTripForm } from '../trips.js';
 import { loadAirports } from '../airports.js';
 
 export function mount(el) {
@@ -18,7 +18,7 @@ export function mount(el) {
       return `${head}<a class="card card-link" href="#/reis/${esc(t.id)}">
         <div class="trip-head"><span>${ic('cal', 18)}${esc(fmtRange(t.start, t.end))}</span><span>Duur <strong>${d} ${d === 1 ? 'dag' : 'dagen'}</strong></span></div>
         ${t.title ? `<div class="trip-title">${esc(t.title)}</div>` : ''}
-        <div class="app-only">${legsCompact(routeOf(t))}</div><div class="site-only">${legsHtml(routeOf(t))}</div>
+        <div class="app-only">${legsSplit(routeOf(t))}</div><div class="site-only">${legsHtml(routeOf(t))}</div>
         ${t.mates?.length ? `<div class="trip-note">${ic(t.mates.length > 1 ? 'users' : 'user', 18)}Met ${esc(matesText(t.mates))}</div>` : ''}
       </a>`;
     }).join('');
