@@ -128,7 +128,7 @@ export function tripStats(state) {
   const countries = new Set();
   let days = 0;
   for (const t of state.trips) {
-    t.legs.forEach(l => l.c && countries.add(l.c));
+    t.legs.forEach(l => l.c && !l.transit && countries.add(l.c));   // overstappen (transit) tellen niet mee
     days += daysBetween(t.start, t.end);
   }
   const conts = new Set([...countries].map(c => byCode.get(c)?.k).filter(Boolean));
