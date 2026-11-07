@@ -114,7 +114,7 @@ export function routeOf(trip) {
   if (!fromAp) {
     // Geen vlucht: begin in het gekozen vertrekland (of je thuisland) als je er niet met het vliegtuig vertrekt.
     const start = trip.from || homeCountry();
-    if (start && legs[0].mode !== 'plane' && legs[0].c !== start) return [{ kind: 'c', mode: legs[0].mode, c: start }, ...legs];
+    if (start && (legs[0].mode !== 'plane' || trip.from) && legs[0].c !== start) return [{ kind: 'c', mode: legs[0].mode, c: start }, ...legs];
     return legs;
   }
   const ap = (code, layover) => {
@@ -243,7 +243,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
         <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" placeholder="Naam" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
         <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !draft.mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist></div>
       <div class="label">Heenreis</div>
-      <div class="field" data-vertrek${(draft.legs[0]?.mode || 'plane') === 'plane' ? ' hidden' : ''}><label for="f-vertrek">Vertrek uit</label>${countryPick('vertrek', draft.from || homeCountry(), 'Vertrek uit', 'f-vertrek')}</div>
+      <div class="field" data-vertrek><label for="f-vertrek">Vertrek uit</label>${countryPick('vertrek', draft.from || homeCountry(), 'Vertrek uit', 'f-vertrek')}</div>
       <div class="legs heen"><div class="legrow" data-leg="0"><div style="flex:1;min-width:0">${legFields(draft.legs[0], 0, { labels: true })}</div></div></div>
       <div class="label">Route</div>
       <div class="legs">${draft.legs.map((l, i) => i === 0 ? '' : `<div class="legrow" data-leg="${i}"><button type="button" class="grip" aria-label="Stop ${i + 1} verslepen" title="Sleep om te verplaatsen"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button><div style="flex:1;min-width:0">${legFields(l, i, { remove: true })}</div></div>`).join('')}</div>
@@ -317,10 +317,6 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     grip.addEventListener('pointercancel', end);
   });
   sh.el.addEventListener('change', e => {
-    if (e.target.name === 'mode-0') {
-      const box = sh.el.querySelector('[data-vertrek]');
-      if (box) box.hidden = e.target.value === 'plane';
-    }
     const m = /^mode-(\d+)$/.exec(e.target.name || '');
     if (!m) return;
     const lab = sh.el.querySelector(`[data-transit="${m[1]}"]`);
@@ -341,7 +337,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     const legs = draft.legs.filter(l => l.c);
     if (!draft.title && !legs.length) return render('Geef een titel of kies minstens één land.');
     const clean = { ...draft, legs, end: draft.end || draft.start };
-    if (!legs.length || legs[0].mode === 'plane' || !draft.from) delete clean.from;
+    if (!legs.length || !draft.from) delete clean.from;
     if (!clean.mates?.length) delete clean.mates;
     update(st => {
       const i = st.trips.findIndex(t => t.id === clean.id);
