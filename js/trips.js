@@ -162,9 +162,16 @@ export function legsHtml(items) {
       : `<div class="p">${nm(l.c)}</div>${l.through ? '<div class="sub">Doorgereden</div>' : ''}`}</div></div>`).join('');
 }
 
+/** Aantal items van de heenreis: tot en met het eerste land. */
+export function heenEnd(items) {
+  let k = items.findIndex(x => x.kind === 'c');
+  if (k === 0 && items.length > 1) k = 1;
+  return k < 0 ? items.length : k + 1;
+}
+
 /** Route op één regel (overzicht op mobiel): landen als vlag, luchthavens als label met de code en de vlag als watermerk. */
-export function legsCompact(items) {
-  return `<div class="croute">${items.map((l, i) => `${i ? `<span class="cm2" title="${esc(MODES[l.mode]?.[0] || '')}">${ic(MODES[l.mode]?.[1] || 'dots', 16)}</span>` : ''}${l.kind === 'ap'
+export function legsCompact(items, a = 0, b = items.length) {
+  return `<div class="croute">${items.map((l, i) => i < a || i >= b ? '' : `${i ? `<span class="cm2" title="${esc(MODES[l.mode]?.[0] || '')}">${ic(MODES[l.mode]?.[1] || 'dots', 16)}</span>` : ''}${l.kind === 'ap'
     ? `<span class="ac${l.layover ? ' lt' : ''}" title="${esc(l.name)}, ${esc(nameOf(l.c))}"><img class="wm" src="assets/flags/${esc(String(l.c).toLowerCase())}.svg" alt="" aria-hidden="true"><b>${esc(l.code)}</b></span>`
     : l.through ? `<span class="thru" title="Doorgereden">${flag(l.c)}</span>` : flag(l.c)}`).join('')}</div>`;
 }
@@ -224,9 +231,9 @@ export function openTripForm(trip = null, { onSaved } = {}) {
         ${draft.mates.length ? `<div class="mates">${draft.mates.map((m, i) => `<span class="mate">${esc(m)}<button type="button" data-rmmate="${i}" aria-label="${esc(m)} verwijderen">${ic('x', 16)}</button></span>`).join('')}</div>` : ''}
         <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" placeholder="Naam" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
         <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !draft.mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist></div>
-      <div class="label">Route</div>
+      <div class="label legsep">Heenreis</div>
       <div class="field" data-vertrek${(draft.legs[0]?.mode || 'plane') === 'plane' ? ' hidden' : ''}><label for="f-vertrek">Vertrek uit</label>${countryPick('vertrek', draft.from || homeCountry(), 'Vertrek uit', 'f-vertrek')}</div>
-      <div class="legs">${draft.legs.map((l, i) => `<div class="legrow" data-leg="${i}"><button type="button" class="grip" aria-label="Stop ${i + 1} verslepen" title="Sleep om te verplaatsen"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button><div style="flex:1;min-width:0"><div class="pair" style="align-items:center">
+      <div class="legs">${draft.legs.map((l, i) => `${i === 1 ? '<div class="label legsep">Route</div>' : ''}<div class="legrow" data-leg="${i}"><button type="button" class="grip" aria-label="Stop ${i + 1} verslepen" title="Sleep om te verplaatsen"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button><div style="flex:1;min-width:0"><div class="pair" style="align-items:center">
         <div class="field"><select name="mode-${i}" aria-label="Vervoer stop ${i + 1}">${Object.entries(MODES).map(([k, [n]]) => `<option value="${k}"${k === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
         <div class="field">${countryPick(`land-${i}`, l.c, `Land stop ${i + 1}`)}</div>
         ${draft.legs.length > 1 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${i}" aria-label="Stop ${i + 1} verwijderen">${ic('x', 20)}</button>` : ''}
@@ -261,10 +268,10 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     const grip = e.target.closest('.grip');
     if (!grip) return;
     const box = sh.el.querySelector('.legs'), row = grip.closest('.legrow');
-    if (!box || !row || box.children.length < 2) return;
+    if (!box || !row || box.querySelectorAll('.legrow').length < 2) return;
     e.preventDefault();
     grip.setPointerCapture(e.pointerId);
-    const rows = [...box.children];
+    const rows = [...box.querySelectorAll('.legrow')];
     const from = rows.indexOf(row), startY = e.clientY;
     const mids = rows.map(r => { const b = r.getBoundingClientRect(); return b.top + b.height / 2; });
     const step = rows.length > 1 ? mids[1] - mids[0] : 0;
