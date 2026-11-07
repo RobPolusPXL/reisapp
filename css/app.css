@@ -569,4 +569,6 @@ svg.globe .g-rim { fill: none; stroke: var(--field); stroke-width: 1px; }
 .cpill .flag { width: 26px; height: 19.5px; border-radius: 3px; }
 .cvis { display: inline-flex; }
 .cvis .flag { width: 34px; height: 25.5px; border-radius: 5px; }
-.split .cm2 { opacity: .45; }
+/* Heen en terug (de reis zelf) lichter; Bezocht blijft vol */
+.srow:not(.v) .ac, .srow:not(.v) .croute > .flag, .srow:not(.v) .thru .flag { opacity: .55; }
+.srow:not(.v) .thru { opacity: 1; }
