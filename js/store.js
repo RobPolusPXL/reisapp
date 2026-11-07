@@ -16,13 +16,32 @@ const blank = () => ({
   settings: { theme: 'groen', mode: 'system' },
 });
 
+/** Dubbel ingelezen vluchten (zelfde nummer, datum en route, bv. één boarding pass per reiziger) samenvoegen tot één vlucht met alle reizigers. */
+export function mergeDuplicateFlights(items = []) {
+  const key = i => i.type === 'flight' && i.f?.number && i.date ? [i.date, i.f.number.replace(/\s+/g, '').toUpperCase(), i.f.from, i.f.to].join('|') : null;
+  const first = new Map(), out = [];
+  for (const it of items) {
+    const k = key(it), keep = k && first.get(k);
+    if (!keep) { if (k) first.set(k, it); out.push(it); continue; }
+    const pk = x => (x.name || '').trim().toLowerCase() || 'seat:' + (x.seat || '');
+    const pax = [...(keep.f.pax || [])];
+    for (const x of it.f.pax || []) {
+      const j = pax.findIndex(y => pk(y) === pk(x));
+      if (j < 0) pax.push(x); else pax[j] = { ...x, ...pax[j], seat: pax[j].seat || x.seat, cls: pax[j].cls || x.cls };
+    }
+    keep.f = { ...it.f, ...Object.fromEntries(Object.entries(keep.f).filter(([, v]) => v !== '' && v != null)), pax };
+    for (const k2 of ['note', 'score']) if (!keep[k2] && it[k2]) keep[k2] = it[k2];
+  }
+  return out;
+}
+
 function normalize(s = {}) {
   const b = blank();
   return {
     ...b, ...s,
     countries: s.countries || {},
     places: { ...b.places, ...(s.places || {}) },
-    trips: s.trips || [],
+    trips: (s.trips || []).map(t => t.items?.length ? { ...t, items: mergeDuplicateFlights(t.items) } : t),
     travelers: s.travelers || [],
     credits: s.credits || {},
     settings: { ...b.settings, ...(s.settings || {}) },

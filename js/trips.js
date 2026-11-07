@@ -1,5 +1,5 @@
 // Gedeelde onderdelen voor reizen: vervoer, itemtypes, formulieren
-import { get, update, newId } from './store.js';
+import { get, update, newId, mergeDuplicateFlights } from './store.js';
 import { list, byCode, nameOf, flag } from './data.js';
 import { loadAirlines, airlineByName, attachAirlineSearch } from './airlines.js';
 import { scanBoardingPass } from './boardingpass.js';
@@ -538,6 +538,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     else if (!draft.name) return render('Geef het item een naam.');
     if ((draft.type === 'stay' || draft.type === 'activity') && draft.date && draft.dateEnd && draft.dateEnd < draft.date) return render(draft.type === 'stay' ? 'Uitchecken ligt voor inchecken.' : 'De einddatum ligt voor de begindatum.');
     if (!draft.dateEnd) delete draft.dateEnd;
+    let merged = false;
     update(st => {
       if (draft.type === 'flight') {
         for (const k of ['from', 'to']) ensureMyAirport(st, airportByCode(draft.f[k]), newId);
@@ -548,9 +549,12 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
       t.items ||= [];
       const i = t.items.findIndex(x => x.id === draft.id);
       if (i >= 0) t.items[i] = draft; else t.items.push(draft);
+      const before = t.items.length;
+      t.items = mergeDuplicateFlights(t.items);
+      merged = t.items.length < before;
     });
     sh.close();
-    toast('Item opgeslagen');
+    toast(merged ? 'Reiziger toegevoegd aan de bestaande vlucht' : 'Item opgeslagen');
   });
   return sh;
 }
