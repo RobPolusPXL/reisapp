@@ -152,7 +152,9 @@ svg.map path, svg.map circle {
 }
 svg.map.static path, svg.map.static circle { cursor: default; }
 svg.map .w { fill: color-mix(in srgb, var(--accent) 35%, var(--land)); }
+svg.map .t { fill: color-mix(in srgb, var(--accent) 30%, var(--land)); }
 svg.map .v { fill: var(--accent); }
+.thru { display: inline-flex; opacity: .45; }
 svg.map .sel { stroke: var(--ink); stroke-width: 2px; }
 .map-top { position: absolute; left: 16px; right: 16px; top: 16px; display: flex; flex-direction: column; gap: 10px; align-items: flex-start; z-index: 5; max-width: 560px; }
 .search { width: 100%; height: 48px; border-radius: 24px; background: var(--surface); box-shadow: var(--shadow); display: flex; align-items: center; gap: 10px; padding: 0 4px 0 16px; color: var(--muted); }
@@ -540,3 +542,14 @@ svg.globe .g-rim { fill: none; stroke: var(--field); stroke-width: 1px; }
 .mate-add .btn { flex: none; }
 
 .trip-title { font-size: 17px; font-weight: 700; margin: -4px 0 10px; overflow-wrap: anywhere; }
+
+.sheet .titel-in { width: 100%; height: 48px; padding: 0 14px; border: 1.5px solid var(--line, #d5dbe1); border-radius: 12px; background: var(--card, #fff); color: inherit; font: inherit; font-size: 16px; margin-bottom: 4px; }
+.sheet .datums { display: flex; gap: 12px; } .sheet .datums > div { flex: 1; min-width: 0; }
+.sheet .chips { display: flex; gap: 6px; margin: 0 0 8px; align-items: center; }
+.sheet .chips .ch { flex: 1; display: flex; align-items: center; justify-content: center; height: 42px; padding: 0; border-radius: 12px; border: 1.5px solid var(--line, #d5dbe1); background: transparent; color: var(--muted); }
+.sheet .chips .ch.on { background: color-mix(in srgb, var(--accent) 14%, transparent); border-color: var(--accent); color: var(--accent); }
+.sheet .stp { margin: 0 0 14px; } .sheet .two2 { display: flex; gap: 10px; position: relative; } .sheet .two2 > .pl { flex: 1; min-width: 0; } .sheet .two2 .ap-results { position: absolute; left: 0; right: 0; top: 100%; z-index: 5; }
+.rd { margin: 0 0 12px; } .rd h3 { margin: 0 0 8px; font-size: 17px; } .rd h3 small { font-size: 13px; color: var(--muted); font-weight: 500; margin-left: 6px; }
+.rd-row { display: flex; align-items: center; gap: 5px; } .rd-row .flag { width: 30px; height: 22px; border-radius: 4px; } .rd-row b { font-size: 14px; letter-spacing: .04em; }
+.rd-ln { flex: 1; min-width: 6px; height: 2px; background: var(--line, #d5dbe1); } .rd-mi { display: inline-flex; color: var(--accent); } .rd-info { margin-top: 6px; font-size: 13px; color: var(--muted); }
+.rd-wrap { margin-top: 14px; }
