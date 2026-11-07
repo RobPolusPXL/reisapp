@@ -143,7 +143,33 @@ function partHtml(title, date, steps) {
   const row = places.map((p, i) => `${i ? `<span class="rd-ln"></span><span class="rd-mi">${ic(MODES[steps[i - 1].mode]?.[1] || 'dots', 20)}</span><span class="rd-ln"></span>` : ''}${p?.c ? flag(p.c) : ''}${p?.code ? `<b>${esc(p.code)}</b>` : ''}`).join('');
   return `<div class="rd"><h3>${esc(title)}${date ? ` <small>${esc(fmtDate(date))}</small>` : ''}</h3><div class="rd-row">${row}</div><div class="rd-info">${esc(stepsInfo(steps))}</div></div>`;
 }
-export const partsHtml = t => partHtml('Heenreis', t.start, t.heen) + partHtml('Terugreis', t.end, t.terug);
+/** Reizen van vóór de stappen hebben geen heen en terug: die leiden we af uit de stops en vluchten. */
+function legacyParts(t) {
+  const L = t.legs || [], home = homeCountry();
+  if (!L.length) return {};
+  const fl = (t.items || []).filter(i => i.type === 'flight' && i.f?.from && i.f?.to).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
+  const ctry = c => airportByCode(c)?.c;
+  const out = {};
+  if (L[0].mode === 'plane' && fl.length) {
+    const h = [{ mode: 'plane', from: fl[0].f.from, to: fl[0].f.to }];
+    for (const f of fl.slice(1)) { if (f.f.from === h[h.length - 1].to && ctry(h[h.length - 1].to) !== L[0].c) h.push({ mode: 'plane', from: f.f.from, to: f.f.to }); else break; }
+    out.heen = h;
+  } else out.heen = [{ mode: L[0].mode, from: L[0].mode === 'plane' ? '' : (t.from || home), to: L[0].mode === 'plane' ? '' : L[0].c }].filter(x => x.from || x.to);
+  const last = L[L.length - 1];
+  if (L.length >= 2 && last.c === home) {
+    if (last.mode === 'plane' && fl.length) {
+      const k = [], used = new Set((out.heen || []).map(x => x.from + x.to));
+      for (let i = fl.length - 1; i >= 0; i--) {
+        if (used.has(fl[i].f.from + fl[i].f.to)) continue; if (!k.length) { if (ctry(fl[i].f.to) === home) k.unshift({ mode: 'plane', from: fl[i].f.from, to: fl[i].f.to }); } else if (fl[i].f.to === k[0].from) k.unshift({ mode: 'plane', from: fl[i].f.from, to: fl[i].f.to }); else break; }
+      if (k.length) out.terug = k;
+    } else if (last.mode !== 'plane') out.terug = [{ mode: last.mode, from: L[L.length - 2].c, to: home }];
+  }
+  return out;
+}
+export const partsHtml = t => {
+  const l = t.heen || t.terug ? {} : legacyParts(t);
+  return partHtml('Heenreis', t.start, t.heen || l.heen) + partHtml('Terugreis', t.end, t.terug || l.terug);
+};
 
 export function openTripForm(trip = null, { onSaved } = {}) {
   const mates = [...(trip?.mates || [])];

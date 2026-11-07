@@ -47,7 +47,7 @@ export function mount(el, { params }) {
         <button type="button" class="icon-btn" id="del" aria-label="Reis verwijderen">${ic('trash', 22)}</button>
       </header>
       <div class="cols">
-        ${t.heen?.length || t.terug?.length ? `<section class="card" style="flex:1 1 260px">${partsHtml(t)}</section>` : ''}
+        ${partsHtml(t) ? `<section class="card" style="flex:1 1 260px">${partsHtml(t)}</section>` : ''}
         <section class="card" style="flex:3 1 380px"><div class="card-head"><h2>Onderweg</h2></div>
           <div class="chips" role="group" aria-label="Filter" style="margin-bottom:14px">${FILTERS.map(([k, n]) => `<button type="button" class="btn" data-filter="${k}" aria-pressed="${filter === k}">${n}</button>`).join('')}</div>
           <div class="items">${items.map(itemRow).join('') || '<div class="empty">Nog niets toegevoegd.</div>'}</div>
