@@ -4,7 +4,7 @@ import { list, byCode, nameOf, flag, searchCountries } from './data.js';
 import { loadAirlines, airlineByName, attachAirlineSearch } from './airlines.js';
 import { scanBoardingPass } from './boardingpass.js';
 import { loadAirports, airportByCode, attachAirportSearch, ensureMyAirport } from './airports.js';
-import { esc, ic, openSheet, toast, daysBetween, snorTxt, iconPick } from './ui.js';
+import { esc, ic, openSheet, toast, daysBetween, snorTxt, iconPick, fmtDate } from './ui.js';
 
 export const MODES = {
   plane: ['Vliegtuig', 'plane'], car: ['Auto', 'car'], train: ['Trein', 'train'],
@@ -119,9 +119,36 @@ export function matesText(mates) {
   return m.length < 2 ? m.join('') : m.slice(0, -1).join(', ') + ' en ' + m[m.length - 1];
 }
 
+// ---- Heenreis en terugreis: stappen (vervoer, van, naar) ----
+const STEP_MODES = ['plane', 'car', 'train', 'boat'];
+const placeOf = (x, mode) => {
+  if (!x) return null;
+  if (mode === 'plane') { const a = airportByCode(x); return a ? { c: a.c, code: a.code, name: a.city || a.name || a.code } : null; }
+  return { c: x };
+};
+const stepsInfo = steps => {
+  if (steps.length === 1) return MODES[steps[0].mode]?.[0] || '';
+  if (steps.every(x => x.mode === 'plane')) {
+    const via = steps.slice(0, -1).map(x => placeOf(x.to, 'plane')?.name).filter(Boolean).join(', ');
+    return `${steps.length} vluchten${via ? ' · overstap in ' + via : ''}`;
+  }
+  const n = steps.map(x => (MODES[x.mode]?.[0] || '').toLowerCase());
+  return n[0].charAt(0).toUpperCase() + n[0].slice(1) + n.slice(1).map(x => ', daarna ' + x).join('');
+};
+/** Eén deel (heenreis of terugreis): titel met datum, één lijn met vlaggen en vervoer, info eronder. */
+function partHtml(title, date, steps) {
+  steps = (steps || []).filter(x => x.from || x.to);
+  if (!steps.length) return '';
+  const places = [placeOf(steps[0].from, steps[0].mode), ...steps.map(x => placeOf(x.to, x.mode))];
+  const row = places.map((p, i) => `${i ? `<span class="rd-ln"></span><span class="rd-mi">${ic(MODES[steps[i - 1].mode]?.[1] || 'dots', 20)}</span><span class="rd-ln"></span>` : ''}${p?.c ? flag(p.c) : ''}${p?.code ? `<b>${esc(p.code)}</b>` : ''}`).join('');
+  return `<div class="rd"><h3>${esc(title)}${date ? ` <small>${esc(fmtDate(date))}</small>` : ''}</h3><div class="rd-row">${row}</div><div class="rd-info">${esc(stepsInfo(steps))}</div></div>`;
+}
+export const partsHtml = t => partHtml('Heenreis', t.start, t.heen) + partHtml('Terugreis', t.end, t.terug);
+
 export function openTripForm(trip = null, { onSaved } = {}) {
   const mates = [...(trip?.mates || [])];
-  const sh = openSheet(`<div class="label">Titel</div><input class="titel-in" name="titel" aria-label="Titel" placeholder="Bijvoorbeeld Tatra &amp; Energylandia"><div class="datums"><div><div class="label">Start</div><input class="titel-in" type="date" name="start" aria-label="Start"></div><div><div class="label">Einde</div><input class="titel-in" type="date" name="einde" aria-label="Einde"></div></div><div class="label">Reisgenoten (optioneel)</div><div data-mates></div><div class="label">Heenreis</div><div class="label">Route</div><div class="label">Terugreis</div>`, { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
+  const st = { heen: structuredClone(trip?.heen || []), terug: structuredClone(trip?.terug || []) };
+  const sh = openSheet(`<div class="label">Titel</div><input class="titel-in" name="titel" aria-label="Titel" placeholder="Bijvoorbeeld Tatra &amp; Energylandia" value="${esc(trip?.title || '')}"><div class="datums"><div><div class="label">Start</div><input class="titel-in" type="date" name="start" aria-label="Start" value="${esc(trip?.start || '')}"></div><div><div class="label">Einde</div><input class="titel-in" type="date" name="einde" aria-label="Einde" value="${esc(trip?.end || '')}"></div></div><div class="label">Reisgenoten (optioneel)</div><div data-mates></div><div class="label">Heenreis</div><div data-sec="heen"></div><div class="label">Route</div><div class="label">Terugreis</div><div data-sec="terug"></div><p class="muted" role="alert" data-err style="margin:0;color:var(--danger)"></p><div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="button" class="btn primary" data-save>Opslaan</button></div>`, { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
   const addMate = name => {
     name = (name || '').trim().replace(/\s+/g, ' ');
     if (name && !mates.some(m => m.toLowerCase() === name.toLowerCase())) mates.push(name);
@@ -131,20 +158,85 @@ export function openTripForm(trip = null, { onSaved } = {}) {
       <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" placeholder="Naam" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
       <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist>`;
   };
-  drawMates();
+  const place = (w, i, k, s) => s.mode === 'plane'
+    ? `<input class="titel-in" data-ap="${w}-${i}-${k}" aria-label="${k === 'from' ? 'Van' : 'Naar'}" value="${esc(s[k] || '')}">`
+    : countryPick(`${w}-${i}-${k}`, s[k], k === 'from' ? 'Van' : 'Naar');
+  const drawSec = w => {
+    const box = sh.el.querySelector(`[data-sec="${w}"]`);
+    box.innerHTML = st[w].map((s, i) => `<div class="stp"><div class="chips">${STEP_MODES.map(m => `<button type="button" class="ch${s.mode === m ? ' on' : ''}" data-mode="${w}-${i}-${m}" aria-label="${MODES[m][0]}">${ic(MODES[m][1], 20)}</button>`).join('')}${i ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rmstep="${w}-${i}" aria-label="Stap verwijderen">${ic('x', 20)}</button>` : ''}</div><div class="two2"><div class="pl">${place(w, i, 'from', s)}</div><div class="pl">${place(w, i, 'to', s)}</div></div></div>`).join('')
+      + `<button type="button" class="btn soft" data-addstep="${w}">${ic('plus', 18)}Stap toevoegen</button>`;
+    box.querySelectorAll('[data-ap]').forEach(inp => attachAirportSearch(inp));
+  };
+  // Leest de ingevulde plaatsen terug in de stappen.
+  const sync = () => {
+    for (const w of ['heen', 'terug']) st[w].forEach((s, i) => {
+      for (const k of ['from', 'to']) {
+        const ap = sh.el.querySelector(`[data-ap="${w}-${i}-${k}"]`), cp = sh.el.querySelector(`input[name="${w}-${i}-${k}"]`);
+        if (ap) s[k] = ap.value.trim().toUpperCase(); else if (cp) s[k] = cp.value;
+      }
+    });
+  };
+  drawMates(); drawSec('heen'); drawSec('terug');
+  bindCountryPick(sh.el);
   sh.el.addEventListener('click', e => {
     const am = e.target.closest('[data-addmate]'), rmm = e.target.closest('[data-rmmate]');
-    if (!am && !rmm) return;
-    if (am) addMate(sh.el.querySelector('[name=mate]')?.value); else mates.splice(+rmm.dataset.rmmate, 1);
-    drawMates();
-    if (am) sh.el.querySelector('[name=mate]')?.focus();
+    if (am || rmm) {
+      if (am) addMate(sh.el.querySelector('[name=mate]')?.value); else mates.splice(+rmm.dataset.rmmate, 1);
+      drawMates();
+      if (am) sh.el.querySelector('[name=mate]')?.focus();
+      return;
+    }
+    const md = e.target.closest('[data-mode]');
+    if (md) {
+      const [w, i, m] = md.dataset.mode.split('-'); sync();
+      const s = st[w][+i];
+      if ((s.mode === 'plane') !== (m === 'plane')) {
+        for (const k of ['from', 'to']) s[k] = s.mode === 'plane' ? (airportByCode(s[k])?.c || '') : '';
+      }
+      s.mode = m; drawSec(w); return;
+    }
+    const ad = e.target.closest('[data-addstep]');
+    if (ad) { const w = ad.dataset.addstep; sync(); const prev = st[w][st[w].length - 1]; st[w].push({ mode: prev?.mode || '', from: prev?.to || '', to: '' }); drawSec(w); return; }
+    const rs = e.target.closest('[data-rmstep]');
+    if (rs) { const [w, i] = rs.dataset.rmstep.split('-'); sync(); st[w].splice(+i, 1); drawSec(w); return; }
+    if (e.target.closest('[data-save]')) save();
   });
+  sh.el.addEventListener('input', e => { if (e.target.type === 'date') e.target.classList.toggle('e', !e.target.value); });
   sh.el.addEventListener('keydown', e => {
     if (e.key !== 'Enter' || e.target.name !== 'mate') return;
     e.preventDefault();
     addMate(e.target.value); drawMates();
     sh.el.querySelector('[name=mate]')?.focus();
   });
+  const save = () => {
+    sync();
+    const err = m => { sh.el.querySelector('[data-err]').textContent = m; };
+    const g = n => (sh.el.querySelector(`[name=${n}]`)?.value || '').trim();
+    addMate(sh.el.querySelector('[name=mate]')?.value);
+    const title = g('titel'), start = g('start'), end = g('einde');
+    if (!title) return err('Geef een titel.');
+    if (!start) return err('Kies een startdatum.');
+    if (end && end < start) return err('Het einde ligt voor de start.');
+    const clean = steps => steps.map(s => ({ mode: s.mode || 'other', from: s.from, to: s.to })).filter(s => s.from || s.to);
+    const heen = clean(st.heen), terug = clean(st.terug);
+    const last = heen[heen.length - 1];
+    const dest = last ? placeOf(last.to, last.mode)?.c : '';
+    const out = { ...(trip || {}), id: trip?.id || newId(), title, start, end: end || start, legs: dest ? [{ mode: last.mode, c: dest }] : [], items: trip?.items || [] };
+    if (mates.length) out.mates = [...mates]; else delete out.mates;
+    if (heen.length) out.heen = heen; else delete out.heen;
+    if (terug.length) out.terug = terug; else delete out.terug;
+    update(s => {
+      const i = s.trips.findIndex(t => t.id === out.id);
+      if (i >= 0) s.trips[i] = out; else s.trips.push(out);
+      if (dest) {
+        const y = parseInt(start.slice(0, 4), 10), cur = s.countries[dest] || {};
+        if (cur.s !== 'v') s.countries[dest] = { ...cur, s: 'v', y }; else if (!cur.y) s.countries[dest] = { ...cur, y };
+      }
+    });
+    sh.close();
+    toast('Reis opgeslagen');
+    onSaved?.(out);
+  };
   return sh;
 }
 
