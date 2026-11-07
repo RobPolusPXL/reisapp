@@ -493,3 +493,45 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
   });
   return sh;
 }
+
+// ---- Paspoortweergave: stempels per land en alle verplaatsingen ----
+const STAMP_INK = ['#1d4f91', '#8a2b6b', '#2f6b3a', '#9a3324', '#6b4a1d'];
+const dmy = s => s ? `${s.slice(8, 10)}.${s.slice(5, 7)}` : '';
+const dmyy = s => s ? `${s.slice(8, 10)}.${s.slice(5, 7)}.${s.slice(2, 4)}` : '';
+/** Bezochte landen in volgorde, met het vervoer waarmee je binnenkwam. Doorgereden landen tellen niet. */
+export function entries(t) {
+  const d = partsData(t), legs = t.legs || [], out = [];
+  legs.forEach((l, i) => {
+    if (!l.c || l.transit || out.some(x => x.c === l.c)) return;
+    const mode = i === 0 && d.heen.length ? d.heen[d.heen.length - 1].mode : l.mode;
+    out.push({ c: l.c, mode: mode || 'other' });
+  });
+  return out;
+}
+const tilt = i => [-6, 4, -3, 5, -2][i % 5];
+export function miniStamps(t) {
+  return `<div class="pc-s">${entries(t).map((e, i) => `<span class="ministamp" style="--r:${tilt(i)}deg;--c:${STAMP_INK[i % 5]}">${flag(e.c)}<b>${ic(MODES[e.mode]?.[1] || 'dots', 11)}${esc(e.c)}</b></span>`).join('')}</div>`;
+}
+export function bigStamps(t) {
+  const es = entries(t), d = partsData(t), it = t.items || [];
+  const inDate = flightOf(d.heen[d.heen.length - 1], it)?.date || t.start, outDate = flightOf(d.terug[0], it)?.date || t.end;
+  return `<div class="stamps">${es.map((e, i) => {
+    const a = i === 0 ? inDate : '', b = i === es.length - 1 ? outDate : '';
+    return `<div class="stamp${e.mode === 'boat' ? ' round' : ''}" style="--r:${tilt(i)}deg;--c:${STAMP_INK[i % 5]}"><div class="st-top">${esc(nameOf(e.c))}</div><div class="st-f">${flag(e.c)}</div><div class="st-m">${ic(MODES[e.mode]?.[1] || 'dots', 16)}</div>${a || b ? `<div class="st-d">${a ? 'IN ' + dmyy(a) : ''}${a && b ? '<br>' : ''}${b ? 'UIT ' + dmyy(b) : ''}</div>` : ''}</div>`;
+  }).join('')}</div>`;
+}
+const ptH = p => p ? `<span class="pp">${p.c ? flag(p.c) : ''}<b>${esc(p.code || nameOf(p.c))}</b></span>` : '<span class="pp">?</span>';
+const mvH = (date, mode, a, b, sub, flightId) => `<${flightId ? `button type="button" data-item="${esc(flightId)}"` : 'div'} class="mv"><span class="mv-d">${esc(dmy(date))}</span><span class="mv-i">${ic(MODES[mode]?.[1] || 'dots', 16)}</span><span class="mv-r">${ptH(a)}<span class="arr">→</span>${ptH(b)}</span>${sub ? `<span class="mv-s">${esc(sub)}</span>` : ''}</${flightId ? 'button' : 'div'}>`;
+/** Alle verplaatsingen: Heen, Onderweg (tussen de landen van de route) en Terug. Een vlucht opent bij tikken. */
+export function movesHtml(t) {
+  const d = partsData(t), it = t.items || [], legs = (t.legs || []).filter(l => l.c);
+  const part = (steps, fallback) => steps.filter(s => s.from || s.to || s.flight).map((s, i, arr) => {
+    const e = stepEnds(s, it), f = flightOf(s, it);
+    return mvH(f?.date || (i === 0 ? fallback : ''), s.mode, placeOf(e.from, s.mode), placeOf(e.to, s.mode), i < arr.length - 1 && s.mode === 'plane' ? 'overstap' : '', f?.id);
+  }).join('');
+  const heen = part(d.heen, t.start), terug = part(d.terug, t.end);
+  const onder = legs.slice(1).map((l, i) => l.c === legs[i].c ? '' : mvH('', l.mode, { c: legs[i].c }, { c: l.c }, l.transit ? 'doorgereden' : '')).join('');
+  const grp = (n, h) => h ? `<div class="grp">${n}</div>${h}` : '';
+  const all = grp('Heen', heen) + grp('Onderweg', onder) + grp('Terug', terug);
+  return all ? `<div class="lab">Verplaatsingen</div><div class="moves">${all}</div>` : '';
+}

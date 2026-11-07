@@ -538,3 +538,36 @@ svg.globe .g-rim { fill: none; stroke: var(--field); stroke-width: 1px; }
 .rd-p { display: inline-flex; align-items: center; gap: 5px; flex: none; } .rd-p.lt { opacity: .55; }
 .rd:last-child { margin-bottom: 0; }
 .rd-wrap { margin-top: 14px; }
+
+/* ---------- Paspoortweergave van reizen ---------- */
+.paper { --pmuted: #8a7f6a; --pline: #d6ccb6; }
+:root:not([data-scheme=dark]) .paper { background: #f8f4ea; background-image: radial-gradient(rgba(120, 100, 60, .06) 1px, transparent 1px); background-size: 6px 6px; color: #2a2620; min-height: 100%; }
+[data-scheme=dark] .paper { --pmuted: var(--muted); --pline: var(--line); }
+.paper .pyear, .paper .pc-d, .paper .pmeta, .paper .lab, .paper .grp, .paper .mv-d, .paper .r-n, .paper .ministamp, .paper .stamp { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; letter-spacing: .06em; }
+.paper .pyear { font-size: 12px; color: var(--pmuted); margin: 14px 0 2px; text-align: left; }
+.plist { max-width: 760px; }
+.pcard { display: flex; justify-content: space-between; gap: 12px; padding: 14px 0; border-bottom: 1.5px dashed var(--pline); }
+.pc-t { font-weight: 700; font-size: 17px; overflow-wrap: anywhere; } .pc-d { font-size: 11px; color: var(--pmuted); margin: 4px 0 6px; text-transform: uppercase; }
+.pc-m { font-size: 13px; color: var(--pmuted); display: flex; gap: 5px; align-items: center; }
+.pc-s { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; justify-content: flex-end; max-width: 160px; flex: none; }
+.ministamp { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; padding: 4px 5px; border: 1.8px solid var(--c); border-radius: 6px; color: var(--c); transform: rotate(var(--r)); font-size: 9px; font-weight: 600; }
+.ministamp .flag { width: 22px; height: 16px; border-radius: 2px; } .ministamp b { display: flex; align-items: center; gap: 2px; }
+[data-scheme=dark] .ministamp, [data-scheme=dark] .stamp { filter: brightness(1.8) saturate(.8); }
+.ppage { max-width: 760px; }
+.ptop { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; } .ptop .grow { flex: 1; }
+.ptitle { font-size: 26px; overflow-wrap: anywhere; } .pmeta { font-size: 11px; color: var(--pmuted); margin-top: 6px; text-transform: uppercase; }
+.stamps { display: flex; flex-wrap: wrap; gap: 12px 14px; margin: 22px 0 8px; justify-content: center; }
+.stamp { border: 3px double var(--c); color: var(--c); border-radius: 12px; padding: 8px 10px; text-align: center; transform: rotate(var(--r)); opacity: .9; width: 150px; }
+.stamp.round { border-radius: 50%; width: 124px; height: 124px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; }
+.st-top { font-size: 9.5px; font-weight: 600; text-transform: uppercase; overflow-wrap: anywhere; } .st-f { margin: 5px 0 2px; } .st-f .flag { width: 30px; height: 22px; }
+.st-m { display: flex; justify-content: center; margin-bottom: 2px; } .st-d { font-size: 10px; font-weight: 600; }
+.paper .lab { font-size: 11px; color: var(--pmuted); margin: 24px 0 4px; border-bottom: 1px solid var(--pline); padding-bottom: 4px; text-transform: uppercase; }
+.paper .grp { font-size: 10px; color: var(--pmuted); opacity: .8; margin: 12px 0 2px; text-transform: uppercase; }
+.mv { display: grid; grid-template-columns: 44px 22px 1fr; align-items: center; column-gap: 6px; padding: 7px 0; border: 0; border-bottom: 1px dotted var(--pline); background: none; width: 100%; text-align: left; color: inherit; cursor: default; }
+button.mv { cursor: pointer; }
+.mv-d { font-size: 11px; color: var(--pmuted); } .mv-i { display: flex; } .mv-r { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; font-size: 15px; }
+.mv-s { grid-column: 3; font-size: 12px; color: var(--pmuted); }
+.pp { display: inline-flex; align-items: center; gap: 5px; } .pp .flag { width: 20px; height: 15px; border-radius: 2px; } .pp b { font-weight: 600; } .arr { color: var(--pmuted); }
+.prow { display: flex; justify-content: space-between; align-items: center; gap: 10px; width: 100%; padding: 10px 0; border: 0; border-bottom: 1px dotted var(--pline); background: none; color: inherit; text-align: left; cursor: pointer; }
+.prow .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; } .prow .r-t { font-weight: 600; font-size: 15px; overflow-wrap: anywhere; }
+.prow .r-s { font-size: 13px; color: var(--pmuted); } .prow .r-n { font-size: 10px; color: var(--pmuted); white-space: nowrap; text-transform: uppercase; }
