@@ -508,32 +508,64 @@ export function entries(t) {
 export const flagsHtml = t => `<div class="fvs">${entries(t).map(e => `<span class="fv" title="${esc(nameOf(e.c))} · ${esc(MODES[e.mode]?.[0] || '')}">${flag(e.c)}<span class="fm">${ic(MODES[e.mode]?.[1] || 'dots', 12)}</span></span>`).join('')}</div>`;
 const apH = (code, right) => { const a = airportByCode(code); return `<div class="ap${right ? ' r' : ''}">${a?.c ? flag(a.c) : ''}<b>${esc(code || '?')}</b>${a ? `<small>${esc(cityNl(a.city || a.name || ''))}</small>` : ''}</div>`; };
 const lineH = mode => `<div class="fc-l"><span></span>${ic(MODES[mode]?.[1] || 'dots', 16)}<span></span></div>`;
-/** Vervoer apart: elke vlucht een kaartje (Heen / Tussendoor / Terug), autoritten van heen en terug met de landen waar je doorrijdt. */
+/** Reisweg in volgorde: heenreis (vluchten of rit), dan de landen met tussendoorvluchten op hun plaats, dan de terugreis. */
 export function transportHtml(t) {
   const d = partsData(t), it = t.items || [];
-  const heenIds = new Set(d.heen.map(s => s.flight).filter(Boolean)), terugIds = new Set(d.terug.map(s => s.flight).filter(Boolean));
-  const flights = it.filter(i => i.type === 'flight').sort((a, b) => (a.date || '9').localeCompare(b.date || '9') || String(a.f?.dep || '').localeCompare(String(b.f?.dep || '')));
-  const fcard = i => {
-    const k = heenIds.has(i.id) ? 'Heen' : terugIds.has(i.id) ? 'Terug' : 'Tussendoor';
+  const ctryOf = code => airportByCode(code)?.c;
+  const byId = new Map(it.filter(i => i.type === 'flight').map(i => [i.id, i]));
+  const used = new Set();
+  const fcard = (i, k) => {
+    used.add(i.id);
     const px = i.f?.pax?.length ? i.f.pax : (i.f?.seat ? [{ seat: i.f.seat }] : []);
     const seats = px.filter(x => x.seat).map(x => x.name ? `${x.name.split(' ')[0]} ${x.seat}` : x.seat).join(' · ');
     return `<button type="button" class="fc" data-item="${esc(i.id)}"><div class="fc-h"><span>${k}</span><span>${esc(fmtDate(i.date))}</span></div>
       <div class="fc-r">${apH(i.f?.from)}${lineH('plane')}${apH(i.f?.to, true)}</div>
       ${i.f?.airline || seats ? `<div class="fc-f"><span>${esc(i.f?.airline || '')}</span><span>${seats ? ic('seat', 14) + esc(seats) : ''}</span></div>` : ''}</button>`;
   };
-  const legs = (t.legs || []).filter(l => l.c);
-  const firstStay = legs.findIndex(l => !l.transit), lastStay = legs.length - 1 - [...legs].reverse().findIndex(l => !l.transit);
-  const rit = (k, steps, date, via) => {
-    const s = steps.filter(x => x.mode !== 'plane' && (x.from || x.to));
-    if (!s.length) return '';
-    const from = s[0].from, to = s[s.length - 1].to, m = s[0].mode;
-    const cH = (c, r) => `<div class="ap${r ? ' r' : ''}">${c ? flag(c) : ''}<b>${esc(nameOf(c) || '?')}</b></div>`;
-    return `<div class="fc"><div class="fc-h"><span>${k}</span><span>${esc(fmtDate(date))}</span></div><div class="fc-r">${cH(from)}${lineH(m)}${cH(to, true)}</div>
-      ${via.length ? `<div class="fc-f"><span class="via">door ${via.map(c => flag(c)).join('')}</span></div>` : ''}</div>`;
+  const cH = (c, r) => `<div class="ap${r ? ' r' : ''}">${c ? flag(c) : ''}<b>${esc(nameOf(c) || '?')}</b></div>`;
+  // Heen of terug: vluchten als kaartjes, andere stappen samen als één rit met de landen waar je doorrijdt.
+  const part = (k, steps, date, edgeVia) => {
+    steps = steps.filter(x => x.from || x.to || x.flight);
+    let out = '', ride = [];
+    const flushRide = () => {
+      if (!ride.length) return;
+      const via = [...new Set([...ride.slice(0, -1).map(x => x.to), ...edgeVia])].filter(c => c && c !== ride[0].from && c !== ride[ride.length - 1].to);
+      out += `<div class="fc"><div class="fc-h"><span>${k}</span><span>${esc(fmtDate(date))}</span></div><div class="fc-r">${cH(ride[0].from)}${lineH(ride[0].mode)}${cH(ride[ride.length - 1].to, true)}</div>
+        ${via.length ? `<div class="fc-f"><span class="via">door ${via.map(c => `${flag(c)}${esc(nameOf(c))}`).join(', ')}</span></div>` : ''}</div>`;
+      ride = [];
+    };
+    for (const s of steps) {
+      const f = s.flight && byId.get(s.flight);
+      if (s.mode === 'plane' && f) { flushRide(); out += fcard(f, k); }
+      else if (s.mode === 'plane') { flushRide(); out += `<div class="fc"><div class="fc-h"><span>${k}</span><span>${esc(fmtDate(date))}</span></div><div class="fc-r">${apH(s.from)}${lineH('plane')}${apH(s.to, true)}</div></div>`; }
+      else ride.push(s);
+    }
+    flushRide();
+    return out;
   };
-  const viaH = firstStay > 0 ? legs.slice(0, firstStay).map(l => l.c) : [], viaT = lastStay >= 0 && lastStay < legs.length - 1 ? legs.slice(lastStay + 1).map(l => l.c) : [];
-  const ritten = rit('Heen', d.heen, t.start, viaH) + rit('Terug', d.terug, t.end, viaT);
-  const fl = flights.map(fcard).join('');
-  return (fl ? `<section class="card"><div class="card-head"><h2>Vluchten</h2></div>${fl}</section>` : '') +
-    (ritten ? `<section class="card"><div class="card-head"><h2>Met de ${esc((MODES[[...d.heen, ...d.terug].find(x => x.mode !== 'plane')?.mode]?.[0] || 'auto').toLowerCase())}</h2></div>${ritten}</section>` : '');
+  const legs = (t.legs || []).filter(l => l.c);
+  // Doorgereden landen aan het begin/einde van de route horen bij de heen-/terugrit als die met de auto is.
+  const carH = d.heen.some(x => x.mode !== 'plane'), carT = d.terug.some(x => x.mode !== 'plane');
+  let a = 0, b = legs.length;
+  const viaH = [], viaT = [];
+  if (carH) while (a < b && legs[a].transit) viaH.push(legs[a++].c);
+  if (carT) while (b > a && legs[b - 1].transit) viaT.unshift(legs[--b].c);
+  const mid = legs.slice(a, b);
+  const free = () => [...byId.values()].filter(i => !used.has(i.id));
+  let out = part('Heen', d.heen, t.start, viaH);
+  const terugIds = new Set(d.terug.map(s => s.flight).filter(Boolean));
+  terugIds.forEach(id => used.add(id));   // terugvluchten niet als tussendoor gebruiken
+  mid.forEach((l, i) => {
+    if (i) {
+      const prev = mid[i - 1];
+      const f = free().filter(x => !terugIds.has(x.id)).find(x => ctryOf(x.f?.from) === prev.c && ctryOf(x.f?.to) === l.c);
+      out += f ? fcard(f, 'Tussendoor') : (prev.c !== l.c || l.mode !== prev.mode ? `<div class="hop">${ic(MODES[l.mode]?.[1] || 'dots', 16)}<span>${esc(MODES[l.mode]?.[0] || '')}</span></div>` : '');
+    }
+    out += `<div class="ctry${l.transit ? ' lt' : ''}">${flag(l.c)}<b>${esc(nameOf(l.c))}</b>${l.transit ? '<small>doorgereden</small>' : ''}</div>`;
+  });
+  terugIds.forEach(id => used.delete(id));
+  const rest = free().filter(x => !terugIds.has(x.id));
+  out += rest.map(x => fcard(x, 'Tussendoor')).join('');
+  out += part('Terug', d.terug, t.end, viaT);
+  return out ? `<section class="card"><div class="card-head"><h2>Reisweg</h2></div>${out}</section>` : '';
 }

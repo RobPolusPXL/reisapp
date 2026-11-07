@@ -555,3 +555,9 @@ button.fc { cursor: pointer; } .card-head + .fc { margin-top: 0; }
 .fc-l { flex: 1; display: flex; align-items: center; gap: 6px; color: var(--accent); min-width: 40px; } .fc-l span { flex: 1; height: 2px; background: var(--accent-soft); }
 .fc-f { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--muted); border-top: 1px dashed var(--line); padding-top: 8px; flex-wrap: wrap; }
 .fc-f span { display: flex; align-items: center; gap: 5px; } .via .flag { width: 20px; height: 14px; border-radius: 2px; }
+.ctry { display: flex; align-items: center; gap: 10px; padding: 12px 14px; margin-top: 10px; border-radius: 16px; background: var(--accent-soft); }
+.ctry .flag { width: 30px; height: 22px; border-radius: 3px; } .ctry b { font-size: 17px; overflow-wrap: anywhere; }
+.ctry.lt { background: none; border: 1px dashed var(--line); padding: 8px 14px; } .ctry.lt b { font-size: 15px; font-weight: 600; color: var(--muted); } .ctry small { margin-left: auto; color: var(--muted); font-size: 12px; }
+.card-head + .ctry { margin-top: 0; }
+.hop { display: flex; align-items: center; gap: 8px; margin: 8px 0 0 22px; padding-left: 14px; border-left: 2px dashed var(--line); min-height: 28px; color: var(--accent); font-size: 13px; } .hop span { color: var(--muted); }
+.via { flex-wrap: wrap; } .via .flag { margin-right: 3px; }
