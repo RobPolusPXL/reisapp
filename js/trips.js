@@ -111,17 +111,6 @@ export function routeOf(trip) {
       return aps.length === 1 ? { kind: 'ap', mode: 'plane', c: l.c, code: aps[0].code, name: cityNl(aps[0].name) } : l;
     });
   }
-  // Aankomst- en vertrekluchthaven per land waar je met het vliegtuig naartoe gaat (eerste keer erheen, laatste keer eruit).
-  if (flights.length) {
-    const apInfo = code => { const a = airportByCode(code); return a ? { code: a.code, name: cityNl(a.city || a.name), c: a.c } : null; };
-    legs.forEach((l, i) => {
-      if (l.kind !== 'c') return;
-      const arr = flights.find(f => airportByCode(f.f.to)?.c === l.c);
-      if (l.mode === 'plane' && arr && legs.findIndex(x => x.c === l.c) === i) l.arr = apInfo(arr.f.to);
-      const dep = [...flights].reverse().find(f => airportByCode(f.f.from)?.c === l.c);
-      if (dep && legs.map(x => x.c).lastIndexOf(l.c) === i) l.dep = apInfo(dep.f.from);
-    });
-  }
   if (!fromAp) {
     // Geen vlucht: begin in het gekozen vertrekland (of je thuisland) als je er niet met het vliegtuig vertrekt.
     const start = trip.from || homeCountry();
@@ -193,10 +182,7 @@ export function legsSplit(items) {
   const first = visited.indexOf(true), last = visited.lastIndexOf(true);
   if (first < 0) return legsCompact(items);
   const chain = arr => arr.map((l, i) => `${i ? modeIc(l) : ''}${chipOf(l)}`).join('');
-  const asAp = (l, x) => x ? { kind: 'ap', mode: l.mode, c: x.c, code: x.code, name: x.name } : l;   // aankomst/vertrek als luchthaven
-  const heen = items.slice(0, first + 1), terug = items.slice(last);
-  heen[first] = asAp(heen[first], heen[first].arr);
-  terug[0] = asAp(terug[0], terug[0].dep);   // inclusief vertrek, aankomst en het vervoer ertussen
+  const heen = items.slice(0, first + 1), terug = items.slice(last);   // inclusief vertrek, aankomst en het vervoer ertussen
   const seen = new Set(), pills = [];
   items.forEach((l, i) => { if (visited[i] && !seen.has(l.c)) { seen.add(l.c); pills.push(`<span class="cpill">${flag(l.c)}<span>${esc(nameOf(l.c))}</span></span>`); } });
   const row = (lab, html, cls = '') => html ? `<div class="srow${cls}"><i>${lab}</i><div class="croute">${html}</div></div>` : '';
