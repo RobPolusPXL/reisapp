@@ -151,8 +151,8 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     sh.setHtml(`<h2>${trip ? 'Reis bewerken' : 'Nieuwe reis'}</h2>
     <form class="form blank" novalidate>
       <div class="field"><label for="f-titel">Titel</label><input id="f-titel" name="titel" value="${esc(draft.title)}"></div>
-      <div class="pair"><div class="field"><label for="f-start">Start</label><input id="f-start" name="start" type="date" value="${esc(draft.start)}"></div>
-      <div class="field"><label for="f-einde">Einde</label><input id="f-einde" name="einde" type="date" value="${esc(draft.end)}"></div></div>
+      <div class="pair"><div class="field"><label for="f-start">Start</label><input id="f-start" name="start" type="date" class="${draft.start ? '' : 'e'}" value="${esc(draft.start)}"></div>
+      <div class="field"><label for="f-einde">Einde</label><input id="f-einde" name="einde" type="date" class="${draft.end ? '' : 'e'}" value="${esc(draft.end)}"></div></div>
       <div class="field"><label for="f-mate">Reisgenoten (optioneel)</label>
         ${draft.mates.length ? `<div class="mates">${draft.mates.map((m, i) => `<span class="mate">${esc(m)}<button type="button" data-rmmate="${i}" aria-label="${esc(m)} verwijderen">${ic('x', 16)}</button></span>`).join('')}</div>` : ''}
         <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
@@ -170,6 +170,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
   };
   render();
   bindCountryPick(sh.el);
+  sh.el.addEventListener('input', e => { if (e.target.type === 'date') e.target.classList.toggle('e', !e.target.value); });
   sh.el.addEventListener('click', e => {
     const am = e.target.closest('[data-addmate]'), rmm = e.target.closest('[data-rmmate]');
     if (am || rmm) {

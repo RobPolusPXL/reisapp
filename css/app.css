@@ -561,3 +561,4 @@ svg.globe .g-rim { fill: none; stroke: var(--field); stroke-width: 1px; }
 .hsec { margin-top: 10px; } .hsec .croute { margin-top: 4px; }
 .legsep { margin: 6px 0 -4px; }
 .form.blank .cp-btn.empty span { visibility: hidden; }
+.form.blank input[type=date].e:not(:focus)::-webkit-datetime-edit { color: transparent; }
