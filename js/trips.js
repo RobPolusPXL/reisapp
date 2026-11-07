@@ -164,13 +164,31 @@ function linkFlights(steps, t, taken) {
   }
   return out;
 }
+const sortFlights = a => [...a].sort((x, y) => (x.date || '9').localeCompare(y.date || '9') || String(x.f?.dep || '').localeCompare(String(y.f?.dep || '')));
+/** Vluchten waarbij je zelf 'Deel van' koos, op hun plaats zetten: de vliegstappen van die kant worden die vluchten. */
+function applyParts(steps, flights, atStart) {
+  if (!flights.length) return steps;
+  const fsteps = sortFlights(flights).map(f => ({ mode: 'plane', from: f.f.from, to: f.f.to, flight: f.id }));
+  const i = steps.findIndex(x => x.mode === 'plane');
+  const rest = steps.filter(x => x.mode !== 'plane');
+  if (i < 0) return atStart ? [...fsteps, ...rest] : [...rest, ...fsteps];
+  const before = steps.slice(0, i).filter(x => x.mode !== 'plane'), after = steps.slice(i).filter(x => x.mode !== 'plane');
+  return [...before, ...fsteps, ...after];
+}
 export const partsData = t => {
-  // Per kant: wat is ingevuld (vliegstappen gekoppeld aan de vluchten), anders afgeleid uit de vluchten.
+  // 1. Vluchten met een gekozen 'Deel van' (Heenreis/Terugreis/Onderweg) gaan voor.
+  // 2. Daarna: wat in heen/terug is ingevuld (vliegstappen gekoppeld aan de vluchten), anders afgeleid uit de vluchten.
   const filled = a => (a || []).filter(x => x.from || x.to || x.flight);
-  const taken = new Set();
-  const h = linkFlights(filled(t.heen), t, taken), r = linkFlights(filled(t.terug), t, taken);
+  const fl = (t.items || []).filter(i => i.type === 'flight' && i.f?.from && i.f?.to);
+  const part = k => fl.filter(i => i.f.part === k);
+  const taken = new Set(fl.filter(i => i.f.part).map(i => i.id));
+  const strip = a => a.map(x => x.flight && taken.has(x.flight) ? { ...x, flight: undefined } : x);
+  let h = linkFlights(strip(filled(t.heen)), t, taken), r = linkFlights(strip(filled(t.terug)), t, taken);
+  const ph = part('heen'), pt = part('terug');
+  if (ph.length) h = applyParts(h, ph, false);
+  if (pt.length) r = applyParts(r, pt, true);
   if (h.length && r.length) return { heen: h, terug: r };
-  const lp = legacyParts(t);
+  const lp = legacyParts({ ...t, items: (t.items || []).filter(i => !taken.has(i.id)) });
   const used = new Set([...h, ...r].map(x => x.flight).filter(Boolean));
   return {
     heen: h.length ? h : lp.heen.filter(x => !used.has(x.flight)),
@@ -413,6 +431,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     if (draft.type === 'stay' || draft.type === 'activity') draft.dateEnd = val(f, 'dateEnd'); else delete draft.dateEnd;
     if (draft.type === 'flight') {
       for (const k of ['airline', 'number', 'from', 'to', 'dep', 'arr', 'ref']) draft.f[k] = val(f, k);
+      draft.f.part = val(f, 'part'); if (!draft.f.part) delete draft.f.part;
       draft.f.pax = [...f.querySelectorAll('[data-pax]')].map(r => ({
         name: r.querySelector('[name=pname]').value.trim(), seat: r.querySelector('[name=pseat]').value.trim().toUpperCase(), cls: r.querySelector('[name=pcls]').value,
       })).filter(x => x.name || x.seat || x.cls);
@@ -438,6 +457,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
         <div class="pair">${fld('airline', 'Maatschappij', 'text', f.airline, 'Maatschappij')}${fld('number', 'Vluchtnummer', 'text', f.number, 'Vluchtnummer')}</div>
         <div class="pair">${fld('from', 'Van', 'text', f.from, 'Luchthaven of stad', apAttr)}${fld('to', 'Naar', 'text', f.to, 'Luchthaven of stad', apAttr)}</div>
         ${fld('date', 'Datum', 'date', draft.date)}
+        <div class="field"><label for="i-part">Deel van</label><select id="i-part" name="part">${[['', 'Automatisch'], ['heen', 'Heenreis'], ['terug', 'Terugreis'], ['onderweg', 'Onderweg']].map(([k, n]) => `<option value="${k}"${(f.part || '') === k ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
         <div class="pair">${fld('dep', 'Vertrek', 'time', f.dep)}${fld('arr', 'Aankomst', 'time', f.arr)}</div>
         <div class="field"><label>Reizigers</label>
           <div class="pax-list">${(f.pax.length ? f.pax : [{}]).map(paxRow).join('')}</div>
@@ -546,7 +566,7 @@ const apH = (code, right) => { const a = airportByCode(code); return `<div class
 const lineH = mode => `<div class="fc-l"><span></span>${ic(MODES[mode]?.[1] || 'dots', 16)}<span></span></div>`;
 /** Vervoer apart: elke vlucht een kaartje (Heen / Tussendoor / Terug), autoritten van heen en terug met de landen waar je doorrijdt. */
 const flightsOf = t => (t.items || []).filter(i => i.type === 'flight').sort((a, b) => (a.date || '9').localeCompare(b.date || '9') || String(a.f?.dep || '').localeCompare(String(b.f?.dep || '')));
-const flightLabel = (t, id) => { const d = partsData(t); return d.heen.some(s => s.flight === id) ? 'Heen' : d.terug.some(s => s.flight === id) ? 'Terug' : 'Tussendoor'; };
+const flightLabel = (t, id) => { const d = partsData(t); return d.heen.some(s => s.flight === id) ? 'Heen' : d.terug.some(s => s.flight === id) ? 'Terug' : 'Onderweg'; };
 /** Vluchtkaartje: Heen/Tussendoor/Terug, datum, luchthavens met stad, maatschappij en zitplaatsen. Tik opent de vlucht. */
 function flightCard(t, i) {
   const px = i.f?.pax?.length ? i.f.pax : (i.f?.seat ? [{ seat: i.f.seat }] : []);
