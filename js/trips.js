@@ -137,10 +137,38 @@ function legacyParts(t) {
   return out;
 }
 /** Heen en terug van een reis: wat is opgeslagen, anders (oude reis) afgeleid uit de vluchten. */
+/** Vliegstappen zonder gekoppelde vlucht koppelen aan de vluchten van de reis: dezelfde van/naar, of een aansluitende reeks (bv. BRU → MAD → SJO voor een stap BRU → SJO). */
+function linkFlights(steps, t, taken) {
+  const fl = (t.items || []).filter(i => i.type === 'flight' && i.f?.from && i.f?.to && !taken.has(i.id))
+    .sort((a, b) => (a.date || '9').localeCompare(b.date || '9') || String(a.f.dep || '').localeCompare(String(b.f.dep || '')));
+  const out = [];
+  for (const s of steps) {
+    if (s.mode !== 'plane' || (s.flight && (t.items || []).some(i => i.id === s.flight))) { out.push(s); if (s.flight) taken.add(s.flight); continue; }
+    const from = String(s.from || '').toUpperCase(), to = String(s.to || '').toUpperCase();
+    const free = fl.filter(i => !taken.has(i.id));
+    const direct = free.find(i => i.f.from === from && (!to || i.f.to === to));
+    if (direct) { taken.add(direct.id); out.push({ ...s, flight: direct.id }); continue; }
+    // Aansluitende vluchten van 'from' naar 'to'
+    const start = free.find(i => i.f.from === from);
+    if (start && to) {
+      const chain = [start];
+      while (chain.length < 4 && chain[chain.length - 1].f.to !== to) {
+        const last = chain[chain.length - 1];
+        const nx = free.find(i => !chain.includes(i) && i.f.from === last.f.to && dayDiff(last.date, i.date) <= 1);
+        if (!nx) break;
+        chain.push(nx);
+      }
+      if (chain[chain.length - 1].f.to === to) { chain.forEach(c => taken.add(c.id)); chain.forEach(c => out.push({ mode: 'plane', from: c.f.from, to: c.f.to, flight: c.id })); continue; }
+    }
+    out.push(s);
+  }
+  return out;
+}
 export const partsData = t => {
-  // Per kant: wat is ingevuld, anders afgeleid uit de vluchten (ook als de reis ooit met een lege heen/terug werd opgeslagen).
+  // Per kant: wat is ingevuld (vliegstappen gekoppeld aan de vluchten), anders afgeleid uit de vluchten.
   const filled = a => (a || []).filter(x => x.from || x.to || x.flight);
-  const h = filled(t.heen), r = filled(t.terug);
+  const taken = new Set();
+  const h = linkFlights(filled(t.heen), t, taken), r = linkFlights(filled(t.terug), t, taken);
   if (h.length && r.length) return { heen: h, terug: r };
   const lp = legacyParts(t);
   const used = new Set([...h, ...r].map(x => x.flight).filter(Boolean));
