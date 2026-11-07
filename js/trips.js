@@ -1,6 +1,6 @@
 // Gedeelde onderdelen voor reizen: vervoer, itemtypes, formulieren
 import { get, update, newId } from './store.js';
-import { list, byCode, nameOf, flag } from './data.js';
+import { list, byCode, nameOf, flag, searchCountries } from './data.js';
 import { loadAirlines, airlineByName, attachAirlineSearch } from './airlines.js';
 import { scanBoardingPass } from './boardingpass.js';
 import { loadAirports, airportByCode, attachAirportSearch, ensureMyAirport } from './airports.js';
@@ -25,6 +25,57 @@ export const CLASSES = ['Economy', 'Premium economy', 'Business', 'First'];
 
 export const countryOptions = sel =>
   '<option value="">Kies een land</option>' + list.map(c => `<option value="${c.c}"${c.c === sel ? ' selected' : ''}>${esc(c.n)}</option>`).join('');
+
+/** Landkeuze met zoekveld: een verborgen veld met de landcode (zodat formulieren het gewoon als `name` uitlezen) en een zoekveld met resultaten eronder. */
+export const countryPick = (name, sel, label, id = '') => `<div class="cpick">
+  <input type="hidden" name="${name}" value="${esc(sel || '')}">
+  <input type="search" class="cp-in"${id ? ` id="${id}"` : ''} value="${esc(sel ? nameOf(sel) : '')}" placeholder="Zoek een land" aria-label="${esc(label)}" autocomplete="off" autocapitalize="words" enterkeyhint="done">
+  <ul class="cp-list" hidden></ul></div>`;
+/** Zet een landkeuze (verborgen veld + zichtbare naam) op een code. */
+export function setCountryPick(form, name, code) {
+  const h = form.elements[name]; if (!h) return;
+  h.value = code || '';
+  const box = h.closest('.cpick'); if (box) box.querySelector('.cp-in').value = code ? nameOf(code) : '';
+}
+/** Koppelt alle landkeuzes binnen `root` (ook later toegevoegde). */
+export function bindCountryPick(root) {
+  const hide = box => { const ul = box.querySelector('.cp-list'); ul.hidden = true; };
+  const show = box => {
+    const inp = box.querySelector('.cp-in'), ul = box.querySelector('.cp-list');
+    const cur = box.querySelector('input[type=hidden]').value;
+    const q = cur && inp.value === nameOf(cur) ? '' : inp.value;   // staat er al een land, dan toon je de hele lijst
+    const found = searchCountries(q, 60);
+    ul.innerHTML = found.map(c => `<li><button type="button" data-pick="${c.c}">${flag(c.c)}<span>${esc(c.n)}</span></button></li>`).join('') || '<li class="empty">Geen landen gevonden.</li>';
+    ul.hidden = false;
+  };
+  const pick = (box, code) => {
+    box.querySelector('input[type=hidden]').value = code;
+    box.querySelector('.cp-in').value = nameOf(code);
+    hide(box);
+  };
+  root.addEventListener('focusin', e => { const box = e.target.closest?.('.cpick'); if (box && e.target.classList.contains('cp-in')) { e.target.select?.(); show(box); } });
+  root.addEventListener('input', e => {
+    const box = e.target.closest?.('.cpick'); if (!box || !e.target.classList.contains('cp-in')) return;
+    box.querySelector('input[type=hidden]').value = '';
+    show(box);
+  });
+  root.addEventListener('keydown', e => {
+    const box = e.target.closest?.('.cpick'); if (!box || !e.target.classList.contains('cp-in')) return;
+    if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); const first = box.querySelector('[data-pick]'); if (first && !box.querySelector('.cp-list').hidden) pick(box, first.dataset.pick); }
+    if (e.key === 'Escape') hide(box);
+  });
+  root.addEventListener('pointerdown', e => { if (e.target.closest?.('.cp-list')) e.preventDefault(); });   // zoekveld houdt de focus
+  root.addEventListener('click', e => {
+    const b = e.target.closest?.('[data-pick]'); if (!b) return;
+    e.stopPropagation(); pick(b.closest('.cpick'), b.dataset.pick);
+  });
+  root.addEventListener('focusout', e => {
+    const box = e.target.closest?.('.cpick'); if (!box || !e.target.classList.contains('cp-in')) return;
+    hide(box);
+    const h = box.querySelector('input[type=hidden]');
+    if (!h.value) e.target.value = '';   // niets gekozen: veld leegmaken in plaats van een naam die niet bewaard wordt
+  });
+}
 
 /** Thuisland: het land waar je het vaakst vertrekt volgens de eerste vlucht van elke reis. */
 export function homeCountry(state = get()) {
@@ -181,10 +232,10 @@ export function openTripForm(trip = null, { onSaved } = {}) {
         <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" placeholder="Naam" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
         <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !draft.mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist></div>
       <div class="label">Route</div>
-      <div class="field" data-vertrek${(draft.legs[0]?.mode || 'plane') === 'plane' ? ' hidden' : ''}><label for="f-vertrek">Vertrek uit</label><select id="f-vertrek" name="vertrek">${countryOptions(draft.from || homeCountry())}</select></div>
+      <div class="field" data-vertrek${(draft.legs[0]?.mode || 'plane') === 'plane' ? ' hidden' : ''}><label for="f-vertrek">Vertrek uit</label>${countryPick('vertrek', draft.from || homeCountry(), 'Vertrek uit', 'f-vertrek')}</div>
       <div class="legs">${draft.legs.map((l, i) => `<div class="legrow" data-leg="${i}"><button type="button" class="grip" aria-label="Stop ${i + 1} verslepen" title="Sleep om te verplaatsen"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button><div style="flex:1;min-width:0"><div class="pair" style="align-items:center">
         <div class="field"><select name="mode-${i}" aria-label="Vervoer stop ${i + 1}">${Object.entries(MODES).map(([k, [n]]) => `<option value="${k}"${k === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
-        <div class="field"><select name="land-${i}" aria-label="Land stop ${i + 1}">${countryOptions(l.c)}</select></div>
+        <div class="field">${countryPick(`land-${i}`, l.c, `Land stop ${i + 1}`)}</div>
         ${draft.legs.length > 1 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${i}" aria-label="Stop ${i + 1} verwijderen">${ic('x', 20)}</button>` : ''}
       </div>
       <label class="transit" data-transit="${i}"><input type="checkbox" name="transit-${i}"${l.transit ? ' checked' : ''}> <span>${transitTxt(l.mode)} (land telt niet mee als bezocht)</span></label></div></div>`).join('')}</div>
@@ -194,6 +245,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     </form>`);
   };
   render();
+  bindCountryPick(sh.el);
   sh.el.addEventListener('click', e => {
     const am = e.target.closest('[data-addmate]'), rmm = e.target.closest('[data-rmmate]');
     if (am || rmm) {
