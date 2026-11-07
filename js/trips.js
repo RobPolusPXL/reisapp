@@ -521,19 +521,55 @@ export function transportHtml(t) {
       <div class="fc-r">${apH(i.f?.from)}${lineH('plane')}${apH(i.f?.to, true)}</div>
       ${i.f?.airline || seats ? `<div class="fc-f"><span>${esc(i.f?.airline || '')}</span><span>${seats ? ic('seat', 14) + esc(seats) : ''}</span></div>` : ''}</button>`;
   };
-  const legs = (t.legs || []).filter(l => l.c);
-  const firstStay = legs.findIndex(l => !l.transit), lastStay = legs.length - 1 - [...legs].reverse().findIndex(l => !l.transit);
-  const rit = (k, steps, date, via) => {
-    const s = steps.filter(x => x.mode !== 'plane' && (x.from || x.to));
-    if (!s.length) return '';
-    const from = s[0].from, to = s[s.length - 1].to, m = s[0].mode;
-    const cH = (c, r) => `<div class="ap${r ? ' r' : ''}">${c ? flag(c) : ''}<b>${esc(nameOf(c) || '?')}</b></div>`;
-    return `<div class="fc"><div class="fc-h"><span>${k}</span><span>${esc(fmtDate(date))}</span></div><div class="fc-r">${cH(from)}${lineH(m)}${cH(to, true)}</div>
-      ${via.length ? `<div class="fc-f"><span class="via">door ${via.map(c => flag(c)).join('')}</span></div>` : ''}</div>`;
-  };
-  const viaH = firstStay > 0 ? legs.slice(0, firstStay).map(l => l.c) : [], viaT = lastStay >= 0 && lastStay < legs.length - 1 ? legs.slice(lastStay + 1).map(l => l.c) : [];
-  const ritten = rit('Heen', d.heen, t.start, viaH) + rit('Terug', d.terug, t.end, viaT);
   const fl = flights.map(fcard).join('');
-  return (fl ? `<section class="card"><div class="card-head"><h2>Vluchten</h2></div>${fl}</section>` : '') +
-    (ritten ? `<section class="card"><div class="card-head"><h2>Met de ${esc((MODES[[...d.heen, ...d.terug].find(x => x.mode !== 'plane')?.mode]?.[0] || 'auto').toLowerCase())}</h2></div>${ritten}</section>` : '');
+  return fl ? `<section class="card"><div class="card-head"><h2>Vluchten</h2></div>${fl}</section>` : '';
+}
+
+// ---- Reisweg als metrolijn: stations onder elkaar, de lijn kleurt per vervoer ----
+const MODE_COLOR = { plane: '#0E7C66', boat: '#1f78c8', car: '#d97706', train: '#7c3aed', bus: '#b45309', other: '#64748b' };
+/** Stations van de reis: vertrek, overstappen/doorgereden landen, bezochte landen, thuiskomst. Elk station krijgt het vervoer waarmee je er aankwam. */
+export function stationsOf(t) {
+  const d = partsData(t), it = t.items || [];
+  const heen = d.heen.filter(x => x.from || x.to || x.flight), terug = d.terug.filter(x => x.from || x.to || x.flight);
+  const place = (code, mode) => {
+    if (mode === 'plane') { const a = airportByCode(code); return { c: a?.c, name: a ? cityNl(a.city || a.name || a.code) : String(code || '?').toUpperCase() }; }
+    return { c: code, name: nameOf(code) || '?' };
+  };
+  const st = [];
+  const push = (p, kind, sub, mode) => { if (!p?.c && !p?.name) return; st.push({ ...p, kind, sub, mode }); };
+  if (heen.length) {
+    const e0 = stepEnds(heen[0], it);
+    push(place(e0.from, heen[0].mode), 'home', fmtDate(flightOf(heen[0], it)?.date || t.start), null);
+    heen.slice(0, -1).forEach(s => push(place(stepEnds(s, it).to, s.mode), 'small', s.mode === 'plane' ? 'overstap' : 'doorgereden', s.mode));
+  }
+  const legs = (t.legs || []).filter(l => l.c);
+  legs.forEach((l, i) => {
+    const mode = i === 0 && heen.length ? heen[heen.length - 1].mode : l.mode;
+    push({ c: l.c, name: nameOf(l.c) }, l.transit ? 'small' : 'stay', l.transit ? (mode === 'plane' ? 'overstap' : 'doorgereden') : '', st.length ? mode : null);
+  });
+  if (terug.length) {
+    terug.slice(0, -1).forEach(s => {
+      const p = place(stepEnds(s, it).to, s.mode), last = st[st.length - 1];
+      if (last && last.c === p.c && last.kind !== 'home' && s.mode !== 'plane') return;
+      push(p, 'small', s.mode === 'plane' ? 'overstap' : 'doorgereden', s.mode);
+    });
+    const l = terug[terug.length - 1];
+    push(place(stepEnds(l, it).to, l.mode), 'home', fmtDate(flightOf(l, it)?.date || t.end), l.mode);
+  }
+  return st;
+}
+export function metroHtml(t) {
+  const st = stationsOf(t);
+  if (st.length < 2) return '';
+  const used = new Set();
+  const rows = st.map((s, i) => {
+    const next = st[i + 1], seg = next?.mode, col = MODE_COLOR[seg] || MODE_COLOR.other;
+    const dotCol = MODE_COLOR[s.mode || seg] || MODE_COLOR.other;
+    const chg = seg && seg !== s.mode;
+    if (seg) used.add(seg);
+    return `<div class="mst ${s.kind}"><div class="mrail"><span class="mdot" style="--c:${dotCol}"></span>${seg ? `<span class="mseg${seg === 'boat' ? ' dash' : ''}" style="--c:${col}"></span>` : ''}${chg ? `<span class="mchg" style="background:${col}" title="${esc(MODES[seg]?.[0] || '')}">${ic(MODES[seg]?.[1] || 'dots', 13)}</span>` : ''}</div>
+      <div class="mtx">${s.c ? flag(s.c) : ''}<div><b>${esc(s.name)}</b>${s.sub ? `<small>${esc(s.sub)}</small>` : ''}</div></div></div>`;
+  }).join('');
+  const leg = [...used].map(m => `<span><i style="background:${MODE_COLOR[m] || MODE_COLOR.other}"></i>${esc((MODES[m]?.[0] || '').toLowerCase())}</span>`).join('');
+  return `<section class="card"><div class="card-head"><h2>Reisweg</h2></div><div class="metro">${rows}</div>${used.size > 1 ? `<div class="mleg">${leg}</div>` : ''}</section>`;
 }

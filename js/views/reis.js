@@ -2,7 +2,7 @@ import { get, subscribe, getTrip, update } from '../store.js';
 import { nameOf } from '../data.js';
 import { loadAirports } from '../airports.js';
 import { esc, ic, ICONS, fmtRange, fmtDate, daysBetween, scoreH } from '../ui.js';
-import { matesText, flagsHtml, transportHtml, TYPES, openTripForm, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
+import { matesText, flagsHtml, transportHtml, metroHtml, TYPES, openTripForm, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
 
 export function mount(el, { params }) {
   const id = params[0];
@@ -45,6 +45,7 @@ export function mount(el, { params }) {
       </header>
       ${flagsHtml(t)}
       <div class="trip-secs">
+        ${metroHtml(t)}
         ${transportHtml(t)}
         ${sec('Verblijven', 'stay')}${sec('Gedaan', 'activity')}${sec('Gegeten', 'food')}
         <button type="button" class="btn dashed" id="add">${ic('plus', 20)}Item toevoegen</button>
