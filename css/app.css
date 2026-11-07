@@ -572,3 +572,4 @@ svg.globe .g-rim { fill: none; stroke: var(--field); stroke-width: 1px; }
 /* In het gesplitste overzicht zijn alle vlaggen en luchthavens even helder */
 .split .ac.lt, .split .thru { opacity: 1; }
 .split .ac.lt::after { background: radial-gradient(ellipse 70% 90% at 50% 50%, rgba(12, 16, 18, .3), rgba(12, 16, 18, .16) 55%, transparent); }
+.split .cm2 { opacity: .45; }
