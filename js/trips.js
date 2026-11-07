@@ -37,70 +37,6 @@ export function homeCountry(state = get()) {
   return Object.entries(count).sort((a, b) => b[1] - a[1])[0]?.[0] || '';
 }
 
-/** Route van een reis: begin- en eindluchthaven uit je vluchten, overstappen (vluchten die aansluiten) en daartussen de stops die je invulde. */
-export function routeOf(trip) {
-  let legs = (trip.legs || []).map(l => ({ kind: 'c', mode: l.mode, c: l.c, ...(l.transit && l.mode !== 'plane' ? { through: true } : {}) }));
-  if (!legs.length) return legs;
-  const up = x => String(x || '').trim().toUpperCase();
-  // Vluchten op volgorde van datum en vertrektijd; dubbele vluchten (zelfde reizigers apart ingevoerd) tellen één keer; aansluitende vluchten op dezelfde dag staan achter elkaar.
-  const seen = new Set();
-  const flights = (trip.items || []).filter(i => i.type === 'flight' && i.f?.from)
-    .filter(i => { const k = `${i.date}|${up(i.f.from)}|${up(i.f.to)}`; if (seen.has(k)) return false; seen.add(k); return true; })
-    .sort((a, b) => (a.date || '9').localeCompare(b.date || '9') || String(a.f.dep || '').localeCompare(String(b.f.dep || '')));
-  for (let pass = 0; pass < flights.length; pass++) {
-    let moved = false;
-    for (let i = 0; i < flights.length; i++) for (let j = i + 1; j < flights.length; j++) {
-      if (flights[j].date === flights[i].date && up(flights[j].f.to) === up(flights[i].f.from) && up(flights[i].f.to) !== up(flights[j].f.from)) {
-        flights.splice(i, 0, flights.splice(j, 1)[0]); moved = true;
-      }
-    }
-    if (!moved) break;
-  }
-  const fromAp = airportByCode(flights[0]?.f.from);
-  // Per vliegtuig bereikt zonder vlucht naar dat land (bv. een stop in Lissabon op weg naar Florida): toon de opgeslagen luchthaven van dat land.
-  if (flights.length) {
-    const flownTo = new Set(flights.map(f => airportByCode(f.f.to)?.c).filter(Boolean));
-    const saved = get().places?.airports || [];
-    legs = legs.map(l => {
-      if (l.mode !== 'plane' || flownTo.has(l.c)) return l;
-      const aps = saved.filter(a => a.c === l.c);
-      return aps.length === 1 ? { kind: 'ap', mode: 'plane', c: l.c, code: aps[0].code, name: cityNl(aps[0].name) } : l;
-    });
-  }
-  if (!fromAp) {
-    // Geen vlucht: begin in het gekozen vertrekland (of je thuisland) als je er niet met het vliegtuig vertrekt.
-    const start = trip.from || homeCountry();
-    if (start && legs[0].mode !== 'plane' && legs[0].c !== start) return [{ kind: 'c', mode: legs[0].mode, c: start }, ...legs];
-    return legs;
-  }
-  const ap = (code, layover) => {
-    const a = airportByCode(code);
-    return a ? { kind: 'ap', mode: 'plane', c: a.c, code: a.code, name: cityNl(a.city || a.name), layover } : null;
-  };
-  const near = (x, y) => x.date && y.date && daysBetween(x.date, y.date) <= 2 && daysBetween(x.date, y.date) >= 1;
-  const same = (x, y) => String(x || '').toUpperCase() === String(y || '').toUpperCase();
-  // heenreis: aansluitende vluchten vanaf de eerste vlucht
-  let n = 1;
-  while (n < flights.length && same(flights[n - 1].f.to, flights[n].f.from) && near(flights[n - 1], flights[n])) n++;
-  const outStops = flights.slice(0, n - 1).map(f => ap(f.f.to, true)).filter(x => x && x.c !== legs[0].c);
-  const out = [{ ...ap(fromAp.code, false), mode: legs[0].mode }, ...outStops, ...legs];
-  if (legs[0].c === fromAp.c && !outStops.length) out.shift();
-  // terugreis: aansluitende vluchten naar het land van vertrek
-  const rest = flights.slice(n);
-  const end = ap(fromAp.code, false);
-  const lastIn = rest[rest.length - 1];
-  const back = [];
-  if (lastIn && airportByCode(lastIn.f.to)?.c === fromAp.c) {
-    let k = rest.length - 1;
-    while (k > 0 && same(rest[k - 1].f.to, rest[k].f.from) && near(rest[k - 1], rest[k])) k--;
-    for (let m = k + 1; m < rest.length; m++) { const x = ap(rest[m].f.from, true); if (x && x.c !== legs[legs.length - 1].c) back.push(x); }
-  }
-  // Landt de laatste vlucht niet in het land van vertrek (bv. terug in Frankfurt), dan is dat een overstap vóór de thuisreis.
-  if (lastIn && airportByCode(lastIn.f.to)?.c !== fromAp.c) { const x = ap(lastIn.f.to, true); if (x && x.c !== legs[legs.length - 1].c) back.push(x); }
-  if (out[out.length - 1].c !== fromAp.c || back.length) out.push(...back, { ...end, mode: 'plane' });
-  return out;
-}
-
 // Nederlandse namen voor veelvoorkomende luchthavensteden (de bron heeft Engelse namen).
 const NL_CITY = {
   Brussels: 'Brussel', Vienna: 'Wenen', Lisbon: 'Lissabon', Prague: 'Praag', Cologne: 'Keulen', Warsaw: 'Warschau', Athens: 'Athene',
@@ -109,21 +45,6 @@ const NL_CITY = {
   Brasov: 'Brașov', Cairo: 'Caïro', Edinburgh: 'Edinburgh', 'New York': 'New York', Marrakesh: 'Marrakech', Dubrovnik: 'Dubrovnik',
 };
 const cityNl = c => NL_CITY[c] || c;
-const nm = c => esc(nameOf(c));
-/** Route in de reis zelf (en op laptop): stops onder elkaar, het vervoer op de lijn ertussen; een luchthaven met zijn naam, een overstap iets lichter. */
-export function legsHtml(items) {
-  return items.map((l, i) => `${i ? `<div class="conn${l.layover ? ' light' : ''}"><span class="cl"></span><span class="cm">${ic(MODES[l.mode]?.[1] || 'dots', 16)}${MODES[l.mode]?.[0] || ''}</span></div>` : ''}
-    <div class="leg2${l.layover || l.through ? ' light' : ''}">${flag(l.c)}<div>${l.kind === 'ap'
-      ? `<div class="p">${esc(l.name)} (${esc(l.code)})</div><div class="sub">${l.layover ? 'Overstap · ' : ''}${nm(l.c)}</div>`
-      : `<div class="p">${nm(l.c)}</div>${l.through ? '<div class="sub">Doorgereden</div>' : ''}`}</div></div>`).join('');
-}
-
-/** Route op één regel (overzicht op mobiel): landen als vlag, luchthavens als label met de code en de vlag als watermerk. */
-export function legsCompact(items) {
-  return `<div class="croute">${items.map((l, i) => `${i ? `<span class="cm2" title="${esc(MODES[l.mode]?.[0] || '')}">${ic(MODES[l.mode]?.[1] || 'dots', 16)}</span>` : ''}${l.kind === 'ap'
-    ? `<span class="ac${l.layover ? ' lt' : ''}" title="${esc(l.name)}, ${esc(nameOf(l.c))}"><img class="wm" src="assets/flags/${esc(String(l.c).toLowerCase())}.svg" alt="" aria-hidden="true"><b>${esc(l.code)}</b></span>`
-    : l.through ? `<span class="thru" title="Doorgereden">${flag(l.c)}</span>` : flag(l.c)}`).join('')}</div>`;
-}
 
 export function tripStats(state) {
   const countries = new Set();
@@ -143,84 +64,98 @@ export function confirmSheet(text, yesLabel, onYes) {
 
 const val = (f, n) => (f.elements[n]?.value ?? '').trim();
 
-/** Formulier voor een nieuwe of bestaande reis. */
 /** "Joke", "Joke en Rob", "Joke, Rob en An" */
 export function matesText(mates) {
   const m = (mates || []).filter(Boolean);
   return m.length < 2 ? m.join('') : m.slice(0, -1).join(', ') + ' en ' + m[m.length - 1];
 }
 
-// ---- Heenreis en terugreis: stappen (vervoer, van, naar) ----
+
+// ---- Eén weergave van de reisweg: Heenreis → Route → Terugreis ----
+// Alles wat getoond wordt komt uit wat in de reis is opgeslagen (heen, legs, terug); er wordt niets bij gegokt.
+// Enkel oudere reizen zonder heen/terug krijgen die eenmalig afgeleid uit hun vluchten (legacyParts), tot je ze bewerkt en opslaat.
 const STEP_MODES = ['plane', 'car', 'train', 'boat'];
+const dayDiff = (a, b) => (a && b) ? Math.abs(Math.round((new Date(b) - new Date(a)) / 864e5)) : 0;
+const flightOf = (step, items = []) => step?.flight ? items.find(i => i.id === step.flight) : null;
+/** Een stap met een gekoppelde vlucht neemt van/naar uit die vlucht, zodat stap en vlucht nooit uit elkaar lopen. */
+const stepEnds = (s, items) => { const f = flightOf(s, items)?.f; return { from: f?.from || s.from, to: f?.to || s.to }; };
 const placeOf = (x, mode) => {
   if (!x) return null;
-  if (mode === 'plane') { const a = airportByCode(x); return a ? { c: a.c, code: a.code, name: a.city || a.name || a.code } : null; }
+  if (mode === 'plane') { const a = airportByCode(x); return a ? { c: a.c, code: a.code, name: cityNl(a.city || a.name || a.code) } : { code: String(x).toUpperCase() }; }
   return { c: x };
 };
-const stepsInfo = (steps, items = []) => {
-  const nr = steps.map(x => (items.find(i => i.id === x.flight)?.f?.number || '')).filter(Boolean).join(', ');
+const stepsInfo = (steps, items) => {
+  const nr = steps.map(x => flightOf(x, items)?.f?.number || '').filter(Boolean).join(', ');
   if (steps.length === 1) return [MODES[steps[0].mode]?.[0] || '', nr].filter(Boolean).join(' · ');
   if (steps.every(x => x.mode === 'plane')) {
-    const via = steps.slice(0, -1).map(x => placeOf(x.to, 'plane')?.name).filter(Boolean).join(', ');
+    const via = steps.slice(0, -1).map(x => placeOf(stepEnds(x, items).to, 'plane')?.name).filter(Boolean).join(', ');
     return `${steps.length} vluchten${nr ? ' · ' + nr : ''}${via ? ' · overstap in ' + via : ''}`;
   }
   const n = steps.map(x => (MODES[x.mode]?.[0] || '').toLowerCase());
   return n[0].charAt(0).toUpperCase() + n[0].slice(1) + n.slice(1).map(x => ', daarna ' + x).join('');
 };
-/** Eén deel (heenreis of terugreis): titel met datum, één lijn met vlaggen en vervoer, info eronder. */
-function partHtml(title, date, steps, items = []) {
-  steps = (steps || []).filter(x => x.from || x.to);
+const conn = mode => `<span class="rd-ln"></span><span class="rd-mi" title="${esc(MODES[mode]?.[0] || '')}">${ic(MODES[mode]?.[1] || 'dots', 20)}</span><span class="rd-ln"></span>`;
+const dot = p => `<span class="rd-p">${p?.c ? flag(p.c) : ''}${p?.code ? `<b>${esc(p.code)}</b>` : ''}</span>`;
+/** Heenreis of terugreis: titel met datum, één lijn met vlaggen en vervoer, info eronder. */
+function partHtml(title, date, steps, items) {
+  steps = steps.filter(x => x.from || x.to || x.flight);
   if (!steps.length) return '';
-  const places = [placeOf(steps[0].from, steps[0].mode), ...steps.map(x => placeOf(x.to, x.mode))];
-  const row = places.map((p, i) => `${i ? `<span class="rd-ln"></span><span class="rd-mi">${ic(MODES[steps[i - 1].mode]?.[1] || 'dots', 20)}</span><span class="rd-ln"></span>` : ''}${p?.c ? flag(p.c) : ''}${p?.code ? `<b>${esc(p.code)}</b>` : ''}`).join('');
+  const ends = steps.map(s => stepEnds(s, items));
+  const places = [placeOf(ends[0].from, steps[0].mode), ...ends.map((e, i) => placeOf(e.to, steps[i].mode))];
+  const row = places.map((p, i) => (i ? conn(steps[i - 1].mode) : '') + dot(p)).join('');
   return `<div class="rd"><h3>${esc(title)}${date ? ` <small>${esc(fmtDate(date))}</small>` : ''}</h3><div class="rd-row">${row}</div><div class="rd-info">${esc(stepsInfo(steps, items))}</div></div>`;
 }
-/** Heen en terug uit de vluchten (tickets, boarding passes); zonder vluchten uit de vervoerstops van oudere reizen. */
-const dayDiff = (a, b) => (a && b) ? Math.abs(Math.round((new Date(b) - new Date(a)) / 864e5)) : 0;
+/** Route: de landen die je bezocht, met het vervoer ertussen; doorgereden landen lichter. */
+function routeHtml(legs) {
+  legs = legs.filter(l => l.c);
+  if (!legs.length) return '';
+  const row = legs.map((l, i) => (i ? conn(l.mode) : '') + `<span class="rd-p${l.transit ? ' lt' : ''}" title="${esc(nameOf(l.c))}${l.transit ? ' (doorgereden)' : ''}">${flag(l.c)}</span>`).join('');
+  const names = legs.filter(l => !l.transit).map(l => nameOf(l.c)).filter((n, i, a) => n !== a[i - 1]);
+  return `<div class="rd"><h3>Route</h3><div class="rd-row">${row}</div><div class="rd-info">${esc(names.join(', '))}</div></div>`;
+}
+/** Oudere reizen zonder heen/terug: afgeleid uit de vluchten (heen = eerste aansluitende vluchten, terug = laatste naar huis). */
 function legacyParts(t) {
-  const L = t.legs || [], home = homeCountry();
-  const fl = (t.items || []).filter(i => i.type === 'flight' && i.f?.from && i.f?.to).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
-  const ctry = c => airportByCode(c)?.c;
+  const home = homeCountry();
+  const fl = (t.items || []).filter(i => i.type === 'flight' && i.f?.from && i.f?.to).sort((a, b) => (a.date || '9').localeCompare(b.date || '9') || String(a.f.dep || '').localeCompare(String(b.f.dep || '')));
+  const ctry = code => airportByCode(code)?.c;
   const step = f => ({ mode: 'plane', from: f.f.from, to: f.f.to, flight: f.id });
-  const out = {};
-  const used = new Set();
-  if (fl.length) {
-    // Heen: de eerste vlucht en de vluchten die er direct op aansluiten (zelfde luchthaven, binnen een dag).
-    const h = [fl[0]]; used.add(fl[0].id);
-    for (const f of fl.slice(1)) {
-      const p = h[h.length - 1];
-      if (f.f.from === p.f.to && dayDiff(p.date, f.date) <= 1 && ctry(p.f.to) !== home) { h.push(f); used.add(f.id); } else break;
-    }
-    out.heen = h.map(step);
-    // Terug: de laatste vlucht die in het thuisland landt, met de vluchten die er direct aan voorafgaan.
-    let end = -1;
-    for (let i = fl.length - 1; i >= 0; i--) if (!used.has(fl[i].id) && ctry(fl[i].f.to) === home) { end = i; break; }
-    if (end >= 0) {
-      const k = [fl[end]];
-      for (let i = end - 1; i >= 0; i--) { if (used.has(fl[i].id)) break; if (fl[i].f.to === k[0].f.from && dayDiff(fl[i].date, k[0].date) <= 1) k.unshift(fl[i]); else break; }
-      out.terug = k.map(step);
-    }
-  } else if (L.length) {
-    out.heen = [{ mode: L[0].mode, from: t.from || home, to: L[0].c }].filter(x => x.from && x.to && L[0].mode !== 'plane');
-    const last = L[L.length - 1];
-    if (L.length >= 2 && last.c === home && last.mode !== 'plane') out.terug = [{ mode: last.mode, from: L[L.length - 2].c, to: home }];
+  const out = { heen: [], terug: [] };
+  if (!fl.length) return out;
+  const used = new Set([fl[0].id]), h = [fl[0]];
+  for (const f of fl.slice(1)) {
+    const p = h[h.length - 1];
+    if (f.f.from === p.f.to && dayDiff(p.date, f.date) <= 1 && ctry(p.f.to) !== home) { h.push(f); used.add(f.id); } else break;
+  }
+  out.heen = h.map(step);
+  let end = -1;
+  for (let i = fl.length - 1; i >= 0; i--) if (!used.has(fl[i].id) && ctry(fl[i].f.to) === home) { end = i; break; }
+  if (end >= 0) {
+    const k = [fl[end]];
+    for (let i = end - 1; i >= 0 && !used.has(fl[i].id); i--) { if (fl[i].f.to === k[0].f.from && dayDiff(fl[i].date, k[0].date) <= 1) k.unshift(fl[i]); else break; }
+    out.terug = k.map(step);
   }
   return out;
 }
-/** Heen en terug van een reis: wat is ingevuld, anders afgeleid uit de vluchten of stops. */
-export const partsData = t => { const l = legacyParts(t); return { heen: t.heen?.length ? t.heen : (l.heen || []), terug: t.terug?.length ? t.terug : (l.terug || []) }; };
-export const partsHtml = t => {
-  const d = partsData(t), it = t.items || [];
-  const dateOf = (steps, fallback, first) => { const x = first ? steps[0] : steps[steps.length - 1]; return it.find(i => i.id === x?.flight)?.date || fallback; };
-  return partHtml('Heenreis', dateOf(d.heen, t.start, true), d.heen, it) + partHtml('Terugreis', dateOf(d.terug, t.end, false), d.terug, it);
+/** Heen en terug van een reis: wat is opgeslagen, anders (oude reis) afgeleid uit de vluchten. */
+export const partsData = t => {
+  if (t.heen || t.terug) return { heen: t.heen || [], terug: t.terug || [] };
+  return legacyParts(t);
 };
+/** De volledige reisweg in de volgorde van het formulier: Heenreis, Route, Terugreis. */
+export function journeyHtml(t) {
+  const d = partsData(t), it = t.items || [];
+  const dateOf = (steps, fallback, first) => flightOf(first ? steps[0] : steps[steps.length - 1], it)?.date || fallback;
+  return partHtml('Heenreis', dateOf(d.heen, t.start, true), d.heen, it) + routeHtml(t.legs || []) + partHtml('Terugreis', dateOf(d.terug, t.end, false), d.terug, it);
+}
 
+
+/** Formulier voor een nieuwe of bestaande reis. */
 export function openTripForm(trip = null, { onSaved } = {}) {
   const draft = trip ? structuredClone(trip) : { id: newId(), title: '', start: '', end: '', legs: [{ mode: 'plane', c: '' }], items: [], mates: [] };
   draft.mates ||= [];
   const pd = trip ? partsData(trip) : { heen: [], terug: [] };
   const hv = { heen: structuredClone(pd.heen), terug: structuredClone(pd.terug) };
-  for (const w of ['heen', 'terug']) for (const x of hv[w]) if (typeof x.flight === 'string') { x.flightId = x.flight; delete x.flight; }
+  for (const w of ['heen', 'terug']) for (const x of hv[w]) if (typeof x.flight === 'string') { Object.assign(x, stepEnds(x, trip?.items)); x.flightId = x.flight; delete x.flight; }
   const stepsHtml = w => hv[w].map((s, i) => `<div class="stp"><div class="chips">${STEP_MODES.map(m => `<button type="button" class="ch${s.mode === m ? ' on' : ''}" data-mode="${w}-${i}-${m}" aria-label="${MODES[m][0]}">${ic(MODES[m][1], 20)}</button>`).join('')}<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rmstep="${w}-${i}" aria-label="Stap verwijderen">${ic('x', 20)}</button></div><div class="two2"><div class="pl">${stepPlace(w, i, 'from', s)}</div><div class="pl">${stepPlace(w, i, 'to', s)}</div></div>${s.mode === 'plane' ? `<label class="btn soft scan" style="margin-top:8px">${ic('plane', 18)}Boarding pass inlezen<input type="file" accept="image/*" data-bp="${w}-${i}" hidden></label>` : ''}</div>`).join('') + `<button type="button" class="btn soft" data-addstep="${w}">${ic('plus', 18)}Stap toevoegen</button>`;
   const stepPlace = (w, i, k, s) => s.mode === 'plane'
     ? `<input class="titel-in" data-ap="${w}-${i}-${k}" aria-label="${k === 'from' ? 'Van' : 'Naar'}" value="${esc(s[k] || '')}">`
@@ -395,7 +330,13 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     if (!draft.title && !legs.length) return render('Geef een titel of kies minstens één land.');
     const cl = steps => steps.map(s => ({ mode: s.mode || 'other', from: s.from, to: s.to, ...(s.mode === 'plane' && (s.flight || s.flightId) ? { flight: s.flight?.id || s.flightId } : {}) })).filter(s => s.from || s.to);
     const flights = [...hv.heen, ...hv.terug].filter(s => s.mode === 'plane' && s.flight && typeof s.flight === 'object').map(s => s.flight);
-    const clean = { ...draft, legs, end: draft.end || draft.start, items: [...(draft.items || []).filter(x => !flights.some(f => f.id === x.id)), ...flights] };
+    // Een stap die aan een bestaande vlucht hangt: pas je van/naar aan, dan volgt de vlucht mee (stap en vlucht blijven gelijk).
+    const linked = new Map([...hv.heen, ...hv.terug].filter(s => s.mode === 'plane' && s.flightId && !s.flight).map(s => [s.flightId, s]));
+    const items = (draft.items || []).filter(x => !flights.some(f => f.id === x.id)).map(x => {
+      const s = linked.get(x.id);
+      return s && x.f && (s.from !== x.f.from || s.to !== x.f.to) ? { ...x, f: { ...x.f, from: s.from || x.f.from, to: s.to || x.f.to } } : x;
+    });
+    const clean = { ...draft, legs, end: draft.end || draft.start, items: [...items, ...flights] };
     const heenC = cl(hv.heen), terugC = cl(hv.terug);
     if (heenC.length) clean.heen = heenC; else delete clean.heen;
     if (terugC.length) clean.terug = terugC; else delete clean.terug;
