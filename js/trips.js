@@ -10,6 +10,7 @@ export const MODES = {
   plane: ['Vliegtuig', 'plane'], car: ['Auto', 'car'], train: ['Trein', 'train'],
   bus: ['Bus', 'bus'], boat: ['Boot', 'boat'], other: ['Anders', 'dots'],
 };
+const transitTxt = m => m === 'plane' ? 'Enkel overstap met het vliegtuig' : 'Enkel doorgereden';
 export const TYPES = {
   flight: ['Vlucht', 'plane'], stay: ['Verblijf', 'bed'], food: ['Restaurant', 'fork'], activity: ['Activiteit', 'ticket'],
 };
@@ -38,7 +39,7 @@ export function homeCountry(state = get()) {
 
 /** Route van een reis: begin- en eindluchthaven uit je vluchten, overstappen (vluchten die aansluiten) en daartussen de stops die je invulde. */
 export function routeOf(trip) {
-  let legs = (trip.legs || []).map(l => ({ kind: 'c', mode: l.mode, c: l.c }));
+  let legs = (trip.legs || []).map(l => ({ kind: 'c', mode: l.mode, c: l.c, ...(l.transit && l.mode !== 'plane' ? { through: true } : {}) }));
   if (!legs.length) return legs;
   const up = x => String(x || '').trim().toUpperCase();
   // Vluchten op volgorde van datum en vertrektijd; dubbele vluchten (zelfde reizigers apart ingevoerd) tellen één keer; aansluitende vluchten op dezelfde dag staan achter elkaar.
@@ -112,16 +113,16 @@ const nm = c => esc(nameOf(c));
 /** Route in de reis zelf (en op laptop): stops onder elkaar, het vervoer op de lijn ertussen; een luchthaven met zijn naam, een overstap iets lichter. */
 export function legsHtml(items) {
   return items.map((l, i) => `${i ? `<div class="conn${l.layover ? ' light' : ''}"><span class="cl"></span><span class="cm">${ic(MODES[l.mode]?.[1] || 'dots', 16)}${MODES[l.mode]?.[0] || ''}</span></div>` : ''}
-    <div class="leg2${l.layover ? ' light' : ''}">${flag(l.c)}<div>${l.kind === 'ap'
+    <div class="leg2${l.layover || l.through ? ' light' : ''}">${flag(l.c)}<div>${l.kind === 'ap'
       ? `<div class="p">${esc(l.name)} (${esc(l.code)})</div><div class="sub">${l.layover ? 'Overstap · ' : ''}${nm(l.c)}</div>`
-      : `<div class="p">${nm(l.c)}</div>`}</div></div>`).join('');
+      : `<div class="p">${nm(l.c)}</div>${l.through ? '<div class="sub">Doorgereden</div>' : ''}`}</div></div>`).join('');
 }
 
 /** Route op één regel (overzicht op mobiel): landen als vlag, luchthavens als label met de code en de vlag als watermerk. */
 export function legsCompact(items) {
   return `<div class="croute">${items.map((l, i) => `${i ? `<span class="cm2" title="${esc(MODES[l.mode]?.[0] || '')}">${ic(MODES[l.mode]?.[1] || 'dots', 16)}</span>` : ''}${l.kind === 'ap'
     ? `<span class="ac${l.layover ? ' lt' : ''}" title="${esc(l.name)}, ${esc(nameOf(l.c))}"><img class="wm" src="assets/flags/${esc(String(l.c).toLowerCase())}.svg" alt="" aria-hidden="true"><b>${esc(l.code)}</b></span>`
-    : flag(l.c)}`).join('')}</div>`;
+    : l.through ? `<span class="thru" title="Doorgereden">${flag(l.c)}</span>` : flag(l.c)}`).join('')}</div>`;
 }
 
 export function tripStats(state) {
@@ -165,7 +166,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     draft.legs = draft.legs.map((_, i) => {
       const mode = val(f, `mode-${i}`) || 'plane';
       const leg = { mode, c: val(f, `land-${i}`) };
-      if (mode === 'plane' && f.elements[`transit-${i}`]?.checked) leg.transit = true;
+      if (f.elements[`transit-${i}`]?.checked) leg.transit = true;
       return leg;
     });
   };
@@ -186,7 +187,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
         <div class="field"><select name="land-${i}" aria-label="Land stop ${i + 1}">${countryOptions(l.c)}</select></div>
         ${draft.legs.length > 1 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${i}" aria-label="Stop ${i + 1} verwijderen">${ic('x', 20)}</button>` : ''}
       </div>
-      <label class="transit"${l.mode === 'plane' ? '' : ' hidden'} data-transit="${i}"><input type="checkbox" name="transit-${i}"${l.transit ? ' checked' : ''}> Enkel overstap met het vliegtuig (land telt niet mee als bezocht)</label></div></div>`).join('')}</div>
+      <label class="transit" data-transit="${i}"><input type="checkbox" name="transit-${i}"${l.transit ? ' checked' : ''}> <span>${transitTxt(l.mode)} (land telt niet mee als bezocht)</span></label></div></div>`).join('')}</div>
       <button type="button" class="btn soft" data-add>${ic('plus', 18)}Stop toevoegen</button>
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
       <div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="submit" class="btn primary">Opslaan</button></div>
@@ -263,7 +264,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     const m = /^mode-(\d+)$/.exec(e.target.name || '');
     if (!m) return;
     const lab = sh.el.querySelector(`[data-transit="${m[1]}"]`);
-    if (lab) { lab.hidden = e.target.value !== 'plane'; if (lab.hidden) lab.querySelector('input').checked = false; }
+    if (lab) lab.querySelector('span').textContent = `${transitTxt(e.target.value)} (land telt niet mee als bezocht)`;
   });
   sh.el.addEventListener('keydown', e => {
     if (e.key !== 'Enter' || e.target.name !== 'mate') return;
