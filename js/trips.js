@@ -600,8 +600,15 @@ export function stationsOf(t) {
     push(place(e0.from, heen[0].mode), 'home', fmtDate(flightOf(heen[0], it)?.date || t.start), null);
     heen.slice(0, -1).forEach(s => push(place(stepEnds(s, it).to, s.mode), 'small', s.mode === 'plane' ? 'overstap' : '', s.mode, fid(s)));
   }
-  const legs = (t.legs || []).filter(l => l.c);
   const ctryOf = code => airportByCode(code)?.c;
+  const cOfStep = (x, end) => { const e = stepEnds(x, it)[end]; return x.mode === 'plane' ? ctryOf(e) : e; };
+  // Overstaplanden van heen/terug staan vaak ook als 'doorgereden' in de route: die niet dubbel tonen,
+  // anders schuift de vlucht een station op en lijkt er een vlucht te ontbreken.
+  const viaH = new Set(heen.slice(0, -1).map(x => cOfStep(x, 'to')).filter(Boolean));
+  const viaT = new Set(terug.slice(0, -1).map(x => cOfStep(x, 'to')).filter(Boolean));
+  let legs = (t.legs || []).filter(l => l.c);
+  while (legs.length && legs[0].transit && viaH.has(legs[0].c)) legs = legs.slice(1);
+  while (legs.length && legs[legs.length - 1].transit && viaT.has(legs[legs.length - 1].c)) legs = legs.slice(0, -1);
   const used = new Set([...heen, ...terug].map(fid).filter(Boolean));
   legs.forEach((l, i) => {
     const first = i === 0 && heen.length, mode = first ? heen[heen.length - 1].mode : l.mode;
