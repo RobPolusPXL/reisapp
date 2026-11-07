@@ -148,6 +148,7 @@ export const partsHtml = t => partHtml('Heenreis', t.start, t.heen) + partHtml('
 export function openTripForm(trip = null, { onSaved } = {}) {
   const mates = [...(trip?.mates || [])];
   const st = { heen: structuredClone(trip?.heen || []), terug: structuredClone(trip?.terug || []) };
+  for (const w of ['heen', 'terug']) for (const x of st[w]) if (typeof x.flight === 'string') { x.flightId = x.flight; delete x.flight; }
   const sh = openSheet(`<div class="label">Titel</div><input class="titel-in" name="titel" aria-label="Titel" placeholder="Bijvoorbeeld Tatra &amp; Energylandia" value="${esc(trip?.title || '')}"><div class="datums"><div><div class="label">Start</div><input class="titel-in" type="date" name="start" aria-label="Start" value="${esc(trip?.start || '')}"></div><div><div class="label">Einde</div><input class="titel-in" type="date" name="einde" aria-label="Einde" value="${esc(trip?.end || '')}"></div></div><div class="label">Reisgenoten (optioneel)</div><div data-mates></div><div class="label">Heenreis</div><div data-sec="heen"></div><div class="label">Route</div><div class="label">Terugreis</div><div data-sec="terug"></div><p class="muted" role="alert" data-err style="margin:0;color:var(--danger)"></p><div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="button" class="btn primary" data-save>Opslaan</button></div>`, { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
   const addMate = name => {
     name = (name || '').trim().replace(/\s+/g, ' ');
@@ -163,7 +164,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     : countryPick(`${w}-${i}-${k}`, s[k], k === 'from' ? 'Van' : 'Naar');
   const drawSec = w => {
     const box = sh.el.querySelector(`[data-sec="${w}"]`);
-    box.innerHTML = st[w].map((s, i) => `<div class="stp"><div class="chips">${STEP_MODES.map(m => `<button type="button" class="ch${s.mode === m ? ' on' : ''}" data-mode="${w}-${i}-${m}" aria-label="${MODES[m][0]}">${ic(MODES[m][1], 20)}</button>`).join('')}${i ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rmstep="${w}-${i}" aria-label="Stap verwijderen">${ic('x', 20)}</button>` : ''}</div><div class="two2"><div class="pl">${place(w, i, 'from', s)}</div><div class="pl">${place(w, i, 'to', s)}</div></div></div>`).join('')
+    box.innerHTML = st[w].map((s, i) => `<div class="stp"><div class="chips">${STEP_MODES.map(m => `<button type="button" class="ch${s.mode === m ? ' on' : ''}" data-mode="${w}-${i}-${m}" aria-label="${MODES[m][0]}">${ic(MODES[m][1], 20)}</button>`).join('')}${i ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rmstep="${w}-${i}" aria-label="Stap verwijderen">${ic('x', 20)}</button>` : ''}</div><div class="two2"><div class="pl">${place(w, i, 'from', s)}</div><div class="pl">${place(w, i, 'to', s)}</div></div>${s.mode === 'plane' ? `<label class="btn soft scan" style="margin-top:8px">${ic('plane', 18)}Boarding pass inlezen<input type="file" accept="image/*" data-bp="${w}-${i}" hidden></label>` : ''}</div>`).join('')
       + `<button type="button" class="btn soft" data-addstep="${w}">${ic('plus', 18)}Stap toevoegen</button>`;
     box.querySelectorAll('[data-ap]').forEach(inp => attachAirportSearch(inp));
   };
@@ -201,6 +202,20 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     if (rs) { const [w, i] = rs.dataset.rmstep.split('-'); sync(); st[w].splice(+i, 1); drawSec(w); return; }
     if (e.target.closest('[data-save]')) save();
   });
+  sh.el.addEventListener('change', async e => {
+    const inp = e.target.closest?.('[data-bp]'); const file = inp?.files?.[0];
+    if (!file) return;
+    const [w, i] = inp.dataset.bp.split('-'); sync();
+    toast('Boarding pass lezen…');
+    const g = n => (sh.el.querySelector(`[name=${n}]`)?.value || '').trim();
+    const r = await scanBoardingPass(file, { start: g('start'), end: g('einde') });
+    if (r.error) return toast({ decoder: 'Inlezen lukt niet op dit toestel.', 'geen-code': 'Geen streepjescode gevonden. Probeer een scherpere foto.', 'geen-boardingpass': 'Dit is geen boarding pass.' }[r.error]);
+    const { bp, airline } = r, step = st[w][+i];
+    step.from = bp.from; step.to = bp.to;
+    step.flight = { id: step.flight?.id || step.flightId || newId(), type: 'flight', name: [airline?.name || bp.carrier, bp.number.split(' ').pop()].filter(Boolean).join(' ') || 'Vlucht', date: bp.date || '', note: '', score: '', f: { airline: airline?.name || bp.carrier, ...(airline ? { airlineCode: airline.code } : {}), number: bp.number, from: bp.from, to: bp.to, ref: bp.pnr || '', pax: [{ name: bp.name, seat: bp.seat, cls: bp.cls }] } };
+    drawSec(w);
+    toast(`${bp.name} · ${bp.number} ingelezen`);
+  });
   sh.el.addEventListener('input', e => { if (e.target.type === 'date') e.target.classList.toggle('e', !e.target.value); });
   sh.el.addEventListener('keydown', e => {
     if (e.key !== 'Enter' || e.target.name !== 'mate') return;
@@ -217,15 +232,17 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     if (!title) return err('Geef een titel.');
     if (!start) return err('Kies een startdatum.');
     if (end && end < start) return err('Het einde ligt voor de start.');
-    const clean = steps => steps.map(s => ({ mode: s.mode || 'other', from: s.from, to: s.to })).filter(s => s.from || s.to);
+    const clean = steps => steps.map(s => ({ mode: s.mode || 'other', from: s.from, to: s.to, ...(s.mode === 'plane' && (s.flight || s.flightId) ? { flight: s.flight?.id || s.flightId } : {}) })).filter(s => s.from || s.to);
+    const flights = [...st.heen, ...st.terug].filter(s => s.mode === 'plane' && s.flight && typeof s.flight === 'object').map(s => s.flight);
     const heen = clean(st.heen), terug = clean(st.terug);
     const last = heen[heen.length - 1];
     const dest = last ? placeOf(last.to, last.mode)?.c : '';
-    const out = { ...(trip || {}), id: trip?.id || newId(), title, start, end: end || start, legs: dest ? [{ mode: last.mode, c: dest }] : [], items: trip?.items || [] };
+    const out = { ...(trip || {}), id: trip?.id || newId(), title, start, end: end || start, legs: dest ? [{ mode: last.mode, c: dest }] : [], items: [...(trip?.items || []).filter(x => !flights.some(f => f.id === x.id)), ...flights] };
     if (mates.length) out.mates = [...mates]; else delete out.mates;
     if (heen.length) out.heen = heen; else delete out.heen;
     if (terug.length) out.terug = terug; else delete out.terug;
     update(s => {
+      for (const f of flights) for (const k of ['from', 'to']) ensureMyAirport(s, airportByCode(f.f[k]), newId);
       const i = s.trips.findIndex(t => t.id === out.id);
       if (i >= 0) s.trips[i] = out; else s.trips.push(out);
       if (dest) {
