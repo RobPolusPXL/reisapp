@@ -560,5 +560,3 @@ svg.globe .g-rim { fill: none; stroke: var(--field); stroke-width: 1px; }
 .hsec .hl, .legsep { display: block; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .hsec { margin-top: 10px; } .hsec .croute { margin-top: 4px; }
 .legsep { margin: 6px 0 -4px; }
-.form.blank .cp-btn.empty span { visibility: hidden; }
-.form.blank input[type=date].e:not(:focus)::-webkit-datetime-edit { color: transparent; }
