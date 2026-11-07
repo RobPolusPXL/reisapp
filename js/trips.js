@@ -120,8 +120,15 @@ export function matesText(mates) {
 }
 
 export function openTripForm(trip = null, { onSaved } = {}) {
-  const draft = trip ? structuredClone(trip) : { id: newId(), title: '', start: '', end: '', legs: [{ mode: 'plane', c: '' }], items: [], mates: [] };
+  const draft = trip ? structuredClone(trip) : { id: newId(), title: '', start: '', end: '', legs: [], items: [], mates: [] };
   draft.mates ||= [];
+  // Het formulier kent drie delen; opgeslagen worden ze samen als één lijst stops: heen, route, terug.
+  const L = draft.legs || [];
+  const home = trip?.from || homeCountry();
+  const hasTerug = L.length >= 2 && L[L.length - 1].c === home;
+  draft.heen = L[0] ? { mode: L[0].mode, c: L[0].c } : { mode: 'plane', c: '' };
+  draft.terug = hasTerug ? { mode: L[L.length - 1].mode, c: L[L.length - 1].c } : { mode: 'plane', c: '' };
+  draft.route = L.slice(1, hasTerug ? -1 : undefined).map(l => ({ mode: l.mode, c: l.c }));
   const sh = openSheet('', { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
   const addMate = name => {
     name = (name || '').trim().replace(/\s+/g, ' ');
@@ -131,22 +138,38 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     const f = sh.el.querySelector('form');
     if (!f) return;
     draft.title = val(f, 'titel'); draft.start = val(f, 'start'); draft.end = val(f, 'einde');
+    draft.heen = { mode: val(f, 'heen-mode') || 'plane', c: val(f, 'heen-land') };
+    draft.route = draft.route.map((_, i) => ({ mode: val(f, `route-mode-${i}`) || 'car', c: val(f, `route-land-${i}`) }));
+    draft.terug = { mode: val(f, 'terug-mode') || 'plane', c: val(f, 'terug-land') };
   };
+  const legRow = (k, l, rm = -1) => `<div class="pair" style="align-items:center">
+        <div class="field"><select name="${k.includes('-') ? k.replace('-', '-mode-') : k + '-mode'}" aria-label="Vervoer">${Object.entries(MODES).map(([m, [n]]) => `<option value="${m}"${m === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
+        <div class="field">${countryPick(k.includes('-') ? k.replace('-', '-land-') : k + '-land', l.c, 'Land')}</div>
+        ${rm >= 0 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${rm}" aria-label="Stop verwijderen">${ic('x', 20)}</button>` : ''}
+      </div>`;
   const render = (err = '') => {
     sh.setHtml(`<h2>${trip ? 'Reis bewerken' : 'Nieuwe reis'}</h2>
     <form class="form" novalidate>
-      <div class="field"><label for="f-titel">Titel (optioneel)</label><input id="f-titel" name="titel" value="${esc(draft.title)}" placeholder="Bijvoorbeeld Tatra &amp; Energylandia"></div>
+      <div class="field"><label for="f-titel">Titel</label><input id="f-titel" name="titel" value="${esc(draft.title)}" placeholder="Bijvoorbeeld Tatra &amp; Energylandia"></div>
       <div class="pair"><div class="field"><label for="f-start">Start</label><input id="f-start" name="start" type="date" value="${esc(draft.start)}"></div>
       <div class="field"><label for="f-einde">Einde</label><input id="f-einde" name="einde" type="date" value="${esc(draft.end)}"></div></div>
       <div class="field"><label for="f-mate">Reisgenoten (optioneel)</label>
         ${draft.mates.length ? `<div class="mates">${draft.mates.map((m, i) => `<span class="mate">${esc(m)}<button type="button" data-rmmate="${i}" aria-label="${esc(m)} verwijderen">${ic('x', 16)}</button></span>`).join('')}</div>` : ''}
         <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" placeholder="Naam" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
         <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !draft.mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist></div>
+      ${trip && 0 ? '' : ''}<div class="label legsep">Heenreis</div>
+      ${legRow('heen', draft.heen)}
+      <div class="label legsep">Route</div>
+      ${draft.route.map((l, i) => legRow(`route-${i}`, l, i)).join('')}
+      <button type="button" class="btn soft" data-add>${ic('plus', 18)}Stop toevoegen</button>
+      <div class="label legsep">Terugreis</div>
+      ${legRow('terug', draft.terug)}
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
       <div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="submit" class="btn primary">Opslaan</button></div>
     </form>`);
   };
   render();
+  bindCountryPick(sh.el);
   sh.el.addEventListener('click', e => {
     const am = e.target.closest('[data-addmate]'), rmm = e.target.closest('[data-rmmate]');
     if (am || rmm) {
@@ -157,6 +180,11 @@ export function openTripForm(trip = null, { onSaved } = {}) {
       if (am) sh.el.querySelector('[name=mate]')?.focus();
       return;
     }
+    const rm = e.target.closest('[data-rm]'), add = e.target.closest('[data-add]');
+    if (!rm && !add) return;
+    read();
+    if (rm) draft.route.splice(+rm.dataset.rm, 1); else draft.route.push({ mode: 'car', c: '' });
+    render();
   });
   sh.el.addEventListener('keydown', e => {
     if (e.key !== 'Enter' || e.target.name !== 'mate') return;
@@ -170,10 +198,10 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     addMate(sh.el.querySelector('[name=mate]')?.value);   // een ingetypte naam gaat niet verloren
     if (!draft.start) return render('Kies een startdatum.');
     if (draft.end && draft.end < draft.start) return render('Het einde ligt voor de start.');
-    const legs = draft.legs.filter(l => l.c);
+    const legs = [draft.heen, ...draft.route, draft.terug].filter(l => l.c);
     if (!draft.title) return render('Geef een titel.');
     const clean = { ...draft, legs, end: draft.end || draft.start };
-    if (!legs.length || legs[0].mode === 'plane' || !draft.from) delete clean.from;
+    delete clean.heen; delete clean.route; delete clean.terug;
     if (!clean.mates?.length) delete clean.mates;
     update(st => {
       const i = st.trips.findIndex(t => t.id === clean.id);
