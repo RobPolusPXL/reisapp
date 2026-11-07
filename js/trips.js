@@ -182,11 +182,11 @@ export function legsSplit(items) {
   const first = visited.indexOf(true), last = visited.lastIndexOf(true);
   if (first < 0) return legsCompact(items);
   const chain = arr => arr.map((l, i) => `${i ? modeIc(l) : ''}${chipOf(l)}`).join('');
-  const heen = items.slice(0, first + 1), terug = items.slice(last);   // inclusief vertrek, aankomst en het vervoer ertussen
+  const heen = items.slice(0, first), terug = items.slice(last + 1);
   const seen = new Set(), pills = [];
   items.forEach((l, i) => { if (visited[i] && !seen.has(l.c)) { seen.add(l.c); pills.push(`<span class="cpill">${flag(l.c)}<span>${esc(nameOf(l.c))}</span></span>`); } });
   const row = (lab, html, cls = '') => html ? `<div class="srow${cls}"><i>${lab}</i><div class="croute">${html}</div></div>` : '';
-  return `<div class="split">${row('Heen', chain(heen))}${row('Bezocht', pills.join(''), ' v')}${row('Terug', terug.length > 1 ? chain(terug) : '')}</div>`;
+  return `<div class="split">${row('Heen', chain(heen))}${row('Bezocht', pills.join(''), ' v')}${row('Terug', chain(terug))}</div>`;
 }
 
 export function tripStats(state) {
