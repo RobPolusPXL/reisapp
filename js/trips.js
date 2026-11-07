@@ -509,19 +509,20 @@ export const flagsHtml = t => `<div class="fvs">${entries(t).map(e => `<span cla
 const apH = (code, right) => { const a = airportByCode(code); return `<div class="ap${right ? ' r' : ''}">${a?.c ? flag(a.c) : ''}<b>${esc(code || '?')}</b>${a ? `<small>${esc(cityNl(a.city || a.name || ''))}</small>` : ''}</div>`; };
 const lineH = mode => `<div class="fc-l"><span></span>${ic(MODES[mode]?.[1] || 'dots', 16)}<span></span></div>`;
 /** Vervoer apart: elke vlucht een kaartje (Heen / Tussendoor / Terug), autoritten van heen en terug met de landen waar je doorrijdt. */
+const flightsOf = t => (t.items || []).filter(i => i.type === 'flight').sort((a, b) => (a.date || '9').localeCompare(b.date || '9') || String(a.f?.dep || '').localeCompare(String(b.f?.dep || '')));
+const flightLabel = (t, id) => { const d = partsData(t); return d.heen.some(s => s.flight === id) ? 'Heen' : d.terug.some(s => s.flight === id) ? 'Terug' : 'Tussendoor'; };
+/** Vluchtkaartje: Heen/Tussendoor/Terug, datum, luchthavens met stad, maatschappij en zitplaatsen. Tik opent de vlucht. */
+function flightCard(t, i) {
+  const px = i.f?.pax?.length ? i.f.pax : (i.f?.seat ? [{ seat: i.f.seat }] : []);
+  const seats = px.filter(x => x.seat).map(x => x.name ? `${x.name.split(' ')[0]} ${x.seat}` : x.seat).join(' · ');
+  return `<button type="button" class="fc" data-item="${esc(i.id)}"><div class="fc-h"><span>${flightLabel(t, i.id)}</span><span>${esc(fmtDate(i.date))}</span></div>
+    <div class="fc-r">${apH(i.f?.from)}${lineH('plane')}${apH(i.f?.to, true)}</div>
+    ${i.f?.airline || seats ? `<div class="fc-f"><span>${esc(i.f?.airline || '')}</span><span>${seats ? ic('seat', 14) + esc(seats) : ''}</span></div>` : ''}</button>`;
+}
+/** Vluchten die niet in de reisweg staan (bv. zonder plaats in de route) blijven apart zichtbaar. */
 export function transportHtml(t) {
-  const d = partsData(t), it = t.items || [];
-  const heenIds = new Set(d.heen.map(s => s.flight).filter(Boolean)), terugIds = new Set(d.terug.map(s => s.flight).filter(Boolean));
-  const flights = it.filter(i => i.type === 'flight').sort((a, b) => (a.date || '9').localeCompare(b.date || '9') || String(a.f?.dep || '').localeCompare(String(b.f?.dep || '')));
-  const fcard = i => {
-    const k = heenIds.has(i.id) ? 'Heen' : terugIds.has(i.id) ? 'Terug' : 'Tussendoor';
-    const px = i.f?.pax?.length ? i.f.pax : (i.f?.seat ? [{ seat: i.f.seat }] : []);
-    const seats = px.filter(x => x.seat).map(x => x.name ? `${x.name.split(' ')[0]} ${x.seat}` : x.seat).join(' · ');
-    return `<button type="button" class="fc" data-item="${esc(i.id)}"><div class="fc-h"><span>${k}</span><span>${esc(fmtDate(i.date))}</span></div>
-      <div class="fc-r">${apH(i.f?.from)}${lineH('plane')}${apH(i.f?.to, true)}</div>
-      ${i.f?.airline || seats ? `<div class="fc-f"><span>${esc(i.f?.airline || '')}</span><span>${seats ? ic('seat', 14) + esc(seats) : ''}</span></div>` : ''}</button>`;
-  };
-  const fl = flights.map(fcard).join('');
+  const shown = new Set(stationsOf(t).map(s => s.flightIn).filter(Boolean));
+  const fl = flightsOf(t).filter(i => !shown.has(i.id)).map(i => flightCard(t, i)).join('');
   return fl ? `<section class="card"><div class="card-head"><h2>Vluchten</h2></div>${fl}</section>` : '';
 }
 
@@ -536,41 +537,62 @@ export function stationsOf(t) {
     return { c: code, name: nameOf(code) || '?' };
   };
   const st = [];
-  const push = (p, kind, sub, mode) => { if (!p?.c && !p?.name) return; st.push({ ...p, kind, sub, mode }); };
+  const push = (p, kind, sub, mode, flightIn) => { if (!p?.c && !p?.name) return; st.push({ ...p, kind, sub, mode, flightIn }); };
+  const fid = s => s?.flight && it.some(i => i.id === s.flight) ? s.flight : null;
   if (heen.length) {
     const e0 = stepEnds(heen[0], it);
     push(place(e0.from, heen[0].mode), 'home', fmtDate(flightOf(heen[0], it)?.date || t.start), null);
-    heen.slice(0, -1).forEach(s => push(place(stepEnds(s, it).to, s.mode), 'small', s.mode === 'plane' ? 'overstap' : 'doorgereden', s.mode));
+    heen.slice(0, -1).forEach(s => push(place(stepEnds(s, it).to, s.mode), 'small', s.mode === 'plane' ? 'overstap' : '', s.mode, fid(s)));
   }
   const legs = (t.legs || []).filter(l => l.c);
+  const ctryOf = code => airportByCode(code)?.c;
+  const used = new Set([...heen, ...terug].map(fid).filter(Boolean));
   legs.forEach((l, i) => {
-    const mode = i === 0 && heen.length ? heen[heen.length - 1].mode : l.mode;
-    push({ c: l.c, name: nameOf(l.c) }, l.transit ? 'small' : 'stay', l.transit ? (mode === 'plane' ? 'overstap' : 'doorgereden') : '', st.length ? mode : null);
+    const first = i === 0 && heen.length, mode = first ? heen[heen.length - 1].mode : l.mode;
+    let flightIn = first ? fid(heen[heen.length - 1]) : null;
+    if (!first && mode === 'plane' && i > 0) {
+      const f = flightsOf(t).find(x => !used.has(x.id) && ctryOf(x.f?.from) === legs[i - 1].c && ctryOf(x.f?.to) === l.c);
+      if (f) { used.add(f.id); flightIn = f.id; }
+    }
+    push({ c: l.c, name: nameOf(l.c) }, l.transit ? 'small' : 'stay', l.transit && mode === 'plane' ? 'overstap' : '', st.length ? mode : null, flightIn);
   });
   if (terug.length) {
     terug.slice(0, -1).forEach(s => {
       const p = place(stepEnds(s, it).to, s.mode), last = st[st.length - 1];
       if (last && last.c === p.c && last.kind !== 'home' && s.mode !== 'plane') return;
-      push(p, 'small', s.mode === 'plane' ? 'overstap' : 'doorgereden', s.mode);
+      push(p, 'small', s.mode === 'plane' ? 'overstap' : '', s.mode, fid(s));
     });
     const l = terug[terug.length - 1];
-    push(place(stepEnds(l, it).to, l.mode), 'home', fmtDate(flightOf(l, it)?.date || t.end), l.mode);
+    push(place(stepEnds(l, it).to, l.mode), 'home', fmtDate(flightOf(l, it)?.date || t.end), l.mode, fid(l));
   }
+  // Eerste terugvlucht hoort bij de verplaatsing vanuit het laatste land
   return st;
 }
 export function metroHtml(t) {
   const st = stationsOf(t);
   if (st.length < 2) return '';
+  const it = t.items || [];
   const col = m => MODE_COLOR[m] || MODE_COLOR.other;
   const seg = (cls, m) => m ? `<span class="${cls}${m === 'boat' ? ' dash' : ''}" style="--c:${col(m)}"></span>` : '';
+  let n = 0;
   const rows = st.map((s, i) => {
-    const inc = i ? s.mode : null, out = st[i + 1]?.mode || null;
+    const inc = i ? s.mode : null, nx = st[i + 1], out = nx?.mode || null;
     const ring = col(out || inc);
     const row = `<div class="mst ${s.kind}"><div class="mrail">${seg('mup', inc)}${seg('mdn', out)}<span class="mdot" style="--c:${ring}">${s.c ? flag(s.c) : ''}</span></div>
-      <div class="mtx"><b>${esc(s.name)}</b>${s.kind !== 'home' && s.sub ? `<small>${esc(s.sub)}</small>` : s.kind === 'home' ? `<small>${i ? 'thuis' : 'vertrek'}</small>` : ''}</div>${s.kind === 'home' && s.sub ? `<span class="mdate">${esc(s.sub)}</span>` : ''}</div>`;
-    const chg = out && out !== inc
-      ? `<div class="mchg"><div class="mrail">${seg('mfull', out)}</div><span class="mmode" style="--c:${col(out)}">${ic(MODES[out]?.[1] || 'dots', 15)}${esc(MODES[out]?.[0] || '')}</span></div>` : '';
-    return row + chg;
+      <div class="mtx"><b>${esc(s.name)}</b>${s.kind === 'home' ? `<small>${i ? 'thuis' : 'vertrek'}</small>` : s.sub ? `<small>${esc(s.sub)}</small>` : ''}</div>${s.kind === 'home' && s.sub ? `<span class="mdate">${esc(s.sub)}</span>` : ''}</div>`;
+    if (!out) return row;
+    // Icoon in de lijn: elke vlucht/boot/trein; met de auto (of bus) alleen bij vertrek en na een overnachting (nieuwe rit).
+    const showIcon = !['car', 'bus', 'other'].includes(out) || s.kind !== 'small';
+    if (!showIcon) return row + `<div class="mgap thin"><div class="mrail">${seg('mfull', out)}</div></div>`;
+    const f = nx.flightIn && it.find(x => x.id === nx.flightIn);
+    const times = f && (f.f?.dep || f.f?.arr) ? [f.f.dep, f.f.arr].filter(Boolean).join(' – ') : '';
+    const icon = `<span class="mico" style="color:${col(out)}">${ic(MODES[out]?.[1] || 'dots', 15)}</span>`;
+    if (f) {
+      const id = `mf${n++}`;
+      return row + `<button type="button" class="mgap tap" data-exp="${id}" aria-expanded="false"><div class="mrail">${seg('mfull', out)}${icon}</div><span class="minfo" style="color:${col(out)}">${esc(times || MODES[out]?.[0] || '')}</span><span class="mchev">${ic('chev', 13)}</span></button>
+        <div class="mexp" id="${id}" hidden><div class="mrail">${seg('mfull', out)}</div><div class="mbox">${flightCard(t, f)}</div></div>`;
+    }
+    return row + `<div class="mgap"><div class="mrail">${seg('mfull', out)}${icon}</div></div>`;
   }).join('');
   return `<section class="card"><div class="card-head"><h2>Reisweg</h2></div><div class="metro">${rows}</div></section>`;
 }

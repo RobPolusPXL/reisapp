@@ -58,6 +58,8 @@ export function mount(el, { params }) {
   const onClick = e => {
     const t = getTrip(id);
     if (!t) return;
+    const ex = e.target.closest('[data-exp]');
+    if (ex) { const box = el.querySelector('#' + ex.dataset.exp); const open = box.hidden; box.hidden = !open; ex.setAttribute('aria-expanded', String(open)); return; }
     const it = e.target.closest('[data-item]');
     if (it) { openItemForm(id, t.items.find(x => x.id === it.dataset.item)); return; }
     if (e.target.closest('#add')) { openItemForm(id, null, { type: 'activity', date: t.start }); return; }
