@@ -169,13 +169,6 @@ export function legsCompact(items) {
     : l.through ? `<span class="thru" title="Doorgereden">${flag(l.c)}</span>` : flag(l.c)}`).join('')}</div>`;
 }
 
-/** Splitst de route in de heenreis (tot en met aankomst in het eerste bezochte land) en de rest. */
-export function splitHeen(items) {
-  const n = items.length;
-  const i = items.findIndex((l, k) => k > 0 && (l.kind === 'c' ? !l.through : (!l.layover && k < n - 1)));
-  return i < 0 ? { heen: [], rest: items } : { heen: items.slice(0, i + 1), rest: items.slice(i + 1) };
-}
-
 export function tripStats(state) {
   const countries = new Set();
   let days = 0;
@@ -199,17 +192,6 @@ const val = (f, n) => (f.elements[n]?.value ?? '').trim();
 export function matesText(mates) {
   const m = (mates || []).filter(Boolean);
   return m.length < 2 ? m.join('') : m.slice(0, -1).join(', ') + ' en ' + m[m.length - 1];
-}
-
-/** Vervoer, land en 'enkel doorgereden' van één stop in het reisformulier. */
-function legFields(l, i, { labels = false, remove = false } = {}) {
-  const lab = (t, f) => labels ? `<label>${t}</label>` : '';
-  return `<div class="pair" style="align-items:${labels ? 'flex-end' : 'center'}">
-      <div class="field">${lab('Vervoer')}<select name="mode-${i}" aria-label="Vervoer stop ${i + 1}">${Object.entries(MODES).map(([k, [n]]) => `<option value="${k}"${k === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
-      <div class="field">${lab('Aankomst in')}${countryPick(`land-${i}`, l.c, `Land stop ${i + 1}`)}</div>
-      ${remove ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${i}" aria-label="Stop ${i + 1} verwijderen">${ic('x', 20)}</button>` : ''}
-    </div>
-    <label class="transit" data-transit="${i}"><input type="checkbox" name="transit-${i}"${l.transit ? ' checked' : ''}> <span>${transitTxt(l.mode)} (land telt niet mee als bezocht)</span></label>`;
 }
 
 export function openTripForm(trip = null, { onSaved } = {}) {
@@ -242,11 +224,14 @@ export function openTripForm(trip = null, { onSaved } = {}) {
         ${draft.mates.length ? `<div class="mates">${draft.mates.map((m, i) => `<span class="mate">${esc(m)}<button type="button" data-rmmate="${i}" aria-label="${esc(m)} verwijderen">${ic('x', 16)}</button></span>`).join('')}</div>` : ''}
         <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" placeholder="Naam" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
         <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !draft.mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist></div>
-      <div class="label">Heenreis</div>
-      <div class="field" data-vertrek${(draft.legs[0]?.mode || 'plane') === 'plane' ? ' hidden' : ''}><label for="f-vertrek">Vertrek uit</label>${countryPick('vertrek', draft.from || homeCountry(), 'Vertrek uit', 'f-vertrek')}</div>
-      <div class="legs heen"><div class="legrow" data-leg="0"><div style="flex:1;min-width:0">${legFields(draft.legs[0], 0, { labels: true })}</div></div></div>
       <div class="label">Route</div>
-      <div class="legs">${draft.legs.map((l, i) => i === 0 ? '' : `<div class="legrow" data-leg="${i}"><button type="button" class="grip" aria-label="Stop ${i + 1} verslepen" title="Sleep om te verplaatsen"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button><div style="flex:1;min-width:0">${legFields(l, i, { remove: true })}</div></div>`).join('')}</div>
+      <div class="field" data-vertrek${(draft.legs[0]?.mode || 'plane') === 'plane' ? ' hidden' : ''}><label for="f-vertrek">Vertrek uit</label>${countryPick('vertrek', draft.from || homeCountry(), 'Vertrek uit', 'f-vertrek')}</div>
+      <div class="legs">${draft.legs.map((l, i) => `<div class="legrow" data-leg="${i}"><button type="button" class="grip" aria-label="Stop ${i + 1} verslepen" title="Sleep om te verplaatsen"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button><div style="flex:1;min-width:0"><div class="pair" style="align-items:center">
+        <div class="field"><select name="mode-${i}" aria-label="Vervoer stop ${i + 1}">${Object.entries(MODES).map(([k, [n]]) => `<option value="${k}"${k === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
+        <div class="field">${countryPick(`land-${i}`, l.c, `Land stop ${i + 1}`)}</div>
+        ${draft.legs.length > 1 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${i}" aria-label="Stop ${i + 1} verwijderen">${ic('x', 20)}</button>` : ''}
+      </div>
+      <label class="transit" data-transit="${i}"><input type="checkbox" name="transit-${i}"${l.transit ? ' checked' : ''}> <span>${transitTxt(l.mode)} (land telt niet mee als bezocht)</span></label></div></div>`).join('')}</div>
       <button type="button" class="btn soft" data-add>${ic('plus', 18)}Stop toevoegen</button>
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
       <div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="submit" class="btn primary">Opslaan</button></div>
@@ -275,7 +260,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
   sh.el.addEventListener('pointerdown', e => {
     const grip = e.target.closest('.grip');
     if (!grip) return;
-    const box = sh.el.querySelector('.legs:not(.heen)'), row = grip.closest('.legrow');
+    const box = sh.el.querySelector('.legs'), row = grip.closest('.legrow');
     if (!box || !row || box.children.length < 2) return;
     e.preventDefault();
     grip.setPointerCapture(e.pointerId);
@@ -308,8 +293,8 @@ export function openTripForm(trip = null, { onSaved } = {}) {
       row.classList.toggle('dragging', false);
       if (to === from) return;
       read();
-      const [moved] = draft.legs.splice(from + 1, 1);   // de heenreis (stop 0) staat in een eigen sectie
-      draft.legs.splice(to + 1, 0, moved);
+      const [moved] = draft.legs.splice(from, 1);
+      draft.legs.splice(to, 0, moved);
       render();
     };
     grip.addEventListener('pointermove', move);
