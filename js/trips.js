@@ -128,7 +128,8 @@ function legacyParts(t) {
   }
   out.heen = h.map(step);
   let end = -1;
-  for (let i = fl.length - 1; i >= 0; i--) if (!used.has(fl[i].id) && ctry(fl[i].f.to) === home) { end = i; break; }
+  const homes = new Set([home, ctry(fl[0].f.from)].filter(Boolean));
+  for (let i = fl.length - 1; i >= 0; i--) if (!used.has(fl[i].id) && homes.has(ctry(fl[i].f.to))) { end = i; break; }
   if (end >= 0) {
     const k = [fl[end]];
     for (let i = end - 1; i >= 0 && !used.has(fl[i].id); i--) { if (fl[i].f.to === k[0].f.from && dayDiff(fl[i].date, k[0].date) <= 1) k.unshift(fl[i]); else break; }
@@ -184,16 +185,48 @@ export const partsData = t => {
   const taken = new Set(fl.filter(i => i.f.part).map(i => i.id));
   const strip = a => a.map(x => x.flight && taken.has(x.flight) ? { ...x, flight: undefined } : x);
   let h = linkFlights(strip(filled(t.heen)), t, taken), r = linkFlights(strip(filled(t.terug)), t, taken);
+  // Aansluitende vluchten erbij: na de laatste heenvlucht tot in het eerste bezochte land, vóór de eerste terugvlucht vanaf het laatste.
+  const ctry = code => airportByCode(code)?.c;
+  const stays = (t.legs || []).filter(l => l.c && !l.transit);
+  const free = () => fl.filter(i => !taken.has(i.id));
+  const extendHeen = steps => {
+    const target = stays[0]?.c;
+    for (let n = 0; n < 4; n++) {
+      const last = steps[steps.length - 1];
+      if (!last || last.mode !== 'plane' || !target) break;
+      const lf = last.flight && fl.find(i => i.id === last.flight), to = String(stepEnds(last, t.items).to || '').toUpperCase();
+      if (ctry(to) === target) break;
+      const nx = free().find(i => i.f.from === to && (!lf || (dayDiff(lf.date, i.date) <= 1 && (i.date || '') >= (lf.date || ''))));
+      if (!nx) break;
+      taken.add(nx.id); steps = [...steps, { mode: 'plane', from: nx.f.from, to: nx.f.to, flight: nx.id }];
+    }
+    return steps;
+  };
+  const extendTerug = steps => {
+    const target = stays[stays.length - 1]?.c;
+    for (let n = 0; n < 4; n++) {
+      const first = steps[0];
+      if (!first || first.mode !== 'plane' || !target) break;
+      const ff = first.flight && fl.find(i => i.id === first.flight), from = String(stepEnds(first, t.items).from || '').toUpperCase();
+      if (ctry(from) === target) break;
+      const pv = free().find(i => i.f.to === from && (!ff || (dayDiff(i.date, ff.date) <= 1 && (i.date || '') <= (ff.date || ''))));
+      if (!pv) break;
+      taken.add(pv.id); steps = [{ mode: 'plane', from: pv.f.from, to: pv.f.to, flight: pv.id }, ...steps];
+    }
+    return steps;
+  };
+  h = extendHeen(h); r = extendTerug(r);
   const ph = part('heen'), pt = part('terug');
   if (ph.length) h = applyParts(h, ph, false);
   if (pt.length) r = applyParts(r, pt, true);
   if (h.length && r.length) return { heen: h, terug: r };
   const lp = legacyParts({ ...t, items: (t.items || []).filter(i => !taken.has(i.id)) });
   const used = new Set([...h, ...r].map(x => x.flight).filter(Boolean));
-  return {
-    heen: h.length ? h : lp.heen.filter(x => !used.has(x.flight)),
-    terug: r.length ? r : lp.terug.filter(x => !used.has(x.flight)),
-  };
+  lp.heen.forEach(x => x.flight && !h.length && taken.add(x.flight));
+  const heen = h.length ? h : extendHeen(lp.heen.filter(x => !used.has(x.flight)));
+  lp.terug.forEach(x => x.flight && !r.length && taken.add(x.flight));
+  const terug = r.length ? r : extendTerug(lp.terug.filter(x => !used.has(x.flight)));
+  return { heen, terug };
 };
 /** De volledige reisweg in de volgorde van het formulier: Heenreis, Route, Terugreis. */
 export function journeyHtml(t) {
