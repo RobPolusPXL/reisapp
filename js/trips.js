@@ -126,8 +126,8 @@ export function openTripForm(trip = null, { onSaved } = {}) {
   const L = draft.legs || [];
   const home = trip?.from || homeCountry();
   const hasTerug = L.length >= 2 && L[L.length - 1].c === home;
-  draft.heen = L[0] ? { mode: L[0].mode, c: L[0].c } : { mode: '', c: '' };
-  draft.terug = hasTerug ? { mode: L[L.length - 1].mode, c: L[L.length - 1].c } : { mode: '', c: '' };
+  draft.heen = L[0] ? { mode: L[0].mode, c: L[0].c } : null;
+  draft.terug = hasTerug ? { mode: L[L.length - 1].mode, c: L[L.length - 1].c } : null;
   draft.route = L.slice(1, hasTerug ? -1 : undefined).map(l => ({ mode: l.mode, c: l.c }));
   const sh = openSheet('', { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
   const addMate = name => {
@@ -138,14 +138,14 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     const f = sh.el.querySelector('form');
     if (!f) return;
     draft.title = val(f, 'titel'); draft.start = val(f, 'start'); draft.end = val(f, 'einde');
-    draft.heen = { mode: val(f, 'heen-mode'), c: val(f, 'heen-land') };
+    if (draft.heen) draft.heen = { mode: val(f, 'heen-mode'), c: val(f, 'heen-land') };
     draft.route = draft.route.map((_, i) => ({ mode: val(f, `route-mode-${i}`), c: val(f, `route-land-${i}`) }));
-    draft.terug = { mode: val(f, 'terug-mode'), c: val(f, 'terug-land') };
+    if (draft.terug) draft.terug = { mode: val(f, 'terug-mode'), c: val(f, 'terug-land') };
   };
-  const legRow = (k, l, rm = -1) => `<div class="pair" style="align-items:center">
+  const legRow = (k, l, rm = -1, one = '') => `<div class="pair" style="align-items:center">
         <div class="field"><select name="${k.includes('-') ? k.replace('-', '-mode-') : k + '-mode'}" aria-label="Vervoer"><option value="" aria-label="Vervoer"></option>${Object.entries(MODES).map(([m, [n]]) => `<option value="${m}"${m === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
         <div class="field">${countryPick(k.includes('-') ? k.replace('-', '-land-') : k + '-land', l.c, 'Land')}</div>
-        ${rm >= 0 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${rm}" aria-label="Stop verwijderen">${ic('x', 20)}</button>` : ''}
+        ${rm >= 0 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" ${one ? `data-rmone="${one}"` : `data-rm="${rm}"`} aria-label="Verwijderen">${ic('x', 20)}</button>` : ''}
       </div>`;
   const render = (err = '') => {
     sh.setHtml(`<h2>${trip ? 'Reis bewerken' : 'Nieuwe reis'}</h2>
@@ -158,12 +158,12 @@ export function openTripForm(trip = null, { onSaved } = {}) {
         <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
         <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !draft.mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist></div>
       ${trip && 0 ? '' : ''}<div class="label legsep">Heenreis</div>
-      ${legRow('heen', draft.heen)}
+      ${draft.heen ? legRow('heen', draft.heen, 0, 'heen') : `<button type="button" class="btn soft" data-addone="heen">${ic('plus', 18)}Heenreis toevoegen</button>`}
       <div class="label legsep">Route</div>
       ${draft.route.map((l, i) => legRow(`route-${i}`, l, i)).join('')}
       <button type="button" class="btn soft" data-add>${ic('plus', 18)}Stop toevoegen</button>
       <div class="label legsep">Terugreis</div>
-      ${legRow('terug', draft.terug)}
+      ${draft.terug ? legRow('terug', draft.terug, 0, 'terug') : `<button type="button" class="btn soft" data-addone="terug">${ic('plus', 18)}Terugreis toevoegen</button>`}
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
       <div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="submit" class="btn primary">Opslaan</button></div>
     </form>`);
@@ -181,10 +181,12 @@ export function openTripForm(trip = null, { onSaved } = {}) {
       if (am) sh.el.querySelector('[name=mate]')?.focus();
       return;
     }
-    const rm = e.target.closest('[data-rm]'), add = e.target.closest('[data-add]');
-    if (!rm && !add) return;
+    const rm = e.target.closest('[data-rm]'), add = e.target.closest('[data-add]'), ao = e.target.closest('[data-addone]'), ro = e.target.closest('[data-rmone]');
+    if (!rm && !add && !ao && !ro) return;
     read();
-    if (rm) draft.route.splice(+rm.dataset.rm, 1); else draft.route.push({ mode: '', c: '' });
+    if (ao) draft[ao.dataset.addone] = { mode: '', c: '' };
+    if (ro) draft[ro.dataset.rmone] = null;
+    if (rm) draft.route.splice(+rm.dataset.rm, 1); else if (add) draft.route.push({ mode: '', c: '' });
     render();
   });
   sh.el.addEventListener('keydown', e => {
@@ -199,7 +201,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     addMate(sh.el.querySelector('[name=mate]')?.value);   // een ingetypte naam gaat niet verloren
     if (!draft.start) return render('Kies een startdatum.');
     if (draft.end && draft.end < draft.start) return render('Het einde ligt voor de start.');
-    const legs = [draft.heen, ...draft.route, draft.terug].filter(l => l.c).map(l => ({ ...l, mode: l.mode || 'car' }));
+    const legs = [draft.heen, ...draft.route, draft.terug].filter(l => l?.c).map(l => ({ ...l, mode: l.mode || 'car' }));
     if (!draft.title) return render('Geef een titel.');
     const clean = { ...draft, legs, end: draft.end || draft.start };
     delete clean.heen; delete clean.route; delete clean.terug;
