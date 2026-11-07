@@ -169,9 +169,15 @@ export function heenEnd(items) {
   return k < 0 ? items.length : k + 1;
 }
 
+/** Terugreis: laatste twee items, als de reis eindigt in het land waar hij begon. Geeft het beginpunt of items.length. */
+export function terugStart(items, n) {
+  const e = items.length;
+  return e - n >= 2 && items[0].c === items[e - 1].c ? e - 2 : e;
+}
+
 /** Route op één regel (overzicht op mobiel): landen als vlag, luchthavens als label met de code en de vlag als watermerk. */
-export function legsCompact(items, a = 0, b = items.length) {
-  return `<div class="croute">${items.map((l, i) => i < a || i >= b ? '' : `${i ? `<span class="cm2" title="${esc(MODES[l.mode]?.[0] || '')}">${ic(MODES[l.mode]?.[1] || 'dots', 16)}</span>` : ''}${l.kind === 'ap'
+export function legsCompact(items, a = 0, b = items.length, lead = true) {
+  return `<div class="croute">${items.map((l, i) => i < a || i >= b ? '' : `${i && (lead || i > a) ? `<span class="cm2" title="${esc(MODES[l.mode]?.[0] || '')}">${ic(MODES[l.mode]?.[1] || 'dots', 16)}</span>` : ''}${l.kind === 'ap'
     ? `<span class="ac${l.layover ? ' lt' : ''}" title="${esc(l.name)}, ${esc(nameOf(l.c))}"><img class="wm" src="assets/flags/${esc(String(l.c).toLowerCase())}.svg" alt="" aria-hidden="true"><b>${esc(l.code)}</b></span>`
     : l.through ? `<span class="thru" title="Doorgereden">${flag(l.c)}</span>` : flag(l.c)}`).join('')}</div>`;
 }
@@ -233,7 +239,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
         <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !draft.mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist></div>
       <div class="label legsep">Heenreis</div>
       <div class="field" data-vertrek${(draft.legs[0]?.mode || 'plane') === 'plane' ? ' hidden' : ''}><label for="f-vertrek">Vertrek uit</label>${countryPick('vertrek', draft.from || homeCountry(), 'Vertrek uit', 'f-vertrek')}</div>
-      <div class="legs">${draft.legs.map((l, i) => `${i === 1 ? '<div class="label legsep">Route</div>' : ''}<div class="legrow" data-leg="${i}"><button type="button" class="grip" aria-label="Stop ${i + 1} verslepen" title="Sleep om te verplaatsen"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button><div style="flex:1;min-width:0"><div class="pair" style="align-items:center">
+      <div class="legs">${draft.legs.map((l, i) => `${i === draft.legs.length - 1 && draft.legs.length > 1 && l.c && l.c === (draft.from || homeCountry()) ? '<div class="label legsep">Terugreis</div>' : i === 1 ? '<div class="label legsep">Route</div>' : ''}<div class="legrow" data-leg="${i}"><button type="button" class="grip" aria-label="Stop ${i + 1} verslepen" title="Sleep om te verplaatsen"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button><div style="flex:1;min-width:0"><div class="pair" style="align-items:center">
         <div class="field"><select name="mode-${i}" aria-label="Vervoer stop ${i + 1}">${Object.entries(MODES).map(([k, [n]]) => `<option value="${k}"${k === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
         <div class="field">${countryPick(`land-${i}`, l.c, `Land stop ${i + 1}`)}</div>
         ${draft.legs.length > 1 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${i}" aria-label="Stop ${i + 1} verwijderen">${ic('x', 20)}</button>` : ''}
