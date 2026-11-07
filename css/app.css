@@ -557,6 +557,3 @@ svg.globe .g-rim { fill: none; stroke: var(--field); stroke-width: 1px; }
 .cp-list button:hover, .cp-list button:focus-visible { background: var(--bg); }
 .cp-list button[aria-selected=true] { font-weight: 600; }
 .cp-list .empty { padding: 12px; color: var(--muted); }
-.hsec .hl, .legsep { display: block; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
-.hsec { margin-top: 10px; } .hsec .croute { margin-top: 4px; }
-.legsep { margin: 6px 0 -4px; }
