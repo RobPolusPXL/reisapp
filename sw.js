@@ -2,7 +2,11 @@
 // - Code (HTML, JS, CSS): netwerk eerst, met controle bij de server; offline uit de cache.
 // - Grote data (kaart, landen, vlaggen, iconen): cache eerst, op de achtergrond bijwerken.
 // - Het manifest gaat altijd rechtstreeks naar het netwerk.
+<<<<<<< HEAD
 const V = 'mustache-passport-v72';
+=======
+const V = 'mustache-passport-v72';
+>>>>>>> parent of c9d8378 (Reis ingeven: Vlucht toevoegen onder Heenreis)
 const CORE = [
   './', 'index.html', 'css/app.css',
   'js/main.js', 'js/store.js', 'js/data.js', 'js/ui.js', 'js/map.js', 'js/globe.js', 'js/sheets.js','js/airports.js','data/airports.json','js/airlines.js','data/airlines.json','js/boardingpass.js','vendor/zxing/reader.js','vendor/zxing/share.js','vendor/zxing/zxing_reader.wasm', 'js/trips.js', 'js/sync.js', 'js/firebase-config.js',

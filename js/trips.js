@@ -121,8 +121,7 @@ export function matesText(mates) {
 
 export function openTripForm(trip = null, { onSaved } = {}) {
   const mates = [...(trip?.mates || [])];
-  const flights = [];
-  const sh = openSheet(`<div class="label">Titel</div><input class="titel-in" name="titel" aria-label="Titel" placeholder="Bijvoorbeeld Tatra &amp; Energylandia"><div class="datums"><div><div class="label">Start</div><input class="titel-in" type="date" name="start" aria-label="Start"></div><div><div class="label">Einde</div><input class="titel-in" type="date" name="einde" aria-label="Einde"></div></div><div class="label">Reisgenoten (optioneel)</div><div data-mates></div><div class="label">Heenreis</div><div data-flights></div><button type="button" class="btn soft" data-addflight>${ic('plus', 18)}Vlucht toevoegen</button><div class="label">Route</div><div class="label">Terugreis</div>`, { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
+  const sh = openSheet(`<div class="label">Titel</div><input class="titel-in" name="titel" aria-label="Titel" placeholder="Bijvoorbeeld Tatra &amp; Energylandia"><div class="datums"><div><div class="label">Start</div><input class="titel-in" type="date" name="start" aria-label="Start"></div><div><div class="label">Einde</div><input class="titel-in" type="date" name="einde" aria-label="Einde"></div></div><div class="label">Reisgenoten (optioneel)</div><div data-mates></div><div class="label">Heenreis</div><div class="label">Route</div><div class="label">Terugreis</div>`, { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
   const addMate = name => {
     name = (name || '').trim().replace(/\s+/g, ' ');
     if (name && !mates.some(m => m.toLowerCase() === name.toLowerCase())) mates.push(name);
@@ -132,14 +131,8 @@ export function openTripForm(trip = null, { onSaved } = {}) {
       <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" placeholder="Naam" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
       <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist>`;
   };
-  const drawFlights = () => {
-    sh.el.querySelector('[data-flights]').innerHTML = flights.length ? `<div class="mates">${flights.map((f, i) => `<span class="mate">${esc(f.name)}${f.f?.from || f.f?.to ? ' · ' + esc([f.f.from, f.f.to].filter(Boolean).join(' → ')) : ''}<button type="button" data-rmflight="${i}" aria-label="Vlucht verwijderen">${ic('x', 16)}</button></span>`).join('')}</div>` : '';
-  };
   drawMates();
   sh.el.addEventListener('click', e => {
-    if (e.target.closest('[data-addflight]')) { openItemForm(null, null, { type: 'flight', onSave: d => { flights.push(d); drawFlights(); } }); return; }
-    const rf = e.target.closest('[data-rmflight]');
-    if (rf) { flights.splice(+rf.dataset.rmflight, 1); drawFlights(); return; }
     const am = e.target.closest('[data-addmate]'), rmm = e.target.closest('[data-rmmate]');
     if (!am && !rmm) return;
     if (am) addMate(sh.el.querySelector('[name=mate]')?.value); else mates.splice(+rmm.dataset.rmmate, 1);
@@ -156,7 +149,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
 }
 
 /** Formulier voor een item in een reis (vlucht, verblijf, restaurant, activiteit). */
-export function openItemForm(tripId, item = null, { type = 'activity', date = '', onSave = null } = {}) {
+export function openItemForm(tripId, item = null, { type = 'activity', date = '' } = {}) {
   const draft = item ? structuredClone(item) : { id: newId(), type, name: '', date, note: '', score: '', f: {} };
   draft.f ||= {};
   if (!draft.f.pax) draft.f.pax = (draft.f.seat || draft.f.cls) ? [{ name: '', seat: draft.f.seat || '', cls: draft.f.cls || '' }] : [];
@@ -270,7 +263,6 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     else if (!draft.name) return render('Geef het item een naam.');
     if ((draft.type === 'stay' || draft.type === 'activity') && draft.date && draft.dateEnd && draft.dateEnd < draft.date) return render(draft.type === 'stay' ? 'Uitchecken ligt voor inchecken.' : 'De einddatum ligt voor de begindatum.');
     if (!draft.dateEnd) delete draft.dateEnd;
-    if (onSave) { sh.close(); onSave(draft); return; }
     update(st => {
       if (draft.type === 'flight') {
         for (const k of ['from', 'to']) ensureMyAirport(st, airportByCode(draft.f[k]), newId);
