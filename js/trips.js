@@ -120,7 +120,31 @@ export function matesText(mates) {
 }
 
 export function openTripForm(trip = null, { onSaved } = {}) {
-  const sh = openSheet(`<div class="label">Titel</div><input class="titel-in" name="titel" aria-label="Titel" placeholder="Bijvoorbeeld Tatra &amp; Energylandia"><div class="datums"><div><div class="label">Start</div><input class="titel-in" type="date" name="start" aria-label="Start"></div><div><div class="label">Einde</div><input class="titel-in" type="date" name="einde" aria-label="Einde"></div></div><div class="label">Reisgenoten</div><div class="label">Heenreis</div><div class="label">Route</div><div class="label">Terugreis</div>`, { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
+  const mates = [...(trip?.mates || [])];
+  const sh = openSheet(`<div class="label">Titel</div><input class="titel-in" name="titel" aria-label="Titel" placeholder="Bijvoorbeeld Tatra &amp; Energylandia"><div class="datums"><div><div class="label">Start</div><input class="titel-in" type="date" name="start" aria-label="Start"></div><div><div class="label">Einde</div><input class="titel-in" type="date" name="einde" aria-label="Einde"></div></div><div class="label">Reisgenoten (optioneel)</div><div data-mates></div><div class="label">Heenreis</div><div class="label">Route</div><div class="label">Terugreis</div>`, { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
+  const addMate = name => {
+    name = (name || '').trim().replace(/\s+/g, ' ');
+    if (name && !mates.some(m => m.toLowerCase() === name.toLowerCase())) mates.push(name);
+  };
+  const drawMates = () => {
+    sh.el.querySelector('[data-mates]').innerHTML = `${mates.length ? `<div class="mates">${mates.map((m, i) => `<span class="mate">${esc(m)}<button type="button" data-rmmate="${i}" aria-label="${esc(m)} verwijderen">${ic('x', 16)}</button></span>`).join('')}</div>` : ''}
+      <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" placeholder="Naam" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
+      <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist>`;
+  };
+  drawMates();
+  sh.el.addEventListener('click', e => {
+    const am = e.target.closest('[data-addmate]'), rmm = e.target.closest('[data-rmmate]');
+    if (!am && !rmm) return;
+    if (am) addMate(sh.el.querySelector('[name=mate]')?.value); else mates.splice(+rmm.dataset.rmmate, 1);
+    drawMates();
+    if (am) sh.el.querySelector('[name=mate]')?.focus();
+  });
+  sh.el.addEventListener('keydown', e => {
+    if (e.key !== 'Enter' || e.target.name !== 'mate') return;
+    e.preventDefault();
+    addMate(e.target.value); drawMates();
+    sh.el.querySelector('[name=mate]')?.focus();
+  });
   return sh;
 }
 
