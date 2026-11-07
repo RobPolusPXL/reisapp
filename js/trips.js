@@ -197,10 +197,11 @@ export function legsSplit(items) {
   const heen = items.slice(0, first + 1), terug = items.slice(last);
   heen[first] = asAp(heen[first], heen[first].arr);
   terug[0] = asAp(terug[0], terug[0].dep);   // inclusief vertrek, aankomst en het vervoer ertussen
-  const seen = new Set(), pills = [];
-  items.forEach((l, i) => { if (visited[i] && !seen.has(l.c)) { seen.add(l.c); pills.push(`<span class="cvis" title="${esc(nameOf(l.c))}">${flag(l.c)}</span>`); } });
+  // Bezocht: de landen in volgorde van de reis, met het vervoer ertussen (zodat bv. de boot naar de Bahama's blijft staan).
+  const vis = items.map((l, i) => ({ l, i })).filter(x => visited[x.i]);
+  const stays = vis.map((x, k) => `${k ? modeIc(x.l) : ''}<span class="cvis" title="${esc(nameOf(x.l.c))}">${flag(x.l.c)}</span>`).join('');
   const row = (lab, html, cls = '') => html ? `<div class="srow${cls}"><i>${lab}</i><div class="croute">${html}</div></div>` : '';
-  return `<div class="split">${row('Heen', chain(heen))}${row('Bezocht', pills.join(''), ' v')}${row('Terug', terug.length > 1 ? chain(terug) : '')}</div>`;
+  return `<div class="split">${row('Heen', chain(heen))}${row('Bezocht', stays, ' v')}${row('Terug', terug.length > 1 ? chain(terug) : '')}</div>`;
 }
 
 export function tripStats(state) {
