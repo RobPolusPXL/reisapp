@@ -114,7 +114,7 @@ export function routeOf(trip) {
   if (!fromAp) {
     // Geen vlucht: begin in het gekozen vertrekland (of je thuisland) als je er niet met het vliegtuig vertrekt.
     const start = trip.from || homeCountry();
-    if (start && (legs[0].mode !== 'plane' || trip.from) && legs[0].c !== start) return [{ kind: 'c', mode: legs[0].mode, c: start }, ...legs];
+    if (start && legs[0].c !== start) return [{ kind: 'c', mode: legs[0].mode, c: start }, ...legs];
     return legs;
   }
   const ap = (code, layover) => {
