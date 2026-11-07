@@ -138,8 +138,16 @@ function legacyParts(t) {
 }
 /** Heen en terug van een reis: wat is opgeslagen, anders (oude reis) afgeleid uit de vluchten. */
 export const partsData = t => {
-  if (t.heen || t.terug) return { heen: t.heen || [], terug: t.terug || [] };
-  return legacyParts(t);
+  // Per kant: wat is ingevuld, anders afgeleid uit de vluchten (ook als de reis ooit met een lege heen/terug werd opgeslagen).
+  const filled = a => (a || []).filter(x => x.from || x.to || x.flight);
+  const h = filled(t.heen), r = filled(t.terug);
+  if (h.length && r.length) return { heen: h, terug: r };
+  const lp = legacyParts(t);
+  const used = new Set([...h, ...r].map(x => x.flight).filter(Boolean));
+  return {
+    heen: h.length ? h : lp.heen.filter(x => !used.has(x.flight)),
+    terug: r.length ? r : lp.terug.filter(x => !used.has(x.flight)),
+  };
 };
 /** De volledige reisweg in de volgorde van het formulier: Heenreis, Route, Terugreis. */
 export function journeyHtml(t) {
