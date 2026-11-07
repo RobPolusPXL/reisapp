@@ -73,7 +73,7 @@ export function matesText(mates) {
 
 // ---- Eén weergave van de reisweg: Heenreis → Route → Terugreis ----
 // Alles wat getoond wordt komt uit wat in de reis is opgeslagen (heen, legs, terug); er wordt niets bij gegokt.
-// Enkel oudere reizen zonder heen/terug krijgen die eenmalig afgeleid uit hun vluchten (legacyParts), tot je ze bewerkt en opslaat.
+// Zonder ingevulde heen/terug wordt die afgeleid uit de vluchten (partsData).
 const STEP_MODES = ['plane', 'car', 'train', 'boat'];
 const dayDiff = (a, b) => (a && b) ? Math.abs(Math.round((new Date(b) - new Date(a)) / 864e5)) : 0;
 const flightOf = (step, items = []) => step?.flight ? items.find(i => i.id === step.flight) : null;
@@ -113,43 +113,16 @@ function routeHtml(legs) {
   const names = legs.filter(l => !l.transit).map(l => nameOf(l.c)).filter((n, i, a) => n !== a[i - 1]);
   return `<div class="rd"><h3>Route</h3><div class="rd-row">${row}</div><div class="rd-info">${esc(names.join(', '))}</div></div>`;
 }
-/** Oudere reizen zonder heen/terug: afgeleid uit de vluchten (heen = eerste aansluitende vluchten, terug = laatste naar huis). */
-function legacyParts(t) {
-  const home = homeCountry();
-  const fl = (t.items || []).filter(i => i.type === 'flight' && i.f?.from && i.f?.to).sort((a, b) => (a.date || '9').localeCompare(b.date || '9') || String(a.f.dep || '').localeCompare(String(b.f.dep || '')));
-  const ctry = code => airportByCode(code)?.c;
-  const step = f => ({ mode: 'plane', from: f.f.from, to: f.f.to, flight: f.id });
-  const out = { heen: [], terug: [] };
-  if (!fl.length) return out;
-  const used = new Set([fl[0].id]), h = [fl[0]];
-  for (const f of fl.slice(1)) {
-    const p = h[h.length - 1];
-    if (f.f.from === p.f.to && dayDiff(p.date, f.date) <= 1 && ctry(p.f.to) !== home) { h.push(f); used.add(f.id); } else break;
-  }
-  out.heen = h.map(step);
-  let end = -1;
-  const homes = new Set([home, ctry(fl[0].f.from)].filter(Boolean));
-  for (let i = fl.length - 1; i >= 0; i--) if (!used.has(fl[i].id) && homes.has(ctry(fl[i].f.to))) { end = i; break; }
-  if (end >= 0) {
-    const k = [fl[end]];
-    for (let i = end - 1; i >= 0 && !used.has(fl[i].id); i--) { if (fl[i].f.to === k[0].f.from && dayDiff(fl[i].date, k[0].date) <= 1) k.unshift(fl[i]); else break; }
-    out.terug = k.map(step);
-  }
-  return out;
-}
-/** Heen en terug van een reis: wat is opgeslagen, anders (oude reis) afgeleid uit de vluchten. */
-/** Vliegstappen zonder gekoppelde vlucht koppelen aan de vluchten van de reis: dezelfde van/naar, of een aansluitende reeks (bv. BRU → MAD → SJO voor een stap BRU → SJO). */
-function linkFlights(steps, t, taken) {
-  const fl = (t.items || []).filter(i => i.type === 'flight' && i.f?.from && i.f?.to && !taken.has(i.id))
-    .sort((a, b) => (a.date || '9').localeCompare(b.date || '9') || String(a.f.dep || '').localeCompare(String(b.f.dep || '')));
+/** Vliegstappen zonder gekoppelde vlucht koppelen aan een vlucht met dezelfde van/naar, of aan een aansluitende reeks (BRU → MAD → SJO). */
+function linkFlights(steps, fl, taken) {
   const out = [];
   for (const s of steps) {
-    if (s.mode !== 'plane' || (s.flight && (t.items || []).some(i => i.id === s.flight))) { out.push(s); if (s.flight) taken.add(s.flight); continue; }
+    if (s.mode !== 'plane') { out.push(s); continue; }
+    if (s.flight && fl.some(i => i.id === s.flight) && !taken.has(s.flight)) { taken.add(s.flight); out.push(s); continue; }
     const from = String(s.from || '').toUpperCase(), to = String(s.to || '').toUpperCase();
     const free = fl.filter(i => !taken.has(i.id));
     const direct = free.find(i => i.f.from === from && (!to || i.f.to === to));
     if (direct) { taken.add(direct.id); out.push({ ...s, flight: direct.id }); continue; }
-    // Aansluitende vluchten van 'from' naar 'to'
     const start = free.find(i => i.f.from === from);
     if (start && to) {
       const chain = [start];
@@ -159,73 +132,72 @@ function linkFlights(steps, t, taken) {
         if (!nx) break;
         chain.push(nx);
       }
-      if (chain[chain.length - 1].f.to === to) { chain.forEach(c => taken.add(c.id)); chain.forEach(c => out.push({ mode: 'plane', from: c.f.from, to: c.f.to, flight: c.id })); continue; }
+      if (chain[chain.length - 1].f.to === to) { chain.forEach(c => { taken.add(c.id); out.push({ mode: 'plane', from: c.f.from, to: c.f.to, flight: c.id }); }); continue; }
     }
-    out.push(s);
+    out.push({ ...s, flight: undefined });
   }
   return out;
 }
-const sortFlights = a => [...a].sort((x, y) => (x.date || '9').localeCompare(y.date || '9') || String(x.f?.dep || '').localeCompare(String(y.f?.dep || '')));
-/** Vluchten waarbij je zelf 'Deel van' koos, op hun plaats zetten: de vliegstappen van die kant worden die vluchten. */
-function applyParts(steps, flights, atStart) {
-  if (!flights.length) return steps;
-  const fsteps = sortFlights(flights).map(f => ({ mode: 'plane', from: f.f.from, to: f.f.to, flight: f.id }));
-  const i = steps.findIndex(x => x.mode === 'plane');
-  const rest = steps.filter(x => x.mode !== 'plane');
-  if (i < 0) return atStart ? [...fsteps, ...rest] : [...rest, ...fsteps];
-  const before = steps.slice(0, i).filter(x => x.mode !== 'plane'), after = steps.slice(i).filter(x => x.mode !== 'plane');
-  return [...before, ...fsteps, ...after];
-}
+const fstep = f => ({ mode: 'plane', from: f.f.from, to: f.f.to, flight: f.id });
+/**
+ * Heen en terug van een reis. Volgorde van wat telt:
+ * 1. vluchten waarbij je zelf 'Deel van' koos (Heenreis / Terugreis; Onderweg nooit),
+ * 2. wat in de heen/terugreis van het reisformulier staat (vliegstappen gekoppeld aan de vluchten),
+ * 3. anders: de eerste vlucht van de reis is de heenreis, de laatste vlucht terug naar het vertrekland de terugreis.
+ * Daarna aangevuld met aansluitende vluchten (overstappen) tot in het eerste / vanaf het laatste bezochte land.
+ */
 export const partsData = t => {
-  // 1. Vluchten met een gekozen 'Deel van' (Heenreis/Terugreis/Onderweg) gaan voor.
-  // 2. Daarna: wat in heen/terug is ingevuld (vliegstappen gekoppeld aan de vluchten), anders afgeleid uit de vluchten.
-  const filled = a => (a || []).filter(x => x.from || x.to || x.flight);
-  const fl = (t.items || []).filter(i => i.type === 'flight' && i.f?.from && i.f?.to);
-  const part = k => fl.filter(i => i.f.part === k);
-  const taken = new Set(fl.filter(i => i.f.part).map(i => i.id));
-  const strip = a => a.map(x => x.flight && taken.has(x.flight) ? { ...x, flight: undefined } : x);
-  let h = linkFlights(strip(filled(t.heen)), t, taken), r = linkFlights(strip(filled(t.terug)), t, taken);
-  // Aansluitende vluchten erbij: na de laatste heenvlucht tot in het eerste bezochte land, vóór de eerste terugvlucht vanaf het laatste.
   const ctry = code => airportByCode(code)?.c;
-  const stays = (t.legs || []).filter(l => l.c && !l.transit);
+  const fl = (t.items || []).filter(i => i.type === 'flight' && i.f?.from && i.f?.to)
+    .sort((a, b) => (a.date || '9').localeCompare(b.date || '9') || String(a.f.dep || '').localeCompare(String(b.f.dep || '')));
+  const filled = a => (a || []).filter(x => x.from || x.to || x.flight);
+  const taken = new Set(fl.filter(i => i.f.part).map(i => i.id));   // zelf ingedeelde vluchten niet automatisch elders gebruiken
+  const byPart = k => fl.filter(i => i.f.part === k).map(fstep);
   const free = () => fl.filter(i => !taken.has(i.id));
-  const extendHeen = steps => {
-    const target = stays[0]?.c;
-    for (let n = 0; n < 4; n++) {
-      const last = steps[steps.length - 1];
-      if (!last || last.mode !== 'plane' || !target) break;
-      const lf = last.flight && fl.find(i => i.id === last.flight), to = String(stepEnds(last, t.items).to || '').toUpperCase();
-      if (ctry(to) === target) break;
-      const nx = free().find(i => i.f.from === to && (!lf || (dayDiff(lf.date, i.date) <= 1 && (i.date || '') >= (lf.date || ''))));
-      if (!nx) break;
-      taken.add(nx.id); steps = [...steps, { mode: 'plane', from: nx.f.from, to: nx.f.to, flight: nx.id }];
+  const stays = (t.legs || []).filter(l => l.c && !l.transit);
+  const merge = (steps, parts, atStart) => {
+    if (!parts.length) return steps;
+    const all = [...steps.filter(x => x.mode === 'plane' && x.flight), ...parts];
+    // In volgorde van datum/uur; bij gelijke datum zonder uur: in de volgorde waarin ze op elkaar aansluiten.
+    let rest0 = fl.filter(f => all.some(x => x.flight === f.id)); const ord = [];
+    while (rest0.length) {
+      const prev = ord[ord.length - 1];
+      const nx = (prev && rest0.find(f => f.f.from === prev.f.to && dayDiff(prev.date, f.date) <= 1)) || rest0.find(f => !rest0.some(g => g !== f && g.f.to === f.f.from && (g.date || '') <= (f.date || ''))) || rest0[0];
+      ord.push(nx); rest0 = rest0.filter(f => f !== nx);
     }
-    return steps;
+    const planes = ord.map(fstep);
+    const i = steps.findIndex(x => x.mode === 'plane'), rest = steps.filter(x => x.mode !== 'plane' || !x.flight);
+    if (i < 0) return atStart ? [...planes, ...rest] : [...rest, ...planes];
+    return [...steps.slice(0, i).filter(x => x.mode !== 'plane'), ...planes, ...steps.slice(i).filter(x => x.mode !== 'plane')];
   };
-  const extendTerug = steps => {
-    const target = stays[stays.length - 1]?.c;
-    for (let n = 0; n < 4; n++) {
-      const first = steps[0];
-      if (!first || first.mode !== 'plane' || !target) break;
-      const ff = first.flight && fl.find(i => i.id === first.flight), from = String(stepEnds(first, t.items).from || '').toUpperCase();
-      if (ctry(from) === target) break;
-      const pv = free().find(i => i.f.to === from && (!ff || (dayDiff(i.date, ff.date) <= 1 && (i.date || '') <= (ff.date || ''))));
-      if (!pv) break;
-      taken.add(pv.id); steps = [{ mode: 'plane', from: pv.f.from, to: pv.f.to, flight: pv.id }, ...steps];
-    }
-    return steps;
-  };
-  h = extendHeen(h); r = extendTerug(r);
-  const ph = part('heen'), pt = part('terug');
-  if (ph.length) h = applyParts(h, ph, false);
-  if (pt.length) r = applyParts(r, pt, true);
-  if (h.length && r.length) return { heen: h, terug: r };
-  const lp = legacyParts({ ...t, items: (t.items || []).filter(i => !taken.has(i.id)) });
-  const used = new Set([...h, ...r].map(x => x.flight).filter(Boolean));
-  lp.heen.forEach(x => x.flight && !h.length && taken.add(x.flight));
-  const heen = h.length ? h : extendHeen(lp.heen.filter(x => !used.has(x.flight)));
-  lp.terug.forEach(x => x.flight && !r.length && taken.add(x.flight));
-  const terug = r.length ? r : extendTerug(lp.terug.filter(x => !used.has(x.flight)));
+  // Heen
+  let heen = merge(linkFlights(filled(t.heen), fl, taken), byPart('heen'), false);
+  if (!heen.length && free().length && (!t.legs?.length || t.legs[0].mode === 'plane')) { const f = free()[0]; taken.add(f.id); heen = [fstep(f)]; }
+  for (let n = 0; n < 4; n++) {   // overstappen erbij tot in het eerste bezochte land
+    const last = heen[heen.length - 1];
+    if (!last || last.mode !== 'plane' || !stays.length || ctry(stepEnds(last, t.items).to) === stays[0].c) break;
+    const lf = fl.find(i => i.id === last.flight), to = String(stepEnds(last, t.items).to || '').toUpperCase();
+    const nx = free().find(i => i.f.from === to && (!lf || (dayDiff(lf.date, i.date) <= 1 && (i.date || '') >= (lf.date || ''))));
+    if (!nx) break;
+    taken.add(nx.id); heen = [...heen, fstep(nx)];
+  }
+  // Terug
+  const homes = new Set([homeCountry(), heen[0] && (heen[0].mode === 'plane' ? ctry(stepEnds(heen[0], t.items).from) : heen[0].from)].filter(Boolean));
+  let terug = merge(linkFlights(filled(t.terug), fl, taken), byPart('terug'), true);
+  if (!terug.length) {
+    const back = [...free()].reverse().find(i => homes.has(ctry(i.f.to)) && !(stays.length && ctry(i.f.to) === stays[stays.length - 1].c));
+    // Geen vlucht terug naar huis (bv. de laatste aansluiting ontbreekt): dan de laatste vlucht die het laatste bezochte land verlaat.
+    const leave = !back && stays.length && [...free()].reverse().find(i => ctry(i.f.from) === stays[stays.length - 1].c);
+    if (back || leave) { taken.add((back || leave).id); terug = [fstep(back || leave)]; }
+  }
+  for (let n = 0; n < 4; n++) {   // overstappen ervoor vanaf het laatste bezochte land
+    const first = terug[0];
+    if (!first || first.mode !== 'plane' || !stays.length || ctry(stepEnds(first, t.items).from) === stays[stays.length - 1].c) break;
+    const ff = fl.find(i => i.id === first.flight), from = String(stepEnds(first, t.items).from || '').toUpperCase();
+    const pv = free().find(i => i.f.to === from && (!ff || (dayDiff(i.date, ff.date) <= 1 && (i.date || '') <= (ff.date || ''))));
+    if (!pv) break;
+    taken.add(pv.id); terug = [fstep(pv), ...terug];
+  }
   return { heen, terug };
 };
 /** De volledige reisweg in de volgorde van het formulier: Heenreis, Route, Terugreis. */
@@ -611,7 +583,9 @@ function flightCard(t, i) {
 /** Vluchten die niet in de reisweg staan (bv. zonder plaats in de route) blijven apart zichtbaar. */
 export function transportHtml(t) {
   const shown = new Set(stationsOf(t).map(s => s.flightIn).filter(Boolean));
-  const fl = flightsOf(t).filter(i => !shown.has(i.id)).map(i => flightCard(t, i)).join('');
+  const key = i => [i.date, i.f?.number, i.f?.from, i.f?.to].join('|');
+  const shownKeys = new Set(flightsOf(t).filter(i => shown.has(i.id)).map(key));   // dubbel ingelezen (zelfde vlucht, zelfde dag) niet nog eens tonen
+  const fl = flightsOf(t).filter(i => !shown.has(i.id) && !shownKeys.has(key(i))).map(i => flightCard(t, i)).join('');
   return fl ? `<section class="card"><div class="card-head"><h2>Vluchten</h2></div>${fl}</section>` : '';
 }
 
