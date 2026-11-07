@@ -120,77 +120,7 @@ export function matesText(mates) {
 }
 
 export function openTripForm(trip = null, { onSaved } = {}) {
-  const draft = trip ? structuredClone(trip) : { id: newId(), title: '', start: '', end: '', legs: [{ mode: 'plane', c: '' }], items: [], mates: [] };
-  draft.mates ||= [];
-  const sh = openSheet('', { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
-  const addMate = name => {
-    name = (name || '').trim().replace(/\s+/g, ' ');
-    if (name && !draft.mates.some(m => m.toLowerCase() === name.toLowerCase())) draft.mates.push(name);
-  };
-  const read = () => {
-    const f = sh.el.querySelector('form');
-    if (!f) return;
-    draft.title = val(f, 'titel'); draft.start = val(f, 'start'); draft.end = val(f, 'einde');
-  };
-  const render = (err = '') => {
-    sh.setHtml(`<h2>${trip ? 'Reis bewerken' : 'Nieuwe reis'}</h2>
-    <form class="form" novalidate>
-      <div class="field"><label for="f-titel">Titel (optioneel)</label><input id="f-titel" name="titel" value="${esc(draft.title)}" placeholder="Bijvoorbeeld Tatra &amp; Energylandia"></div>
-      <div class="pair"><div class="field"><label for="f-start">Start</label><input id="f-start" name="start" type="date" value="${esc(draft.start)}"></div>
-      <div class="field"><label for="f-einde">Einde</label><input id="f-einde" name="einde" type="date" value="${esc(draft.end)}"></div></div>
-      <div class="field"><label for="f-mate">Reisgenoten (optioneel)</label>
-        ${draft.mates.length ? `<div class="mates">${draft.mates.map((m, i) => `<span class="mate">${esc(m)}<button type="button" data-rmmate="${i}" aria-label="${esc(m)} verwijderen">${ic('x', 16)}</button></span>`).join('')}</div>` : ''}
-        <div class="mate-add"><input id="f-mate" name="mate" list="mates-dl" placeholder="Naam" autocomplete="off" enterkeyhint="done"><button type="button" class="btn soft" data-addmate>${ic('plus', 18)}Toevoegen</button></div>
-        <datalist id="mates-dl">${[...new Set(get().trips.flatMap(t => t.mates || []))].filter(n => !draft.mates.includes(n)).map(n => `<option value="${esc(n)}"></option>`).join('')}</datalist></div>
-      <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
-      <div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="submit" class="btn primary">Opslaan</button></div>
-    </form>`);
-  };
-  render();
-  sh.el.addEventListener('click', e => {
-    const am = e.target.closest('[data-addmate]'), rmm = e.target.closest('[data-rmmate]');
-    if (am || rmm) {
-      read();
-      if (am) addMate(sh.el.querySelector('[name=mate]')?.value);
-      else draft.mates.splice(+rmm.dataset.rmmate, 1);
-      render();
-      if (am) sh.el.querySelector('[name=mate]')?.focus();
-      return;
-    }
-  });
-  sh.el.addEventListener('keydown', e => {
-    if (e.key !== 'Enter' || e.target.name !== 'mate') return;
-    e.preventDefault();
-    read(); addMate(e.target.value); render();
-    sh.el.querySelector('[name=mate]')?.focus();
-  });
-  sh.el.addEventListener('submit', e => {
-    e.preventDefault();
-    read();
-    addMate(sh.el.querySelector('[name=mate]')?.value);   // een ingetypte naam gaat niet verloren
-    if (!draft.start) return render('Kies een startdatum.');
-    if (draft.end && draft.end < draft.start) return render('Het einde ligt voor de start.');
-    const legs = draft.legs.filter(l => l.c);
-    if (!draft.title) return render('Geef een titel.');
-    const clean = { ...draft, legs, end: draft.end || draft.start };
-    if (!legs.length || legs[0].mode === 'plane' || !draft.from) delete clean.from;
-    if (!clean.mates?.length) delete clean.mates;
-    update(st => {
-      const i = st.trips.findIndex(t => t.id === clean.id);
-      if (i >= 0) st.trips[i] = clean; else st.trips.push(clean);
-      const y = parseInt(clean.start.slice(0, 4), 10);
-      // Een land telt als bezocht, tenzij alle stops in dat land enkel een overstap met het vliegtuig zijn.
-      const counted = new Set(legs.filter(l => !l.transit).map(l => l.c));
-      for (const c of counted) {
-        const cur = st.countries[c] || {};
-        if (cur.s !== 'v') st.countries[c] = { ...cur, s: 'v', y };
-        else if (!cur.y) st.countries[c] = { ...cur, y };
-      }
-    });
-    sh.close();
-    toast('Reis opgeslagen');
-    onSaved?.(clean);
-  });
+  const sh = openSheet(`<div class="label">Titel</div><div class="label">Start</div><div class="label">Einde</div><div class="label">Reisgenoten</div><div class="label">Heenreis</div><div class="label">Route</div><div class="label">Terugreis</div>`, { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
   return sh;
 }
 

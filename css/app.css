@@ -560,3 +560,4 @@ svg.globe .g-rim { fill: none; stroke: var(--field); stroke-width: 1px; }
 .hsec .hl, .legsep { display: block; font-size: 12px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
 .hsec { margin-top: 10px; } .hsec .croute { margin-top: 4px; }
 .legsep { margin: 6px 0 -4px; }
+.sheet .label { display: block; font-size: 17px; font-weight: 600; color: var(--ink, inherit); padding: 10px 0; }
