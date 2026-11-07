@@ -149,7 +149,7 @@ function legacyParts(t) {
   const L = t.legs || [], home = homeCountry();
   const fl = (t.items || []).filter(i => i.type === 'flight' && i.f?.from && i.f?.to).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
   const ctry = c => airportByCode(c)?.c;
-  const step = f => ({ mode: 'plane', from: f.f.from, to: f.f.to });
+  const step = f => ({ mode: 'plane', from: f.f.from, to: f.f.to, flight: f.id });
   const out = {};
   const used = new Set();
   if (fl.length) {
@@ -175,14 +175,14 @@ function legacyParts(t) {
   }
   return out;
 }
-export const partsHtml = t => {
-  const l = legacyParts(t);
-  return partHtml('Heenreis', t.start, t.heen?.length ? t.heen : l.heen) + partHtml('Terugreis', t.end, t.terug?.length ? t.terug : l.terug);
-};
+/** Heen en terug van een reis: wat is ingevuld, anders afgeleid uit de vluchten of stops. */
+export const partsData = t => { const l = legacyParts(t); return { heen: t.heen?.length ? t.heen : (l.heen || []), terug: t.terug?.length ? t.terug : (l.terug || []) }; };
+export const partsHtml = t => { const d = partsData(t); return partHtml('Heenreis', t.start, d.heen) + partHtml('Terugreis', t.end, d.terug); };
 
 export function openTripForm(trip = null, { onSaved } = {}) {
   const mates = [...(trip?.mates || [])];
-  const st = { heen: structuredClone(trip?.heen || []), terug: structuredClone(trip?.terug || []) };
+  const pd = trip ? partsData(trip) : { heen: [], terug: [] };
+  const st = { heen: structuredClone(pd.heen), terug: structuredClone(pd.terug) };
   for (const w of ['heen', 'terug']) for (const x of st[w]) if (typeof x.flight === 'string') { x.flightId = x.flight; delete x.flight; }
   const sh = openSheet(`<div class="label">Titel</div><input class="titel-in" name="titel" aria-label="Titel" placeholder="Bijvoorbeeld Tatra &amp; Energylandia" value="${esc(trip?.title || '')}"><div class="datums"><div><div class="label">Start</div><input class="titel-in" type="date" name="start" aria-label="Start" value="${esc(trip?.start || '')}"></div><div><div class="label">Einde</div><input class="titel-in" type="date" name="einde" aria-label="Einde" value="${esc(trip?.end || '')}"></div></div><div class="label">Reisgenoten (optioneel)</div><div data-mates></div><div class="label">Heenreis</div><div data-sec="heen"></div><div class="label">Route</div><div class="label">Terugreis</div><div data-sec="terug"></div><p class="muted" role="alert" data-err style="margin:0;color:var(--danger)"></p><div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="button" class="btn primary" data-save>Opslaan</button></div>`, { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
   const addMate = name => {
@@ -272,7 +272,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     const heen = clean(st.heen), terug = clean(st.terug);
     const last = heen[heen.length - 1];
     const dest = last ? placeOf(last.to, last.mode)?.c : '';
-    const out = { ...(trip || {}), id: trip?.id || newId(), title, start, end: end || start, legs: dest ? [{ mode: last.mode, c: dest }] : [], items: [...(trip?.items || []).filter(x => !flights.some(f => f.id === x.id)), ...flights] };
+    const out = { ...(trip || {}), id: trip?.id || newId(), title, start, end: end || start, legs: trip?.legs?.length && !trip.heen ? (dest && !trip.legs.some(l => l.c === dest) ? [...trip.legs, { mode: last.mode, c: dest }] : trip.legs) : (dest ? [{ mode: last.mode, c: dest }] : []), items: [...(trip?.items || []).filter(x => !flights.some(f => f.id === x.id)), ...flights] };
     if (mates.length) out.mates = [...mates]; else delete out.mates;
     if (heen.length) out.heen = heen; else delete out.heen;
     if (terug.length) out.terug = terug; else delete out.terug;
