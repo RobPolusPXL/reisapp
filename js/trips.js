@@ -120,7 +120,7 @@ export function matesText(mates) {
 }
 
 export function openTripForm(trip = null, { onSaved } = {}) {
-  const sh = openSheet(`<div class="label">Titel</div><input class="titel-in" name="titel" aria-label="Titel"><div class="label">Start</div><div class="label">Einde</div><div class="label">Reisgenoten</div><div class="label">Heenreis</div><div class="label">Route</div><div class="label">Terugreis</div>`, { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
+  const sh = openSheet(`<div class="label">Titel</div><input class="titel-in" name="titel" aria-label="Titel" placeholder="Bijvoorbeeld Tatra &amp; Energylandia"><div class="label">Start</div><div class="label">Einde</div><div class="label">Reisgenoten</div><div class="label">Heenreis</div><div class="label">Route</div><div class="label">Terugreis</div>`, { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
   return sh;
 }
 
