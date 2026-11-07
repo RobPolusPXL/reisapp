@@ -26,54 +26,47 @@ export const CLASSES = ['Economy', 'Premium economy', 'Business', 'First'];
 export const countryOptions = sel =>
   '<option value="">Kies een land</option>' + list.map(c => `<option value="${c.c}"${c.c === sel ? ' selected' : ''}>${esc(c.n)}</option>`).join('');
 
-/** Landkeuze met zoekveld: een verborgen veld met de landcode (zodat formulieren het gewoon als `name` uitlezen) en een zoekveld met resultaten eronder. */
+/** Landkeuze die eruitziet als een gewone keuzelijst; bovenaan de lijst staat een zoekveld. Een verborgen veld houdt de landcode bij (formulieren lezen het gewoon als `name`). */
 export const countryPick = (name, sel, label, id = '') => `<div class="cpick">
   <input type="hidden" name="${name}" value="${esc(sel || '')}">
-  <input type="search" class="cp-in"${id ? ` id="${id}"` : ''} value="${esc(sel ? nameOf(sel) : '')}" placeholder="Zoek een land" aria-label="${esc(label)}" autocomplete="off" autocapitalize="words" enterkeyhint="done">
-  <ul class="cp-list" hidden></ul></div>`;
+  <button type="button" class="cp-btn${sel ? '' : ' empty'}"${id ? ` id="${id}"` : ''} aria-label="${esc(label)}" aria-haspopup="listbox"><span>${esc(sel ? nameOf(sel) : 'Kies een land')}</span></button>
+  <div class="cp-panel" hidden><input type="search" class="cp-in" placeholder="Zoek een land" aria-label="Zoek een land" autocomplete="off" autocapitalize="words" enterkeyhint="done"><ul class="cp-list"></ul></div></div>`;
 /** Zet een landkeuze (verborgen veld + zichtbare naam) op een code. */
 export function setCountryPick(form, name, code) {
   const h = form.elements[name]; if (!h) return;
   h.value = code || '';
-  const box = h.closest('.cpick'); if (box) box.querySelector('.cp-in').value = code ? nameOf(code) : '';
+  const btn = h.closest('.cpick')?.querySelector('.cp-btn');
+  if (btn) { btn.querySelector('span').textContent = code ? nameOf(code) : 'Kies een land'; btn.classList.toggle('empty', !code); }
 }
 /** Koppelt alle landkeuzes binnen `root` (ook later toegevoegde). */
 export function bindCountryPick(root) {
-  const hide = box => { const ul = box.querySelector('.cp-list'); ul.hidden = true; };
-  const show = box => {
-    const inp = box.querySelector('.cp-in'), ul = box.querySelector('.cp-list');
+  const closeAll = except => root.querySelectorAll('.cp-panel:not([hidden])').forEach(p => { if (p.parentElement !== except) p.hidden = true; });
+  const draw = box => {
+    const q = box.querySelector('.cp-in').value;
     const cur = box.querySelector('input[type=hidden]').value;
-    const q = cur && inp.value === nameOf(cur) ? '' : inp.value;   // staat er al een land, dan toon je de hele lijst
-    const found = searchCountries(q, 60);
-    ul.innerHTML = found.map(c => `<li><button type="button" data-pick="${c.c}">${flag(c.c)}<span>${esc(c.n)}</span></button></li>`).join('') || '<li class="empty">Geen landen gevonden.</li>';
-    ul.hidden = false;
+    box.querySelector('.cp-list').innerHTML = searchCountries(q, 300).map(c => `<li><button type="button" data-pick="${c.c}"${c.c === cur ? ' aria-selected="true"' : ''}>${flag(c.c)}<span>${esc(c.n)}</span></button></li>`).join('') || '<li class="empty">Geen landen gevonden.</li>';
   };
-  const pick = (box, code) => {
-    box.querySelector('input[type=hidden]').value = code;
-    box.querySelector('.cp-in').value = nameOf(code);
-    hide(box);
-  };
-  root.addEventListener('focusin', e => { const box = e.target.closest?.('.cpick'); if (box && e.target.classList.contains('cp-in')) { e.target.select?.(); show(box); } });
-  root.addEventListener('input', e => {
-    const box = e.target.closest?.('.cpick'); if (!box || !e.target.classList.contains('cp-in')) return;
-    box.querySelector('input[type=hidden]').value = '';
-    show(box);
-  });
-  root.addEventListener('keydown', e => {
-    const box = e.target.closest?.('.cpick'); if (!box || !e.target.classList.contains('cp-in')) return;
-    if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); const first = box.querySelector('[data-pick]'); if (first && !box.querySelector('.cp-list').hidden) pick(box, first.dataset.pick); }
-    if (e.key === 'Escape') hide(box);
-  });
-  root.addEventListener('pointerdown', e => { if (e.target.closest?.('.cp-list')) e.preventDefault(); });   // zoekveld houdt de focus
+  const pick = (box, code) => { setCountryPick(box.closest('form') || root, box.querySelector('input[type=hidden]').name, code); box.querySelector('.cp-panel').hidden = true; };
   root.addEventListener('click', e => {
-    const b = e.target.closest?.('[data-pick]'); if (!b) return;
-    e.stopPropagation(); pick(b.closest('.cpick'), b.dataset.pick);
+    const btn = e.target.closest?.('.cp-btn');
+    if (btn) {
+      const box = btn.parentElement, panel = box.querySelector('.cp-panel');
+      closeAll(box);
+      panel.hidden = !panel.hidden;
+      panel.classList.remove('up');
+      if (!panel.hidden) { const inp = panel.querySelector('.cp-in'); inp.value = ''; draw(box); panel.querySelector('[aria-selected]')?.scrollIntoView({ block: 'center' }); const r = panel.getBoundingClientRect(), vh = window.visualViewport?.height || window.innerHeight; if (r.bottom > vh - 8 && btn.getBoundingClientRect().top > r.height + 16) panel.classList.add('up'); inp.focus({ preventScroll: true }); }
+      return;
+    }
+    const it = e.target.closest?.('[data-pick]');
+    if (it) { e.stopPropagation(); pick(it.closest('.cpick'), it.dataset.pick); return; }
+    if (!e.target.closest?.('.cp-panel')) closeAll(null);
   });
-  root.addEventListener('focusout', e => {
-    const box = e.target.closest?.('.cpick'); if (!box || !e.target.classList.contains('cp-in')) return;
-    hide(box);
-    const h = box.querySelector('input[type=hidden]');
-    if (!h.value) e.target.value = '';   // niets gekozen: veld leegmaken in plaats van een naam die niet bewaard wordt
+  root.addEventListener('input', e => { if (e.target.classList?.contains('cp-in')) draw(e.target.closest('.cpick')); });
+  root.addEventListener('keydown', e => {
+    if (!e.target.classList?.contains('cp-in')) return;
+    const box = e.target.closest('.cpick');
+    if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); const f = box.querySelector('[data-pick]'); if (f) pick(box, f.dataset.pick); }
+    if (e.key === 'Escape') { e.stopPropagation(); box.querySelector('.cp-panel').hidden = true; box.querySelector('.cp-btn').focus(); }
   });
 }
 
