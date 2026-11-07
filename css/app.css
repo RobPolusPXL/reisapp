@@ -542,3 +542,10 @@ svg.globe .g-rim { fill: none; stroke: var(--field); stroke-width: 1px; }
 .mate-add .btn { flex: none; }
 
 .trip-title { font-size: 17px; font-weight: 700; margin: -4px 0 10px; overflow-wrap: anywhere; }
+
+.cpick { position: relative; }
+.cp-list { list-style: none; margin: 4px 0 0; padding: 4px; position: absolute; z-index: 20; right: 0; width: min(280px, 82vw); max-height: 240px; overflow: auto; background: var(--surface); border: 1px solid var(--field); border-radius: 14px; box-shadow: var(--shadow); }
+.cp-list[hidden] { display: none; }
+.cp-list button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 4px 10px; border: 0; border-radius: 10px; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.cp-list button:hover, .cp-list button:focus-visible { background: var(--bg); }
+.cp-list .empty { padding: 12px; color: var(--muted); }
