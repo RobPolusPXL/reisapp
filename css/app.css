@@ -557,13 +557,3 @@ svg.globe .g-rim { fill: none; stroke: var(--field); stroke-width: 1px; }
 .cp-list button:hover, .cp-list button:focus-visible { background: var(--bg); }
 .cp-list button[aria-selected=true] { font-weight: 600; }
 .cp-list .empty { padding: 12px; color: var(--muted); }
-
-/* Reisoverzicht in drie regels */
-.split { display: flex; flex-direction: column; gap: 6px; margin: 10px 0 2px; }
-.srow { display: grid; grid-template-columns: 62px 1fr; gap: 8px; align-items: center; min-height: 34px; }
-.srow > i { font-style: normal; font-size: 12px; font-weight: 600; color: var(--muted); }
-.srow .croute { margin: 0; }
-.srow.v { background: color-mix(in srgb, var(--accent) 9%, var(--surface)); border-radius: 12px; padding: 8px 8px 8px 0; margin: 0 -6px; grid-template-columns: 68px 1fr; }
-.srow.v > i { color: var(--accent); padding-left: 6px; }
-.cpill { display: inline-flex; align-items: center; gap: 8px; background: var(--surface); border: 1px solid var(--accent); border-radius: 999px; padding: 4px 12px 4px 5px; font-weight: 600; font-size: 14px; }
-.cpill .flag { width: 26px; height: 19.5px; border-radius: 3px; }

@@ -162,31 +162,11 @@ export function legsHtml(items) {
       : `<div class="p">${nm(l.c)}</div>${l.through ? '<div class="sub">Doorgereden</div>' : ''}`}</div></div>`).join('');
 }
 
-/** Eén stop van de compacte route: landen als vlag, luchthavens als label met de code en de vlag als watermerk. */
-const chipOf = l => l.kind === 'ap'
-  ? `<span class="ac${l.layover ? ' lt' : ''}" title="${esc(l.name)}, ${esc(nameOf(l.c))}"><img class="wm" src="assets/flags/${esc(String(l.c).toLowerCase())}.svg" alt="" aria-hidden="true"><b>${esc(l.code)}</b></span>`
-  : l.through ? `<span class="thru" title="Doorgereden">${flag(l.c)}</span>` : flag(l.c);
-const modeIc = l => `<span class="cm2" title="${esc(MODES[l.mode]?.[0] || '')}">${ic(MODES[l.mode]?.[1] || 'dots', 16)}</span>`;
-
-/** Route op één regel (overzicht op mobiel). */
+/** Route op één regel (overzicht op mobiel): landen als vlag, luchthavens als label met de code en de vlag als watermerk. */
 export function legsCompact(items) {
-  return `<div class="croute">${items.map((l, i) => `${i ? modeIc(l) : ''}${chipOf(l)}`).join('')}</div>`;
-}
-
-/** Overzicht op mobiel in drie regels: heen, bezocht (met landnaam) en terug. Zonder bezocht land: de gewone route op één regel. */
-export function legsSplit(items) {
-  const n = items.length;
-  const visited = items.map((l, i) => l.kind === 'c' ? !l.through : (l.kind === 'ap' && !l.layover && i > 0 && i < n - 1));
-  visited[0] = false;                                              // vertrek is nooit een bezocht land
-  if (n > 1 && items[n - 1].c === items[0].c) visited[n - 1] = false;   // terug thuis
-  const first = visited.indexOf(true), last = visited.lastIndexOf(true);
-  if (first < 0) return legsCompact(items);
-  const chain = arr => arr.map((l, i) => `${i ? modeIc(l) : ''}${chipOf(l)}`).join('');
-  const heen = items.slice(0, first), terug = items.slice(last + 1);
-  const seen = new Set(), pills = [];
-  items.forEach((l, i) => { if (visited[i] && !seen.has(l.c)) { seen.add(l.c); pills.push(`<span class="cpill">${flag(l.c)}<span>${esc(nameOf(l.c))}</span></span>`); } });
-  const row = (lab, html, cls = '') => html ? `<div class="srow${cls}"><i>${lab}</i><div class="croute">${html}</div></div>` : '';
-  return `<div class="split">${row('Heen', chain(heen))}${row('Bezocht', pills.join(''), ' v')}${row('Terug', chain(terug))}</div>`;
+  return `<div class="croute">${items.map((l, i) => `${i ? `<span class="cm2" title="${esc(MODES[l.mode]?.[0] || '')}">${ic(MODES[l.mode]?.[1] || 'dots', 16)}</span>` : ''}${l.kind === 'ap'
+    ? `<span class="ac${l.layover ? ' lt' : ''}" title="${esc(l.name)}, ${esc(nameOf(l.c))}"><img class="wm" src="assets/flags/${esc(String(l.c).toLowerCase())}.svg" alt="" aria-hidden="true"><b>${esc(l.code)}</b></span>`
+    : l.through ? `<span class="thru" title="Doorgereden">${flag(l.c)}</span>` : flag(l.c)}`).join('')}</div>`;
 }
 
 export function tripStats(state) {
