@@ -13,7 +13,7 @@ const blank = () => ({
   trips: [],
   travelers: [],
   credits: {},                         // { coasterId: { date?, rides, score? } }                       // namen die je bij vluchten kunt kiezen
-  settings: { theme: 'groen', mode: 'system' },
+  settings: { theme: 'groen', mode: 'system', routeOpen: false },
 });
 
 /** Dubbel ingelezen vluchten (zelfde nummer, datum en route, bv. één boarding pass per reiziger) samenvoegen tot één vlucht met alle reizigers. */

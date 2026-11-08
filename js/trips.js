@@ -803,5 +803,8 @@ export function metroHtml(t) {
     }
     return row + `<div class="mgap"><div class="mrail">${seg('mfull', out)}${icon}</div></div>`;
   }).join('');
-  return `<section class="card"><div class="card-head"><h2>Reisweg</h2>${rows.includes('data-exp=') ? `<button type="button" class="icon-btn xall" aria-label="Alles uitklappen" aria-expanded="false">${XALL_ICON.open}</button>` : ''}</div><div class="metro">${rows}</div></section>`;
+  // Instelling: Reisweg standaard uitgeklapt.
+  const open = !!get().settings?.routeOpen;
+  const body = open ? rows.replaceAll('aria-expanded="false"', 'aria-expanded="true"').replace(/(<div class="mexp" id="[^"]+") hidden>/g, '$1>') : rows;
+  return `<section class="card"><div class="card-head"><h2>Reisweg</h2>${rows.includes('data-exp=') ? `<button type="button" class="icon-btn xall" aria-label="${open ? 'Alles inklappen' : 'Alles uitklappen'}" aria-expanded="${open}">${open ? XALL_ICON.close : XALL_ICON.open}</button>` : ''}</div><div class="metro">${body}</div></section>`;
 }

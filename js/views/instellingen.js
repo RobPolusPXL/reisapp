@@ -19,6 +19,10 @@ export function mount(el) {
       <section class="card"><div class="card-head"><h2>Weergave</h2></div>
         <div class="seg" role="group" aria-label="Weergave">${MODES.map(([id, n]) => `<button type="button" data-mode="${id}" aria-pressed="${s.mode === id}">${n}</button>`).join('')}</div>
       </section>
+      <section class="card"><div class="card-head"><h2>Reisweg</h2></div>
+        <p class="muted" style="margin:0 0 12px">Hoe de Reisweg opent als je een reis bekijkt.</p>
+        <div class="seg" role="group" aria-label="Reisweg standaard">${[[false, 'Ingeklapt'], [true, 'Uitgeklapt']].map(([v, n]) => `<button type="button" data-route="${v}" aria-pressed="${!!s.routeOpen === v}">${n}</button>`).join('')}</div>
+      </section>
       ${syncCardHtml()}
       <section class="card"><div class="card-head"><h2>Back-up</h2></div>
         <p class="muted" style="margin:0 0 12px">Exporteer al je gegevens als bestand, of zet een eerder bestand terug.</p>
@@ -39,6 +43,8 @@ export function mount(el) {
     if (t) { update(st => { st.settings.theme = t.dataset.theme; }); return; }
     const m = e.target.closest('button[data-mode]');
     if (m) { update(st => { st.settings.mode = m.dataset.mode; }); return; }
+    const r = e.target.closest('button[data-route]');
+    if (r) { update(st => { st.settings.routeOpen = r.dataset.route === 'true'; }); return; }
     if (e.target.closest('#sync-in')) { signIn(); return; }
     if (e.target.closest('#sync-out')) { signOut(); return; }
     if (e.target.closest('#exp')) {
