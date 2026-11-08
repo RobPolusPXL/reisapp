@@ -494,8 +494,8 @@ export function stayStops(t) {
     return { c: l.c, n: seen[l.c] };
   }).map((x, _, all) => ({ ...x, label: nameOf(x.c) + (all.filter(y => y.c === x.c).length > 1 ? ` (${x.n === 1 ? '1e' : x.n + 'e'} keer)` : '') }));
 }
-/** Verblijven en activiteiten die bij een stop horen. Zonder gekozen land: bij een reis met één bezocht land hoort alles daarbij. */
-export function staysAt(t, stop, types = ['stay', 'activity']) {
+/** Verblijven, activiteiten en restaurants die bij een stop horen. Zonder gekozen land: bij een reis met één bezocht land hoort alles daarbij. */
+export function staysAt(t, stop, types = ['stay', 'activity', 'food']) {
   const stops = stayStops(t);
   return (t.items || []).filter(i => types.includes(i.type)).filter(i => {
     if (i.stop?.c) return i.stop.c === stop.c && (i.stop.n || 1) === stop.n;
@@ -515,8 +515,8 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     draft.date = val(f, 'date'); draft.note = val(f, 'note');
     if (draft.type === 'activity') draft.icon = val(f, 'icon') || 'ticket'; else delete draft.icon;
     if (draft.type === 'stay' || draft.type === 'activity') draft.dateEnd = val(f, 'dateEnd'); else delete draft.dateEnd;
-    if ((draft.type === 'stay' || draft.type === 'activity') && f.elements.stop) { const [c, n] = val(f, 'stop').split(':'); if (c) draft.stop = { c, n: +n || 1 }; else delete draft.stop; }
-    if (draft.type !== 'stay' && draft.type !== 'activity') delete draft.stop;
+    if (['stay', 'activity', 'food'].includes(draft.type) && f.elements.stop) { const [c, n] = val(f, 'stop').split(':'); if (c) draft.stop = { c, n: +n || 1 }; else delete draft.stop; }
+    if (!['stay', 'activity', 'food'].includes(draft.type)) delete draft.stop;
     if (draft.type === 'flight') {
       for (const k of ['airline', 'number', 'from', 'to', 'dep', 'arr', 'ref']) draft.f[k] = val(f, k);
       draft.f.part = val(f, 'part'); if (!draft.f.part) delete draft.f.part;
@@ -561,7 +561,7 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
             ? `<div class="pair">${fld('date', 'Begint op', 'date', draft.date)}${fld('dateEnd', 'Eindigt op', 'date', draft.dateEnd || '')}</div>
                <button type="button" class="btn soft" data-noend style="align-self:flex-start">${ic('trash', 18)}Eén dag</button>`
             : `${fld('date', 'Datum', 'date', draft.date)}${t === 'activity' ? `<button type="button" class="btn soft" data-endday style="align-self:flex-start">${ic('plus', 18)}Eindigt op een andere dag</button>` : ''}`}
-        ${t === 'activity' ? stopField() : ''}
+        ${t === 'activity' || t === 'food' ? stopField() : ''}
         <div class="field"><label for="i-score">Score (optioneel)</label><select id="i-score" name="score"><option value="">Geen score</option>${[1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5].map(n => `<option value="${n}"${String(draft.score) === String(n) ? ' selected' : ''}>${snorTxt(n)}</option>`).join('')}</select></div>`}
       ${t === 'activity' ? `<div class="field"><label>Icoon</label>${iconPick(draft.icon)}</div>` : ''}
       ${fld('note', 'Notitie', 'text', draft.note, 'Notitie')}
@@ -783,7 +783,7 @@ export function metroHtml(t) {
       })()}</div>${s.kind === 'home' && s.sub ? `<span class="mdate">${esc(s.sub)}</span>` : ''}${nights ? `<span class="mnights">${esc(nightsLabel(nights))}</span>` : ''}${sid ? `<span class="mchev">${ic('chev', 13)}</span>` : ''}`;
     const row = sid
       ? `<button type="button" class="mst ${s.kind} tap" data-exp="${sid}" aria-expanded="false">${inner}</button>
-        <div class="mexp" id="${sid}" hidden><div class="mrail">${seg('mfull', out)}</div><div class="mbox"><div class="mstays">${[...stays.filter(x => x.type === 'stay'), ...stays.filter(x => x.type !== 'stay')].map(x => `<button type="button" class="mstay" data-item="${esc(x.id)}">${x.type === 'stay' ? ic('bed', 18) : actIc(x.icon, 18)}<span class="grow"><b>${esc(x.name)}</b>${x.date ? `<small>${esc(x.dateEnd && x.dateEnd !== x.date ? fmtRange(x.date, x.dateEnd) : fmtDate(x.date))}${x.type === 'stay' && nightsBetween(x.date, x.dateEnd) ? ' · ' + esc(nightsLabel(nightsBetween(x.date, x.dateEnd))) : ''}</small>` : ''}</span>${x.score ? scoreH(String(x.score).replace('.', ',')) : ''}</button>`).join('')}</div></div></div>`
+        <div class="mexp" id="${sid}" hidden><div class="mrail">${seg('mfull', out)}</div><div class="mbox"><div class="mstays">${[...stays.filter(x => x.type === 'stay'), ...stays.filter(x => x.type !== 'stay')].map(x => `<button type="button" class="mstay" data-item="${esc(x.id)}">${x.type === 'stay' ? ic('bed', 18) : x.type === 'food' ? ic('fork', 18) : actIc(x.icon, 18)}<span class="grow"><b>${esc(x.name)}</b>${x.date ? `<small>${esc(x.dateEnd && x.dateEnd !== x.date ? fmtRange(x.date, x.dateEnd) : fmtDate(x.date))}${x.type === 'stay' && nightsBetween(x.date, x.dateEnd) ? ' · ' + esc(nightsLabel(nightsBetween(x.date, x.dateEnd))) : ''}</small>` : ''}</span>${x.score ? scoreH(String(x.score).replace('.', ',')) : ''}</button>`).join('')}</div></div></div>`
       : `<div class="mst ${s.kind}">${inner}</div>`;
     if (!out) return row;
     // Icoon in de lijn: elke vlucht/boot/trein; met de auto (of bus) alleen bij vertrek en na een overnachting (nieuwe rit).
