@@ -572,6 +572,7 @@ button.fc { cursor: pointer; } .card-head + .fc { margin-top: 0; }
 .mgap { display: flex; align-items: center; gap: 12px; height: 34px; width: 100%; background: none; border: 0; padding: 0; font: inherit; color: inherit; text-align: left; }
 .mgap.thin { height: 10px; } .mgap.tap { cursor: pointer; }
 .mico { position: relative; z-index: 1; background: var(--surface); padding: 3px 0; display: flex; }
+.mico.back svg { transform: rotate(180deg); }
 .minfo { font-size: 12px; font-weight: 600; } .mchev { color: var(--muted); display: flex; transition: transform .2s; }
 .mgap[aria-expanded="true"] .mchev { transform: rotate(90deg); }
 .mexp { display: flex; gap: 12px; } .mexp[hidden] { display: none; } .mexp .mrail { align-self: stretch; }

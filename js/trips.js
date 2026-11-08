@@ -642,6 +642,14 @@ export function stationsOf(t) {
   // Eerste terugvlucht hoort bij de verplaatsing vanuit het laatste land
   return st;
 }
+/** Afstand in km tussen twee luchthavens (grootcirkel); null als een van beide geen coördinaten heeft. */
+function kmBetween(a, b) {
+  const A = airportByCode(a), B = airportByCode(b);
+  if (A?.lat == null || B?.lat == null) return null;
+  const r = Math.PI / 180, dLat = (B.lat - A.lat) * r, dLon = (B.lon - A.lon) * r;
+  const h = Math.sin(dLat / 2) ** 2 + Math.cos(A.lat * r) * Math.cos(B.lat * r) * Math.sin(dLon / 2) ** 2;
+  return 12742 * Math.asin(Math.sqrt(h));
+}
 export function metroHtml(t) {
   const st = stationsOf(t);
   if (st.length < 2) return '';
@@ -660,7 +668,10 @@ export function metroHtml(t) {
     if (!showIcon) return row + `<div class="mgap thin"><div class="mrail">${seg('mfull', out)}</div></div>`;
     const f = nx.flightIn && it.find(x => x.id === nx.flightIn);
     const times = f && (f.f?.dep || f.f?.arr) ? [f.f.dep, f.f.arr].filter(Boolean).join(' – ') : '';
-    const icon = `<span class="mico" style="color:${col(out)}">${ic(MODES[out]?.[1] || 'dots', 15)}</span>`;
+    // Vlucht die dichter bij huis landt dan ze vertrekt: vliegtuigje omgekeerd.
+    const homeAp = (() => { const h = partsData(t).heen[0]; return h?.mode === 'plane' ? stepEnds(h, it).from : (flightsOf(t)[0]?.f?.from); })();
+    const back = f && homeAp && (() => { const d1 = kmBetween(homeAp, f.f.from), d2 = kmBetween(homeAp, f.f.to); return d1 != null && d2 != null && d2 < d1 - 1; })();
+    const icon = `<span class="mico${back ? ' back' : ''}" style="color:${col(out)}">${ic(MODES[out]?.[1] || 'dots', 15)}</span>`;
     if (f) {
       const id = `mf${n++}`;
       return row + `<button type="button" class="mgap tap" data-exp="${id}" aria-expanded="false"><div class="mrail">${seg('mfull', out)}${icon}</div><span class="minfo" style="color:${col(out)}">${esc(times || MODES[out]?.[0] || '')}</span><span class="mchev">${ic('chev', 13)}</span></button>

@@ -1,4 +1,4 @@
-// Luchthavendatabase (OurAirports, publiek domein): [code, naam, stad, land]
+// Luchthavendatabase (OurAirports, publiek domein): [code, naam, stad, land, breedtegraad, lengtegraad]
 import { flag, nameOf, norm } from './data.js';
 import { esc } from './ui.js';
 
@@ -7,7 +7,7 @@ const byCode = new Map();
 
 export function loadAirports() {
   loading ||= fetch('data/airports.json').then(r => r.json()).then(rows => {
-    db = rows.map(([code, name, city, c]) => ({ code, name, city, c, k: norm(`${code} ${name} ${city}`) }));
+    db = rows.map(([code, name, city, c, lat, lon]) => ({ code, name, city, c, lat, lon, k: norm(`${code} ${name} ${city}`) }));
     for (const a of db) byCode.set(a.code, a);
     return db;
   }).catch(() => { loading = null; return []; });
