@@ -35,7 +35,7 @@ export function mount(el, { params }) {
     const d = daysBetween(t.start, t.end);
     const countries = [...new Set(t.legs.map(l => nameOf(l.c)))].join(', ');
     const all = [...(t.items || [])].sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
-    const inMetro = new Set(stayStops(t).flatMap(st => staysAt(t, st).map(x => x.id)));   // verblijven die al bij een land in de reisweg staan
+    const inMetro = new Set(stayStops(t).flatMap(st => staysAt(t, st).map(x => x.id)));   // verblijven en activiteiten die al bij een land in de reisweg staan
     const sec = (title, type) => { const l = all.filter(i => i.type === type && !inMetro.has(i.id)); return l.length ? `<section class="card"><div class="card-head"><h2>${title}</h2></div><div class="items">${l.map(itemRow).join('')}</div></section>` : ''; };
     el.innerHTML = `<div class="page">
       <header class="page-head"><a class="icon-btn" href="#/reizen" aria-label="Terug naar reizen">${ic('back', 26)}</a>
