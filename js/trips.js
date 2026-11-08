@@ -4,7 +4,7 @@ import { list, byCode, nameOf, flag, searchCountries } from './data.js';
 import { loadAirlines, airlineByName, attachAirlineSearch } from './airlines.js';
 import { scanBoardingPass } from './boardingpass.js';
 import { loadAirports, airportByCode, attachAirportSearch, ensureMyAirport } from './airports.js';
-import { esc, ic, openSheet, toast, daysBetween, snorTxt, iconPick, fmtDate } from './ui.js';
+import { esc, ic, openSheet, toast, daysBetween, snorTxt, iconPick, fmtDate, fmtRange, scoreH } from './ui.js';
 
 export const MODES = {
   plane: ['Vliegtuig', 'plane'], car: ['Auto', 'car'], train: ['Trein', 'train'],
@@ -467,6 +467,22 @@ export function openTripForm(trip = null, { onSaved } = {}) {
 }
 
 /** Formulier voor een item in een reis (vlucht, verblijf, restaurant, activiteit). */
+/** Bezochte landen van de route als 'stops'; komt een land meer dan eens voor, dan krijgt het een volgnummer (Verenigde Staten 1, 2). */
+export function stayStops(t) {
+  const seen = {};
+  return (t?.legs || []).filter(l => l.c && !l.transit).map(l => {
+    seen[l.c] = (seen[l.c] || 0) + 1;
+    return { c: l.c, n: seen[l.c] };
+  }).map((x, _, all) => ({ ...x, label: nameOf(x.c) + (all.filter(y => y.c === x.c).length > 1 ? ` (${x.n === 1 ? '1e' : x.n + 'e'} keer)` : '') }));
+}
+/** Verblijven die bij een stop horen. Zonder gekozen land: bij een reis met één bezocht land hoort alles daarbij. */
+export function staysAt(t, stop) {
+  const stops = stayStops(t);
+  return (t.items || []).filter(i => i.type === 'stay').filter(i => {
+    if (i.stop?.c) return i.stop.c === stop.c && (i.stop.n || 1) === stop.n;
+    return stops.length === 1 || new Set(stops.map(x => x.c)).size === 1 && stop.n === 1;
+  }).sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
+}
 export function openItemForm(tripId, item = null, { type = 'activity', date = '' } = {}) {
   const draft = item ? structuredClone(item) : { id: newId(), type, name: '', date, note: '', score: '', f: {} };
   draft.f ||= {};
@@ -479,6 +495,8 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
     draft.date = val(f, 'date'); draft.note = val(f, 'note');
     if (draft.type === 'activity') draft.icon = val(f, 'icon') || 'ticket'; else delete draft.icon;
     if (draft.type === 'stay' || draft.type === 'activity') draft.dateEnd = val(f, 'dateEnd'); else delete draft.dateEnd;
+    if (draft.type === 'stay' && f.elements.stop) { const [c, n] = val(f, 'stop').split(':'); if (c) draft.stop = { c, n: +n || 1 }; else delete draft.stop; }
+    if (draft.type !== 'stay') delete draft.stop;
     if (draft.type === 'flight') {
       for (const k of ['airline', 'number', 'from', 'to', 'dep', 'arr', 'ref']) draft.f[k] = val(f, k);
       draft.f.part = val(f, 'part'); if (!draft.f.part) delete draft.f.part;
@@ -517,7 +535,8 @@ export function openItemForm(tripId, item = null, { type = 'activity', date = ''
       : `${fld('name', 'Naam', 'text', draft.name, 'Naam')}
         ${t === 'stay'
           ? `<div class="pair">${fld('date', 'Inchecken', 'date', draft.date)}${fld('dateEnd', 'Uitchecken', 'date', draft.dateEnd || '')}</div>
-             <p class="muted" id="i-nights" style="margin:-4px 0 0;font-weight:600;color:var(--accent)">${(n => n === null ? '' : esc(nightsLabel(n)))(nightsBetween(draft.date, draft.dateEnd))}</p>`
+             <p class="muted" id="i-nights" style="margin:-4px 0 0;font-weight:600;color:var(--accent)">${(n => n === null ? '' : esc(nightsLabel(n)))(nightsBetween(draft.date, draft.dateEnd))}</p>
+             ${(stops => stops.length > 1 ? `<div class="field"><label for="i-stop">Land</label><select id="i-stop" name="stop"><option value="">Kies een land</option>${stops.map(x => `<option value="${x.c}:${x.n}"${draft.stop?.c === x.c && (draft.stop.n || 1) === x.n ? ' selected' : ''}>${esc(x.label)}</option>`).join('')}</select></div>` : '')(stayStops(get().trips.find(x => x.id === tripId)))}`
           : t === 'activity' && (endOpen || draft.dateEnd)
             ? `<div class="pair">${fld('date', 'Begint op', 'date', draft.date)}${fld('dateEnd', 'Eindigt op', 'date', draft.dateEnd || '')}</div>
                <button type="button" class="btn soft" data-noend style="align-self:flex-start">${ic('trash', 18)}Eén dag</button>`
@@ -701,12 +720,20 @@ export function metroHtml(t) {
   const it = t.items || [];
   const col = m => MODE_COLOR[m] || MODE_COLOR.other;
   const seg = (cls, m) => m ? `<span class="${cls}${m === 'boat' ? ' dash' : ''}" style="--c:${col(m)}"></span>` : '';
-  let n = 0;
+  let n = 0; const occ = {};
   const rows = st.map((s, i) => {
     const inc = i ? s.mode : null, nx = st[i + 1], out = nx?.mode || null;
     const ring = col(out || inc);
-    const row = `<div class="mst ${s.kind}"><div class="mrail">${seg('mup', inc)}${seg('mdn', out)}<span class="mdot" style="--c:${ring}">${s.c ? flag(s.c) : ''}</span></div>
-      <div class="mtx"><b>${esc(s.name)}</b>${s.kind === 'home' ? `<small>${i ? 'thuis' : 'vertrek'}</small>` : s.sub ? `<small>${esc(s.sub)}</small>` : ''}</div>${s.kind === 'home' && s.sub ? `<span class="mdate">${esc(s.sub)}</span>` : ''}</div>`;
+    let stays = [];
+    if (s.kind === 'stay') { occ[s.c] = (occ[s.c] || 0) + 1; stays = staysAt(t, { c: s.c, n: occ[s.c] }); }
+    const nights = stays.reduce((a, x) => a + (nightsBetween(x.date, x.dateEnd) || 0), 0);
+    const sid = stays.length ? `ms${n++}` : '';
+    const inner = `<div class="mrail">${seg('mup', inc)}${seg('mdn', out)}<span class="mdot" style="--c:${ring}">${s.c ? flag(s.c) : ''}</span></div>
+      <div class="mtx"><b>${esc(s.name)}</b>${s.kind === 'home' ? `<small>${i ? 'thuis' : 'vertrek'}</small>` : s.sub ? `<small>${esc(s.sub)}</small>` : ''}</div>${s.kind === 'home' && s.sub ? `<span class="mdate">${esc(s.sub)}</span>` : ''}${nights ? `<span class="mnights">${esc(nightsLabel(nights))}</span>` : ''}${sid ? `<span class="mchev">${ic('chev', 13)}</span>` : ''}`;
+    const row = sid
+      ? `<button type="button" class="mst ${s.kind} tap" data-exp="${sid}" aria-expanded="false">${inner}</button>
+        <div class="mexp" id="${sid}" hidden><div class="mrail">${seg('mfull', out)}</div><div class="mbox"><div class="mstays">${stays.map(x => `<button type="button" class="mstay" data-item="${esc(x.id)}">${ic('bed', 18)}<span class="grow"><b>${esc(x.name)}</b>${x.date ? `<small>${esc(x.dateEnd ? fmtRange(x.date, x.dateEnd) : fmtDate(x.date))}${nightsBetween(x.date, x.dateEnd) ? ' · ' + esc(nightsLabel(nightsBetween(x.date, x.dateEnd))) : ''}</small>` : ''}</span>${x.score ? scoreH(String(x.score).replace('.', ',')) : ''}</button>`).join('')}</div></div></div>`
+      : `<div class="mst ${s.kind}">${inner}</div>`;
     if (!out) return row;
     // Icoon in de lijn: elke vlucht/boot/trein; met de auto (of bus) alleen bij vertrek en na een overnachting (nieuwe rit).
     const showIcon = !['car', 'bus', 'other'].includes(out) || s.kind !== 'small';

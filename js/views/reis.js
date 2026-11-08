@@ -2,7 +2,7 @@ import { get, subscribe, getTrip, update } from '../store.js';
 import { nameOf } from '../data.js';
 import { loadAirports } from '../airports.js';
 import { esc, ic, ICONS, fmtRange, fmtDate, daysBetween, scoreH } from '../ui.js';
-import { matesText, flagsHtml, transportHtml, metroHtml, TYPES, openTripForm, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
+import { matesText, flagsHtml, transportHtml, metroHtml, stayStops, staysAt, TYPES, openTripForm, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
 
 export function mount(el, { params }) {
   const id = params[0];
@@ -35,7 +35,8 @@ export function mount(el, { params }) {
     const d = daysBetween(t.start, t.end);
     const countries = [...new Set(t.legs.map(l => nameOf(l.c)))].join(', ');
     const all = [...(t.items || [])].sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
-    const sec = (title, type) => { const l = all.filter(i => i.type === type); return l.length ? `<section class="card"><div class="card-head"><h2>${title}</h2></div><div class="items">${l.map(itemRow).join('')}</div></section>` : ''; };
+    const inMetro = new Set(stayStops(t).flatMap(st => staysAt(t, st).map(x => x.id)));   // verblijven die al bij een land in de reisweg staan
+    const sec = (title, type) => { const l = all.filter(i => i.type === type && !inMetro.has(i.id)); return l.length ? `<section class="card"><div class="card-head"><h2>${title}</h2></div><div class="items">${l.map(itemRow).join('')}</div></section>` : ''; };
     el.innerHTML = `<div class="page">
       <header class="page-head"><a class="icon-btn" href="#/reizen" aria-label="Terug naar reizen">${ic('back', 26)}</a>
         <div style="flex:1;min-width:0"><h1 style="font-size:22px">${esc(t.title || countries || 'Reis')}</h1>
