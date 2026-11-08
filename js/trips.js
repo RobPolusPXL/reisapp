@@ -4,6 +4,7 @@ import { list, byCode, nameOf, flag, searchCountries } from './data.js';
 import { loadAirlines, airlineByName, attachAirlineSearch } from './airlines.js';
 import { scanBoardingPass } from './boardingpass.js';
 import { loadAirports, airportByCode, attachAirportSearch, ensureMyAirport } from './airports.js';
+import { actIc } from './acticons.js';
 import { esc, ic, openSheet, toast, daysBetween, snorTxt, iconPick, fmtDate, fmtRange, scoreH } from './ui.js';
 
 export const MODES = {
@@ -734,7 +735,7 @@ export function metroHtml(t) {
       <div class="mtx"><b>${esc(s.name)}</b>${s.kind === 'home' ? `<small>${i ? 'thuis' : 'vertrek'}</small>` : s.sub ? `<small>${esc(s.sub)}</small>` : ''}</div>${s.kind === 'home' && s.sub ? `<span class="mdate">${esc(s.sub)}</span>` : ''}${nights ? `<span class="mnights">${esc(nightsLabel(nights))}</span>` : ''}${sid ? `<span class="mchev">${ic('chev', 13)}</span>` : ''}`;
     const row = sid
       ? `<button type="button" class="mst ${s.kind} tap" data-exp="${sid}" aria-expanded="false">${inner}</button>
-        <div class="mexp" id="${sid}" hidden><div class="mrail">${seg('mfull', out)}</div><div class="mbox"><div class="mstays">${[...stays.filter(x => x.type === 'stay'), ...stays.filter(x => x.type !== 'stay')].map(x => `<button type="button" class="mstay" data-item="${esc(x.id)}">${ic(x.type === 'stay' ? 'bed' : (x.icon || 'ticket'), 18)}<span class="grow"><b>${esc(x.name)}</b>${x.date ? `<small>${esc(x.dateEnd && x.dateEnd !== x.date ? fmtRange(x.date, x.dateEnd) : fmtDate(x.date))}${x.type === 'stay' && nightsBetween(x.date, x.dateEnd) ? ' · ' + esc(nightsLabel(nightsBetween(x.date, x.dateEnd))) : ''}</small>` : ''}</span>${x.score ? scoreH(String(x.score).replace('.', ',')) : ''}</button>`).join('')}</div></div></div>`
+        <div class="mexp" id="${sid}" hidden><div class="mrail">${seg('mfull', out)}</div><div class="mbox"><div class="mstays">${[...stays.filter(x => x.type === 'stay'), ...stays.filter(x => x.type !== 'stay')].map(x => `<button type="button" class="mstay" data-item="${esc(x.id)}">${x.type === 'stay' ? ic('bed', 18) : actIc(x.icon, 18)}<span class="grow"><b>${esc(x.name)}</b>${x.date ? `<small>${esc(x.dateEnd && x.dateEnd !== x.date ? fmtRange(x.date, x.dateEnd) : fmtDate(x.date))}${x.type === 'stay' && nightsBetween(x.date, x.dateEnd) ? ' · ' + esc(nightsLabel(nightsBetween(x.date, x.dateEnd))) : ''}</small>` : ''}</span>${x.score ? scoreH(String(x.score).replace('.', ',')) : ''}</button>`).join('')}</div></div></div>`
       : `<div class="mst ${s.kind}">${inner}</div>`;
     if (!out) return row;
     // Icoon in de lijn: elke vlucht/boot/trein; met de auto (of bus) alleen bij vertrek en na een overnachting (nieuwe rit).

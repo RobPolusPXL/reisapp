@@ -484,6 +484,7 @@ a.list-row { color: inherit; }
 .s-cb div { height: 6px; background: var(--line); border-radius: 3px; } .s-cb u { display: block; height: 100%; background: var(--accent); border-radius: 3px; min-width: 5px; } .s-cb b { text-align: right; }
 @media (max-width: 1700px) { .site-stats b { font-size: 36px; } }
 /* Icoonkiezer bij activiteiten */
+.ipw { display: flex; flex-direction: column; gap: 6px; } .ip-g { font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 4px; }
 .ip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 .ip-b { aspect-ratio: 1; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 12px; display: grid; place-items: center; cursor: pointer; min-height: 44px; }
 .ip-b.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }

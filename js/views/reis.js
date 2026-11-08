@@ -1,6 +1,7 @@
 import { get, subscribe, getTrip, update } from '../store.js';
 import { nameOf } from '../data.js';
 import { loadAirports } from '../airports.js';
+import { actIc } from '../acticons.js';
 import { esc, ic, ICONS, fmtRange, fmtDate, daysBetween, scoreH } from '../ui.js';
 import { matesText, flagsHtml, transportHtml, metroHtml, stayStops, staysAt, TYPES, openTripForm, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
 
@@ -26,7 +27,7 @@ export function mount(el, { params }) {
       if (seats.length) extra += `<div class="s">${esc(seats.join(' · '))}</div>`;
     }
     const right = i.score ? `${scoreH(String(i.score).replace('.', ','))}` : ic('chev', 20);
-    return `<button type="button" class="item" data-item="${esc(i.id)}"><span class="ico">${ic(icon, 22)}</span><span class="grow"><div class="t">${esc(i.name)}</div>${sub ? `<div class="s">${esc(sub)}</div>` : ''}${extra}</span><span class="r">${right}</span></button>`;
+    return `<button type="button" class="item" data-item="${esc(i.id)}"><span class="ico">${i.type === 'activity' ? actIc(i.icon, 22) : ic(icon, 22)}</span><span class="grow"><div class="t">${esc(i.name)}</div>${sub ? `<div class="s">${esc(sub)}</div>` : ''}${extra}</span><span class="r">${right}</span></button>`;
   };
 
   const draw = () => {

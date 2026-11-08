@@ -1,6 +1,7 @@
 // Kleine UI-helpers: escapen, iconen, sheet (modal), toast
 export const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
+import { ACT_LIST, actIc, hasActIcon } from './acticons.js';
 export const ICONS = {
   map: '<path d="M9 4 3 6v14l6-2 6 2 6-2V4l-6 2-6-2zM9 4v14M15 6v14"/>',
   book: '<path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4zM5 17a3 3 0 0 1 3-3h11"/>',
@@ -107,12 +108,15 @@ export function daysBetween(a, b) {
 /** Score met een snor (silhouet van het blog, in themakleur) en een getal met vaste breedte, zodat alles netjes onder elkaar staat. */
 export const scoreH = v => `<span class="score"><span class="snor-i" aria-hidden="true"></span><span class="sn">${esc(String(v))}</span></span>`;
 /** Iconen die je bij een activiteit kunt kiezen. */
-export const ACT_ICONS = ['ticket', 'coaster', 'hike', 'mountain', 'beach', 'swim', 'bike', 'museum', 'music', 'camera', 'ball', 'star'];
-/** Icoonkiezer (raster); hidden input name=icon houdt de keuze vast. */
-export const iconPick = v => `<div class="ip" role="group" aria-label="Icoon"><input type="hidden" name="icon" value="${esc(String(v || 'ticket'))}">${ACT_ICONS.map(n => `<button type="button" class="ip-b${(v || 'ticket') === n ? ' on' : ''}" data-ip="${n}" aria-pressed="${(v || 'ticket') === n}" aria-label="${n}">${ic(n, 24)}</button>`).join('')}</div>`;
+/** Icoonkiezer per groep (gevulde icoontjes); hidden input name=icon houdt de keuze vast. */
+export const iconPick = v => {
+  const cur = hasActIcon(v) ? v : 'ticket';
+  const groups = [...new Set(ACT_LIST.map(x => x[2]))];
+  return `<div class="ipw" role="group" aria-label="Icoon"><input type="hidden" name="icon" value="${esc(cur)}">${groups.map(g => `<div class="ip-g">${esc(g)}</div><div class="ip">${ACT_LIST.filter(x => x[2] === g).map(([k, n]) => `<button type="button" class="ip-b${cur === k ? ' on' : ''}" data-ip="${k}" aria-pressed="${cur === k}" aria-label="${esc(n)}" title="${esc(n)}">${actIc(k, 24)}</button>`).join('')}</div>`).join('')}</div>`;
+};
 document.addEventListener('click', e => {
   const b = e.target.closest('.ip-b'); if (!b) return;
-  const ip = b.closest('.ip');
+  const ip = b.closest('.ipw') || b.closest('.ip');
   ip.querySelectorAll('.ip-b').forEach(x => { x.classList.remove('on'); x.setAttribute('aria-pressed', 'false'); });
   b.classList.add('on'); b.setAttribute('aria-pressed', 'true');
   ip.querySelector('input').value = b.dataset.ip;
