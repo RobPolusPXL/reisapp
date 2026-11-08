@@ -604,3 +604,38 @@ button.fc { cursor: pointer; } .card-head + .fc { margin-top: 0; }
 .sheet .chips.apc { flex-wrap: wrap; } .sheet .chips.apc .ch { flex: 1 1 30%; gap: 6px; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); } .sheet .chips.apc .ch.on { color: var(--accent); }
 .mcode { letter-spacing: .04em; }
 .sn-d { font-size: .62em; vertical-align: .55em; line-height: 0; margin-left: .04em; font-weight: inherit; }
+/* Reisformulier: Reisweg bouwen */
+.tf-top { display: flex; align-items: center; justify-content: space-between; } .tf-top h2 { font-size: 20px; } .tf-x { width: 40px; height: 40px; background: var(--bg); }
+.tf-title { width: 100%; border: 0; border-bottom: 1.5px solid var(--line); font: inherit; font-size: 22px; font-weight: 700; padding: 6px 0 8px; background: transparent; color: var(--ink); outline: none; }
+.tf-title::placeholder { color: var(--muted); font-weight: 600; } .tf-title:focus { border-color: var(--accent); }
+.tf-dates { display: flex; gap: 10px; } .tf-dates label { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: var(--muted); }
+.tf-dates input { height: 46px; border: 1.5px solid var(--line); border-radius: 12px; padding: 0 10px; font: inherit; font-size: 15px; background: var(--surface); color: var(--ink); min-width: 0; }
+.tf-rwh { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: -6px; } .tf-rwh b { font-size: 15px; } .tf-rwh span { font-size: 13px; color: var(--muted); }
+.tf-route { display: flex; flex-direction: column; }
+.tf-n { display: flex; align-items: center; gap: 12px; min-height: 50px; cursor: pointer; border-radius: 12px; }
+.tf-n:hover .tf-tx b { color: var(--accent); }
+.tf-l { display: flex; align-items: center; gap: 12px; min-height: 40px; }
+.tf-rail { width: 32px; align-self: stretch; position: relative; display: flex; align-items: center; justify-content: center; flex: none; }
+.tf-seg { position: absolute; left: 50%; width: 4px; margin-left: -2px; background: var(--c); } .tf-seg.u { top: 0; bottom: 50%; } .tf-seg.d { top: 50%; bottom: 0; } .tf-seg.f { top: 0; bottom: 0; }
+.tf-seg.dash { background: repeating-linear-gradient(var(--c) 0 6px, transparent 6px 10px); }
+.tf-dot { position: relative; z-index: 1; width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--c); overflow: hidden; background: var(--c); flex: none; }
+.tf-dot .flag { width: 100%; height: 100%; object-fit: cover; border-radius: 0; box-shadow: none; border: 0; display: block; } .tf-dot.sm { width: 18px; height: 18px; }
+.tf-tx { flex: 1; min-width: 0; display: flex; flex-direction: column; } .tf-tx b { font-size: 16px; } .tf-tx small { color: var(--muted); font-size: 13px; }
+.tf-n.small .tf-tx b { font-size: 14px; font-weight: 500; color: var(--muted); } .tf-n.ghost .tf-tx b { color: var(--muted); }
+.tf-ico { position: relative; z-index: 1; background: var(--surface); display: flex; padding: 3px 0; }
+.tf-lk { flex: 1; border: 0; background: none; font: inherit; font-size: 13px; font-weight: 600; text-align: left; padding: 8px 0; cursor: pointer; }
+.tf-ins { width: 32px; height: 32px; border-radius: 16px; border: 1.5px dashed var(--field); background: transparent; color: var(--accent); display: flex; align-items: center; justify-content: center; cursor: pointer; flex: none; }
+.tf-addbig { flex: 1; display: flex; align-items: center; gap: 10px; border: 2px dashed var(--field); border-radius: 14px; background: transparent; color: var(--accent); font: inherit; font-weight: 700; font-size: 15px; padding: 12px 14px; margin: 6px 0; cursor: pointer; }
+.tf-more { border: 0; background: var(--bg); border-radius: 14px; padding: 14px; display: flex; align-items: center; gap: 10px; font: inherit; font-weight: 600; color: var(--ink); cursor: pointer; text-align: left; }
+.tf-more span { flex: 1; font-weight: 400; color: var(--muted); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tf-moreb { display: flex; flex-direction: column; gap: 8px; margin-top: -6px; }
+.tf-tiles { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+.tf-tile { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px 6px; border-radius: 16px; border: 0; background: var(--accent-soft); color: var(--accent); font: inherit; font-weight: 700; font-size: 14px; cursor: pointer; text-align: center; }
+.tf-tile small { font-weight: 500; font-size: 11px; color: var(--muted); }
+.tf-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.tf-chip { display: flex; align-items: center; gap: 6px; height: 42px; padding: 0 14px; border-radius: 12px; border: 1.5px solid var(--line); background: var(--surface); font: inherit; font-weight: 600; font-size: 14px; color: var(--ink); cursor: pointer; }
+.tf-chip.on { border-color: var(--accent); background: var(--accent-soft); color: var(--accent); }
+.tf-search { height: 48px; border: 1.5px solid var(--line); border-radius: 12px; padding: 0 14px; font: inherit; font-size: 16px; width: 100%; background: var(--surface); color: var(--ink); }
+.tf-clist { display: flex; flex-direction: column; max-height: 46vh; overflow: auto; margin-top: -6px; }
+.tf-citem { display: flex; align-items: center; gap: 12px; padding: 11px 4px; border: 0; border-bottom: 1px solid var(--line); background: none; font: inherit; font-size: 16px; text-align: left; cursor: pointer; color: var(--ink); }
+.tf-citem .flag { width: 30px; height: 22px; }

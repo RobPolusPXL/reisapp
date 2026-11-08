@@ -3,7 +3,8 @@ import { nameOf } from '../data.js';
 import { loadAirports } from '../airports.js';
 import { actIc } from '../acticons.js';
 import { esc, ic, ICONS, fmtRange, fmtDate, daysBetween, scoreH } from '../ui.js';
-import { matesText, flagsHtml, transportHtml, metroHtml, XALL_ICON, stayStops, staysAt, TYPES, openTripForm, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
+import { matesText, flagsHtml, transportHtml, metroHtml, XALL_ICON, stayStops, staysAt, TYPES, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
+import { openTripForm } from '../tripform.js';
 
 export function mount(el, { params }) {
   const id = params[0];

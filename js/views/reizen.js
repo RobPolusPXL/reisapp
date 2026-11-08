@@ -1,6 +1,7 @@
 import { get, subscribe } from '../store.js';
 import { esc, ic, fmtRange, daysBetween } from '../ui.js';
-import { matesText, flagsHtml, tripStats, openTripForm } from '../trips.js';
+import { matesText, flagsHtml, tripStats } from '../trips.js';
+import { openTripForm } from '../tripform.js';
 import { loadAirports } from '../airports.js';
 
 export function mount(el) {

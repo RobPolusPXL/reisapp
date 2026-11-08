@@ -679,10 +679,10 @@ export function transportHtml(t) {
 }
 
 // ---- Reisweg als metrolijn: stations onder elkaar, de lijn kleurt per vervoer ----
-const MODE_COLOR = { plane: '#0E7C66', boat: '#1f78c8', car: '#d97706', train: '#7c3aed', bus: '#b45309', other: '#64748b', taxi: '#d97706', lift: '#d97706' };
+export const MODE_COLOR = { plane: '#0E7C66', boat: '#1f78c8', car: '#d97706', train: '#7c3aed', bus: '#b45309', other: '#64748b', taxi: '#d97706', lift: '#d97706' };
 /** Stations van de reis: vertrek, overstappen/doorgereden landen, bezochte landen, thuiskomst. Elk station krijgt het vervoer waarmee je er aankwam. */
 /** Luchthavens waarvan de stad in de lijst misleidt (Charleroi staat als 'Brussels'): eigen naam. */
-const AP_NAME = { BRU: 'Brussel-Zaventem', CRL: 'Charleroi', NRN: 'Weeze', CGN: 'Keulen-Bonn', EIN: 'Eindhoven', BVA: 'Beauvais', HHN: 'Hahn' };
+export const AP_NAME = { BRU: 'Brussel-Zaventem', CRL: 'Charleroi', NRN: 'Weeze', CGN: 'Keulen-Bonn', EIN: 'Eindhoven', BVA: 'Beauvais', HHN: 'Hahn' };
 export function stationsOf(t) {
   const d = partsData(t), it = t.items || [];
   const heen = d.heen.filter(x => x.from || x.to || x.flight), terug = d.terug.filter(x => x.from || x.to || x.flight);
@@ -760,7 +760,7 @@ const xsv = d => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" st
 export const XALL_ICON = { open: xsv('m7 15 5 5 5-5M7 9l5-5 5 5'), close: xsv('m7 20 5-5 5 5M7 4l5 5 5-5') };
 const HOUSE_D = 'M13.6 3.6a2.2 2.2 0 0 1 2.8 0l10.4 8.6a2.4 2.4 0 0 1 .9 1.9V26a2 2 0 0 1-2 2H4.3a2 2 0 0 1-2-2V14.1a2.4 2.4 0 0 1 .9-1.9z';
 /** Thuishalte: de vlag van thuis in de vorm van een huisje. */
-const houseDot = (c, color, id) => `<span class="hdot"><svg viewBox="0 0 30 30" width="32" height="32" aria-hidden="true"><defs><clipPath id="${id}"><path d="${HOUSE_D}"/></clipPath></defs>${c ? `<image href="assets/flags/${String(c).toLowerCase()}.svg" x="0" y="0" width="30" height="30" preserveAspectRatio="none" clip-path="url(#${id})"/>` : `<path d="${HOUSE_D}" fill="${color}"/>`}<path d="${HOUSE_D}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/></svg></span>`;
+export const houseDot = (c, color, id) => `<span class="hdot"><svg viewBox="0 0 30 30" width="32" height="32" aria-hidden="true"><defs><clipPath id="${id}"><path d="${HOUSE_D}"/></clipPath></defs>${c ? `<image href="assets/flags/${String(c).toLowerCase()}.svg" x="0" y="0" width="30" height="30" preserveAspectRatio="none" clip-path="url(#${id})"/>` : `<path d="${HOUSE_D}" fill="${color}"/>`}<path d="${HOUSE_D}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/></svg></span>`;
 export function metroHtml(t) {
   const st = stationsOf(t);
   if (st.length < 2) return '';
