@@ -577,3 +577,17 @@ button.fc { cursor: pointer; } .card-head + .fc { margin-top: 0; }
 .mgap[aria-expanded="true"] .mchev { transform: rotate(90deg); }
 .mexp { display: flex; gap: 12px; } .mexp[hidden] { display: none; } .mexp .mrail { align-self: stretch; }
 .mbox { flex: 1; min-width: 0; padding: 2px 0 8px; } .mbox .fc { margin-top: 0; }
+.cpick { position: relative; }
+.cp-btn { display: flex; align-items: center; width: 100%; min-height: 48px; padding: 0 34px 0 14px; border-radius: 12px; border: 1px solid var(--field); background: var(--surface); color: var(--ink); font: inherit; text-align: left; cursor: pointer; position: relative; }
+.cp-btn span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cp-btn.empty span { color: var(--muted); }
+.cp-btn::after { content: ''; position: absolute; right: 14px; top: 50%; width: 7px; height: 7px; margin-top: -6px; border: solid var(--muted); border-width: 0 2px 2px 0; transform: rotate(45deg); }
+.cp-panel { position: absolute; z-index: 20; right: 0; top: calc(100% + 4px); width: min(300px, 86vw); background: var(--surface); border: 1px solid var(--field); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+.cp-panel[hidden] { display: none; }
+.cp-panel.up { top: auto; bottom: calc(100% + 4px); }
+.cp-panel .cp-in { width: 100%; min-height: 46px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; padding: 0 14px; background: var(--surface); color: var(--ink); font: inherit; }
+.cp-list { list-style: none; margin: 0; padding: 4px; max-height: min(260px, 38dvh); overflow: auto; }
+.cp-list button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 44px; padding: 4px 10px; border: 0; border-radius: 10px; background: none; color: var(--ink); font: inherit; text-align: left; cursor: pointer; }
+.cp-list button:hover, .cp-list button:focus-visible { background: var(--bg); }
+.cp-list button[aria-selected=true] { font-weight: 600; }
+.cp-list .empty { padding: 12px; color: var(--muted); }

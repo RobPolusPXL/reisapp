@@ -1,6 +1,6 @@
 // Gedeelde onderdelen voor reizen: vervoer, itemtypes, formulieren
 import { get, update, newId, mergeDuplicateFlights } from './store.js';
-import { list, byCode, nameOf, flag } from './data.js';
+import { list, byCode, nameOf, flag, searchCountries } from './data.js';
 import { loadAirlines, airlineByName, attachAirlineSearch } from './airlines.js';
 import { scanBoardingPass } from './boardingpass.js';
 import { loadAirports, airportByCode, attachAirportSearch, ensureMyAirport } from './airports.js';
@@ -25,6 +25,50 @@ export const CLASSES = ['Economy', 'Premium economy', 'Business', 'First'];
 
 export const countryOptions = sel =>
   '<option value="">Kies een land</option>' + list.map(c => `<option value="${c.c}"${c.c === sel ? ' selected' : ''}>${esc(c.n)}</option>`).join('');
+
+/** Landkeuze die eruitziet als een gewone keuzelijst; bovenaan de lijst staat een zoekveld. Een verborgen veld houdt de landcode bij (formulieren lezen het gewoon als `name`). */
+export const countryPick = (name, sel, label, id = '') => `<div class="cpick">
+  <input type="hidden" name="${name}" value="${esc(sel || '')}">
+  <button type="button" class="cp-btn${sel ? '' : ' empty'}"${id ? ` id="${id}"` : ''} aria-label="${esc(label)}" aria-haspopup="listbox"><span>${esc(sel ? nameOf(sel) : 'Kies een land')}</span></button>
+  <div class="cp-panel" hidden><input type="search" class="cp-in" placeholder="Zoek een land" aria-label="Zoek een land" autocomplete="off" autocapitalize="words" enterkeyhint="done"><ul class="cp-list"></ul></div></div>`;
+/** Zet een landkeuze (verborgen veld + zichtbare naam) op een code. */
+export function setCountryPick(form, name, code) {
+  const h = form.elements[name]; if (!h) return;
+  h.value = code || '';
+  const btn = h.closest('.cpick')?.querySelector('.cp-btn');
+  if (btn) { btn.querySelector('span').textContent = code ? nameOf(code) : 'Kies een land'; btn.classList.toggle('empty', !code); }
+}
+/** Koppelt alle landkeuzes binnen `root` (ook later toegevoegde). */
+export function bindCountryPick(root) {
+  const closeAll = except => root.querySelectorAll('.cp-panel:not([hidden])').forEach(p => { if (p.parentElement !== except) p.hidden = true; });
+  const draw = box => {
+    const q = box.querySelector('.cp-in').value;
+    const cur = box.querySelector('input[type=hidden]').value;
+    box.querySelector('.cp-list').innerHTML = searchCountries(q, 300).map(c => `<li><button type="button" data-pick="${c.c}"${c.c === cur ? ' aria-selected="true"' : ''}>${flag(c.c)}<span>${esc(c.n)}</span></button></li>`).join('') || '<li class="empty">Geen landen gevonden.</li>';
+  };
+  const pick = (box, code) => { setCountryPick(box.closest('form') || root, box.querySelector('input[type=hidden]').name, code); box.querySelector('.cp-panel').hidden = true; };
+  root.addEventListener('click', e => {
+    const btn = e.target.closest?.('.cp-btn');
+    if (btn) {
+      const box = btn.parentElement, panel = box.querySelector('.cp-panel');
+      closeAll(box);
+      panel.hidden = !panel.hidden;
+      panel.classList.remove('up');
+      if (!panel.hidden) { const inp = panel.querySelector('.cp-in'); inp.value = ''; draw(box); panel.querySelector('[aria-selected]')?.scrollIntoView({ block: 'center' }); const r = panel.getBoundingClientRect(), vh = window.visualViewport?.height || window.innerHeight; if (r.bottom > vh - 8 && btn.getBoundingClientRect().top > r.height + 16) panel.classList.add('up'); inp.focus({ preventScroll: true }); }
+      return;
+    }
+    const it = e.target.closest?.('[data-pick]');
+    if (it) { e.stopPropagation(); pick(it.closest('.cpick'), it.dataset.pick); return; }
+    if (!e.target.closest?.('.cp-panel')) closeAll(null);
+  });
+  root.addEventListener('input', e => { if (e.target.classList?.contains('cp-in')) draw(e.target.closest('.cpick')); });
+  root.addEventListener('keydown', e => {
+    if (!e.target.classList?.contains('cp-in')) return;
+    const box = e.target.closest('.cpick');
+    if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); const f = box.querySelector('[data-pick]'); if (f) pick(box, f.dataset.pick); }
+    if (e.key === 'Escape') { e.stopPropagation(); box.querySelector('.cp-panel').hidden = true; box.querySelector('.cp-btn').focus(); }
+  });
+}
 
 /** Thuisland: het land waar je het vaakst vertrekt volgens de eerste vlucht van elke reis. */
 export function homeCountry(state = get()) {
@@ -218,8 +262,9 @@ export function openTripForm(trip = null, { onSaved } = {}) {
   const stepsHtml = w => hv[w].map((s, i) => `<div class="stp"><div class="chips">${STEP_MODES.map(m => `<button type="button" class="ch${s.mode === m ? ' on' : ''}" data-mode="${w}-${i}-${m}" aria-label="${MODES[m][0]}">${ic(MODES[m][1], 20)}</button>`).join('')}<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rmstep="${w}-${i}" aria-label="Stap verwijderen">${ic('x', 20)}</button></div><div class="two2"><div class="pl">${stepPlace(w, i, 'from', s)}</div><div class="pl">${stepPlace(w, i, 'to', s)}</div></div>${s.mode === 'plane' ? `<label class="btn soft scan" style="margin-top:8px">${ic('plane', 18)}Boarding pass inlezen<input type="file" accept="image/*" data-bp="${w}-${i}" hidden></label>` : ''}</div>`).join('') + `<button type="button" class="btn soft" data-addstep="${w}">${ic('plus', 18)}Stap toevoegen</button>`;
   const stepPlace = (w, i, k, s) => s.mode === 'plane'
     ? `<input class="titel-in" data-ap="${w}-${i}-${k}" aria-label="${k === 'from' ? 'Van' : 'Naar'}" value="${esc(s[k] || '')}">`
-    : `<select name="${w}-${i}-${k}" aria-label="${k === 'from' ? 'Van' : 'Naar'}">${countryOptions(s[k])}</select>`;
+    : countryPick(`${w}-${i}-${k}`, s[k], k === 'from' ? 'Van' : 'Naar');
   const sh = openSheet('', { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
+  bindCountryPick(sh.el);
   const addMate = name => {
     name = (name || '').trim().replace(/\s+/g, ' ');
     if (name && !draft.mates.some(m => m.toLowerCase() === name.toLowerCase())) draft.mates.push(name);
@@ -255,10 +300,10 @@ export function openTripForm(trip = null, { onSaved } = {}) {
       <div class="label">Heenreis</div>
       <div data-sec="heen">${stepsHtml('heen')}</div>
       <div class="label">Route</div>
-      <div class="field" data-vertrek${(draft.legs[0]?.mode || 'plane') === 'plane' ? ' hidden' : ''}><label for="f-vertrek">Vertrek uit</label><select id="f-vertrek" name="vertrek">${countryOptions(draft.from || homeCountry())}</select></div>
+      <div class="field" data-vertrek${(draft.legs[0]?.mode || 'plane') === 'plane' ? ' hidden' : ''}><label for="f-vertrek">Vertrek uit</label>${countryPick('vertrek', draft.from || homeCountry(), 'Vertrek uit', 'f-vertrek')}</div>
       <div class="legs">${draft.legs.map((l, i) => `<div class="legrow" data-leg="${i}"><button type="button" class="grip" aria-label="Stop ${i + 1} verslepen" title="Sleep om te verplaatsen"><svg viewBox="0 0 24 24" width="20" height="20" fill="currentColor" aria-hidden="true"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></svg></button><div style="flex:1;min-width:0"><div class="pair" style="align-items:center">
         <div class="field"><select name="mode-${i}" aria-label="Vervoer stop ${i + 1}">${Object.entries(MODES).map(([k, [n]]) => `<option value="${k}"${k === l.mode ? ' selected' : ''}>${n}</option>`).join('')}</select></div>
-        <div class="field"><select name="land-${i}" aria-label="Land stop ${i + 1}">${countryOptions(l.c)}</select></div>
+        <div class="field">${countryPick(`land-${i}`, l.c, `Land stop ${i + 1}`)}</div>
         ${draft.legs.length > 1 ? `<button type="button" class="icon-btn" style="flex:none;background:var(--bg)" data-rm="${i}" aria-label="Stop ${i + 1} verwijderen">${ic('x', 20)}</button>` : ''}
       </div>
       <label class="transit" data-transit="${i}"><input type="checkbox" name="transit-${i}"${l.transit ? ' checked' : ''}> <span>${transitTxt(l.mode)} (land telt niet mee als bezocht)</span></label></div></div>`).join('')}</div>

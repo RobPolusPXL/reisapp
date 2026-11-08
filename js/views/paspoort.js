@@ -4,7 +4,7 @@ import { createMap } from '../map.js';
 import { globeSvg } from '../globe.js';
 import { esc, ic, openSheet, toast, fmtRange, fmtDate, daysBetween, scoreH } from '../ui.js';
 import { load as loadCoasters, parkOverview, ridesOf, avgScore } from './credits.js';
-import { countryOptions } from '../trips.js';
+import { countryPick, bindCountryPick, setCountryPick } from '../trips.js';
 import { openCountryPicker, openCountrySheet } from '../sheets.js';
 import { loadAirports, attachAirportSearch } from '../airports.js';
 
@@ -26,15 +26,16 @@ function openPlaceForm(kind) {
       <div class="pair"><div class="field" style="flex:0 0 110px"><label for="p-code">Code</label><input id="p-code" name="code" maxlength="4" placeholder="BRU" style="text-transform:uppercase"></div>
         <div class="field"><label for="p-naam">Naam</label><input id="p-naam" name="naam" placeholder="Naam van de luchthaven"></div></div>`
       : `<div class="field"><label for="p-naam">Naam</label><input id="p-naam" name="naam" placeholder="Naam"></div>`}
-      <div class="field"><label for="p-land">Land</label><select id="p-land" name="land">${countryOptions('')}</select></div>
+      <div class="field"><label for="p-land">Land</label>${countryPick('land', '', 'Land', 'p-land')}</div>
       <p class="muted" role="alert" id="p-err" style="margin:0;color:var(--danger)"></p>
       <div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="submit" class="btn primary">Opslaan</button></div>
     </form>`, { title: cfg.add });
+  bindCountryPick(sh.el);
   if (kind === 'airports') {
     loadAirports();
     attachAirportSearch(sh.el.querySelector('#p-zoek'), a => {
       const f = sh.el.querySelector('form').elements;
-      f.code.value = a.code; f.naam.value = a.name; f.land.value = a.c;
+      f.code.value = a.code; f.naam.value = a.name; setCountryPick(f, 'land', a.c);
     });
   }
   sh.el.addEventListener('submit', e => {
