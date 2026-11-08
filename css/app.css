@@ -486,8 +486,8 @@ a.list-row { color: inherit; }
 /* Icoonkiezer bij activiteiten */
 .ipw { display: flex; flex-direction: column; gap: 6px; } .ip-g { font-size: 12px; font-weight: 600; color: var(--muted); margin-top: 4px; }
 .ip { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
-.ip-b { aspect-ratio: 1; border: 1.5px solid var(--line); background: var(--surface); color: var(--ink); border-radius: 12px; display: grid; place-items: center; cursor: pointer; min-height: 44px; }
-.ip-b.on { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+.ip-b { aspect-ratio: 1; border: 1.5px solid var(--line); background: var(--surface); color: var(--accent); border-radius: 12px; display: grid; place-items: center; cursor: pointer; min-height: 44px; }
+.ip-b.on { background: var(--accent); border-color: var(--accent); color: var(--on-accent); }
 
 /* Vlucht in de reis: datum, route en zitplaatsen elk op een eigen regel */
 .item .s-route { display: flex; align-items: center; gap: 8px; color: var(--ink); font-size: 15px; font-weight: 600; letter-spacing: .02em; }
