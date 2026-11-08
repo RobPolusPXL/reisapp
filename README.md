@@ -75,7 +75,7 @@ scripts/build-data.mjs generator voor kaart- en landendata
 ## Gegevensbronnen
 
 - `data/airports.json`: [OurAirports](https://ourairports.com/data/) (publiek domein), met coördinaten.
-- `js/acticons.js`: [Google Material Symbols](https://fonts.google.com/icons) (Apache 2.0); vulkaan uit [Font Awesome Free](https://fontawesome.com/license/free) (CC BY 4.0); waterval uit [Game-icons.net](https://game-icons.net) (CC BY 3.0); bergen en via ferrata eigen tekening.
+- `js/acticons.js`: [Google Material Symbols](https://fonts.google.com/icons) (Apache 2.0); vulkaan uit [Font Awesome Free](https://fontawesome.com/license/free) (CC BY 4.0); waterval uit [Game-icons.net](https://game-icons.net) (CC BY 3.0); snorkelen eigen bewerking van een icoon uit [Streamline](https://www.streamlinehq.com) (CC BY 4.0); bergen en via ferrata eigen tekening.
 - `data/airlines.json`: [OpenFlights](https://openflights.org/data) (Open Database License; vermelding: © OpenFlights.org).
 - `vendor/zxing/`: [zxing-wasm](https://github.com/Sec-ant/zxing-wasm) (MIT), leest de streepjescode van een boarding pass lokaal in de browser.
 - `data/coasters.json`: [Coasterpedia](https://coasterpedia.net) (CC BY-SA 4.0), achtbanen van Energylandia met treinindeling (wagons, rijen, zitplaatsen per rij).
