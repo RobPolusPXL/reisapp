@@ -599,3 +599,4 @@ button.fc { cursor: pointer; } .card-head + .fc { margin-top: 0; }
 .cp-list button:hover, .cp-list button:focus-visible { background: var(--bg); }
 .cp-list button[aria-selected=true] { font-weight: 600; }
 .cp-list .empty { padding: 12px; color: var(--muted); }
+.xall { background: var(--accent-soft); color: var(--accent); width: 40px; height: 40px; flex: none; }

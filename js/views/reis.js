@@ -3,7 +3,7 @@ import { nameOf } from '../data.js';
 import { loadAirports } from '../airports.js';
 import { actIc } from '../acticons.js';
 import { esc, ic, ICONS, fmtRange, fmtDate, daysBetween, scoreH } from '../ui.js';
-import { matesText, flagsHtml, transportHtml, metroHtml, stayStops, staysAt, TYPES, openTripForm, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
+import { matesText, flagsHtml, transportHtml, metroHtml, XALL_ICON, stayStops, staysAt, TYPES, openTripForm, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
 
 export function mount(el, { params }) {
   const id = params[0];
@@ -60,8 +60,19 @@ export function mount(el, { params }) {
   const onClick = e => {
     const t = getTrip(id);
     if (!t) return;
+    const xa = e.target.closest('.xall');
+    if (xa) {
+      const exps = [...el.querySelectorAll('.metro [data-exp]')];
+      const open = exps.some(x => el.querySelector('#' + x.dataset.exp)?.hidden);
+      exps.forEach(x => { const b = el.querySelector('#' + x.dataset.exp); if (b) b.hidden = !open; x.setAttribute('aria-expanded', String(open)); });
+      xa.innerHTML = open ? XALL_ICON.close : XALL_ICON.open; xa.setAttribute('aria-label', open ? 'Alles inklappen' : 'Alles uitklappen'); xa.setAttribute('aria-expanded', String(open));
+      return;
+    }
     const ex = e.target.closest('[data-exp]');
-    if (ex) { const box = el.querySelector('#' + ex.dataset.exp); const open = box.hidden; box.hidden = !open; ex.setAttribute('aria-expanded', String(open)); return; }
+    if (ex) { const box = el.querySelector('#' + ex.dataset.exp); const open = box.hidden; box.hidden = !open; ex.setAttribute('aria-expanded', String(open));
+      const xb = el.querySelector('.xall');
+      if (xb) { const allOpen = [...el.querySelectorAll('.metro [data-exp]')].every(x => !el.querySelector('#' + x.dataset.exp)?.hidden); xb.innerHTML = allOpen ? XALL_ICON.close : XALL_ICON.open; xb.setAttribute('aria-label', allOpen ? 'Alles inklappen' : 'Alles uitklappen'); xb.setAttribute('aria-expanded', String(allOpen)); }
+      return; }
     const it = e.target.closest('[data-item]');
     if (it) { openItemForm(id, t.items.find(x => x.id === it.dataset.item)); return; }
     if (e.target.closest('#add')) { openItemForm(id, null, { type: 'activity', date: t.start }); return; }

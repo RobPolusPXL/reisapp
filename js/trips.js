@@ -717,6 +717,9 @@ function kmBetween(a, b) {
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(A.lat * r) * Math.cos(B.lat * r) * Math.sin(dLon / 2) ** 2;
   return 12742 * Math.asin(Math.sqrt(h));
 }
+const xsv = d => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
+/** Iconen voor de knop "alles uit-/inklappen" in de Reisweg. */
+export const XALL_ICON = { open: xsv('m7 15 5 5 5-5M7 9l5-5 5 5'), close: xsv('m7 20 5-5 5 5M7 4l5 5 5-5') };
 export function metroHtml(t) {
   const st = stationsOf(t);
   if (st.length < 2) return '';
@@ -754,5 +757,5 @@ export function metroHtml(t) {
     }
     return row + `<div class="mgap"><div class="mrail">${seg('mfull', out)}${icon}</div></div>`;
   }).join('');
-  return `<section class="card"><div class="card-head"><h2>Reisweg</h2></div><div class="metro">${rows}</div></section>`;
+  return `<section class="card"><div class="card-head"><h2>Reisweg</h2>${rows.includes('data-exp=') ? `<button type="button" class="icon-btn xall" aria-label="Alles uitklappen" aria-expanded="false">${XALL_ICON.open}</button>` : ''}</div><div class="metro">${rows}</div></section>`;
 }
