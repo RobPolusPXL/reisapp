@@ -106,7 +106,12 @@ export function daysBetween(a, b) {
 }
 
 /** Score met een snor (silhouet van het blog, in themakleur) en een getal met vaste breedte, zodat alles netjes onder elkaar staat. */
-export const scoreH = v => `<span class="score"><span class="snor-i" aria-hidden="true"></span><span class="sn">${esc(String(v))}</span></span>`;
+/** Score met snor; een decimaal (3,5) staat hoger en kleiner: 3 met ,5 erboven. */
+export const scoreH = v => {
+  const m = /^(\d+)[.,](\d+)$/.exec(String(v).trim());
+  const t = m ? `${m[1]}<sup class="sn-d">,${m[2]}</sup>` : esc(String(v));
+  return `<span class="score"><span class="snor-i" aria-hidden="true"></span><span class="sn"${m ? ` aria-label="${m[1]},${m[2]}"` : ''}>${t}</span></span>`;
+};
 /** Iconen die je bij een activiteit kunt kiezen. */
 /** Icoonkiezer per groep (gevulde icoontjes); hidden input name=icon houdt de keuze vast. */
 export const iconPick = v => {
