@@ -106,11 +106,15 @@ export function daysBetween(a, b) {
 }
 
 /** Score met een snor (silhouet van het blog, in themakleur) en een getal met vaste breedte, zodat alles netjes onder elkaar staat. */
-/** Score met snor; een decimaal (3,5) staat hoger en kleiner: 3 met ,5 erboven. */
+/** Score als piramide van 5 snorren (1 boven, 2 midden, 2 onder), van onder naar boven gevuld; een halve score is een halve snor. */
 export const scoreH = v => {
-  const m = /^(\d+)[.,](\d+)$/.exec(String(v).trim());
-  const t = m ? `${m[1]}<sup class="sn-d">,${m[2]}</sup>` : esc(String(v));
-  return `<span class="score"><span class="snor-i" aria-hidden="true"></span><span class="sn"${m ? ` aria-label="${m[1]},${m[2]}"` : ''}>${t}</span></span>`;
+  const num = parseFloat(String(v).replace(',', '.'));
+  if (!Number.isFinite(num)) return `<span class="score"><span class="snor-i" aria-hidden="true"></span><span class="sn">${esc(String(v))}</span></span>`;
+  const fill = [0, 0, 0, 0, 0];
+  [3, 4, 1, 2, 0].forEach((pos, k) => { fill[pos] = Math.max(0, Math.min(1, num - k)); });
+  const m = f => `<span class="ps"${f >= 1 ? ' data-on' : f > 0 ? ` style="--f:${Math.round(f * 100)}%"` : ''}></span>`;
+  const lab = `${String(num).replace('.', ',')} ${num === 1 ? 'snor' : 'snorren'}`;
+  return `<span class="score pyr" role="img" aria-label="${lab}" title="${lab}"><span class="pr">${m(fill[0])}</span><span class="pr">${m(fill[1])}${m(fill[2])}</span><span class="pr">${m(fill[3])}${m(fill[4])}</span></span>`;
 };
 /** Iconen die je bij een activiteit kunt kiezen. */
 /** Icoonkiezer per groep (gevulde icoontjes); hidden input name=icon houdt de keuze vast. */

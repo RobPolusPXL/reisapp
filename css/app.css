@@ -604,3 +604,7 @@ button.fc { cursor: pointer; } .card-head + .fc { margin-top: 0; }
 .sheet .chips.apc { flex-wrap: wrap; } .sheet .chips.apc .ch { flex: 1 1 30%; gap: 6px; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); } .sheet .chips.apc .ch.on { color: var(--accent); }
 .mcode { letter-spacing: .04em; }
 .sn-d { font-size: .62em; vertical-align: .55em; line-height: 0; margin-left: .04em; font-weight: inherit; }
+.score.pyr { display: inline-flex; flex-direction: column; align-items: center; gap: 3px; line-height: 0; }
+.pyr .pr { display: flex; gap: 4px; } .kpis b .pyr .ps, .big4 b .pyr .ps { width: 26px; }
+.pyr .ps { display: block; width: max(1.3em, 20px); aspect-ratio: 240 / 76; --f: 0%; background: linear-gradient(90deg, var(--accent) var(--f), var(--line) var(--f)); -webkit-mask: url(../assets/snor.webp) center / contain no-repeat; mask: url(../assets/snor.webp) center / contain no-repeat; }
+.pyr .ps[data-on] { background: var(--accent); }
