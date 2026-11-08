@@ -11,6 +11,9 @@ export const MODES = {
   plane: ['Vliegtuig', 'plane'], car: ['Auto', 'car'], train: ['Trein', 'train'],
   bus: ['Bus', 'bus'], boat: ['Boot', 'boat'], other: ['Anders', 'dots'],
 };
+/** Vervoer van thuis naar de luchthaven (en terug). */
+export const AP_MODES = { car: ['Auto', 'car'], train: ['Trein', 'train'], taxi: ['Taxi', 'car'], bus: ['Bus', 'bus'], lift: ['Gebracht', 'car'] };
+const apOf = (t, w) => { const a = t.ap; if (!a) return null; const x = w === 'terug' && a.same !== false ? (a.heen && { mode: a.heen.mode }) : a[w]; return x?.mode && AP_MODES[x.mode] ? x : null; };
 const transitTxt = m => m === 'plane' ? 'Enkel overstap met het vliegtuig' : 'Enkel doorgereden';
 export const TYPES = {
   flight: ['Vlucht', 'plane'], stay: ['Verblijf', 'bed'], food: ['Restaurant', 'fork'], activity: ['Activiteit', 'ticket'],
@@ -257,6 +260,8 @@ export function journeyHtml(t) {
 export function openTripForm(trip = null, { onSaved } = {}) {
   const draft = trip ? structuredClone(trip) : { id: newId(), title: '', start: '', end: '', legs: [{ mode: 'plane', c: '' }], items: [], mates: [] };
   draft.mates ||= [];
+  draft.ap = structuredClone(draft.ap || { heen: { mode: '', note: '' }, terug: { mode: '', note: '' }, same: true });
+  draft.ap.heen ||= { mode: '', note: '' }; draft.ap.terug ||= { mode: '', note: '' };
   const pd = trip ? partsData(trip) : { heen: [], terug: [] };
   const hv = { heen: structuredClone(pd.heen), terug: structuredClone(pd.terug) };
   for (const w of ['heen', 'terug']) for (const x of hv[w]) if (typeof x.flight === 'string') { Object.assign(x, stepEnds(x, trip?.items)); x.flightId = x.flight; delete x.flight; }
@@ -264,6 +269,7 @@ export function openTripForm(trip = null, { onSaved } = {}) {
   const stepPlace = (w, i, k, s) => s.mode === 'plane'
     ? `<input class="titel-in" data-ap="${w}-${i}-${k}" aria-label="${k === 'from' ? 'Van' : 'Naar'}" value="${esc(s[k] || '')}">`
     : countryPick(`${w}-${i}-${k}`, s[k], k === 'from' ? 'Van' : 'Naar');
+  const apChips = w => `<div class="chips apc">${Object.entries(AP_MODES).map(([k, [n, icn]]) => `<button type="button" class="ch${draft.ap[w].mode === k ? ' on' : ''}" data-apm="${w}-${k}" aria-pressed="${draft.ap[w].mode === k}">${ic(icn, 18)}<span>${n}</span></button>`).join('')}</div>`;
   const sh = openSheet('', { title: trip ? 'Reis bewerken' : 'Nieuwe reis' });
   bindCountryPick(sh.el);
   const addMate = name => {
@@ -275,6 +281,8 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     if (!f) return;
     draft.title = val(f, 'titel'); draft.start = val(f, 'start'); draft.end = val(f, 'einde');
     if (f.elements.vertrek) draft.from = val(f, 'vertrek');
+    for (const w of ['heen', 'terug']) if (f.elements[`ap-${w}-note`]) draft.ap[w].note = val(f, `ap-${w}-note`);
+    if (f.elements['ap-same']) draft.ap.same = f.elements['ap-same'].checked;
     for (const w of ['heen', 'terug']) hv[w].forEach((s, i) => {
       for (const k of ['from', 'to']) {
         const ap = f.querySelector(`[data-ap="${w}-${i}-${k}"]`);
@@ -311,6 +319,11 @@ export function openTripForm(trip = null, { onSaved } = {}) {
       <button type="button" class="btn soft" data-add>${ic('plus', 18)}Stop toevoegen</button>
       <div class="label">Terugreis</div>
       <div data-sec="terug">${stepsHtml('terug')}</div>
+      <div class="label">Naar de luchthaven (optioneel)</div>
+      ${apChips('heen')}
+      <div class="field"><input name="ap-heen-note" aria-label="Notitie heen" value="${esc(draft.ap.heen.note || '')}" placeholder="Notitie, bijvoorbeeld parking of trein-uur"></div>
+      <label class="transit"><input type="checkbox" name="ap-same" data-apsame${draft.ap.same !== false ? ' checked' : ''}> <span>Terug naar huis op dezelfde manier</span></label>
+      ${draft.ap.same === false ? `<div class="label">Van de luchthaven naar huis</div>${apChips('terug')}<div class="field"><input name="ap-terug-note" aria-label="Notitie terug" value="${esc(draft.ap.terug.note || '')}" placeholder="Notitie"></div>` : ''}
       <p class="muted" role="alert" style="margin:0;color:var(--danger)">${esc(err)}</p>
       <div class="pair"><button type="button" class="btn" data-close>Annuleren</button><button type="submit" class="btn primary">Opslaan</button></div>
     </form>`);
@@ -327,6 +340,9 @@ export function openTripForm(trip = null, { onSaved } = {}) {
       if (am) sh.el.querySelector('[name=mate]')?.focus();
       return;
     }
+    const apm = e.target.closest('[data-apm]');
+    if (apm) { const [w, m] = apm.dataset.apm.split('-'); read(); draft.ap[w].mode = draft.ap[w].mode === m ? '' : m; render(); return; }
+    if (e.target.closest('[data-apsame]')) { read(); render(); return; }
     const md = e.target.closest('[data-mode]');
     if (md) {
       const [w, i, m] = md.dataset.mode.split('-'); read();
@@ -447,6 +463,8 @@ export function openTripForm(trip = null, { onSaved } = {}) {
     if (terugC.length) clean.terug = terugC; else delete clean.terug;
     if (!legs.length || legs[0].mode === 'plane' || !draft.from) delete clean.from;
     if (!clean.mates?.length) delete clean.mates;
+    { const a = draft.ap, h = a.heen.mode ? { mode: a.heen.mode, ...(a.heen.note ? { note: a.heen.note } : {}) } : null, tr = a.terug.mode ? { mode: a.terug.mode, ...(a.terug.note ? { note: a.terug.note } : {}) } : null;
+      if (h || (a.same === false && tr)) clean.ap = { ...(h ? { heen: h } : {}), ...(a.same === false ? { same: false, ...(tr ? { terug: tr } : {}) } : {}) }; else delete clean.ap; }
     update(st => {
       for (const f of flights) for (const k of ['from', 'to']) ensureMyAirport(st, airportByCode(f.f[k]), newId);
       const i = st.trips.findIndex(t => t.id === clean.id);
@@ -661,7 +679,7 @@ export function transportHtml(t) {
 }
 
 // ---- Reisweg als metrolijn: stations onder elkaar, de lijn kleurt per vervoer ----
-const MODE_COLOR = { plane: '#0E7C66', boat: '#1f78c8', car: '#d97706', train: '#7c3aed', bus: '#b45309', other: '#64748b' };
+const MODE_COLOR = { plane: '#0E7C66', boat: '#1f78c8', car: '#d97706', train: '#7c3aed', bus: '#b45309', other: '#64748b', taxi: '#d97706', lift: '#d97706' };
 /** Stations van de reis: vertrek, overstappen/doorgereden landen, bezochte landen, thuiskomst. Elk station krijgt het vervoer waarmee je er aankwam. */
 export function stationsOf(t) {
   const d = partsData(t), it = t.items || [];
@@ -675,7 +693,10 @@ export function stationsOf(t) {
   const fid = s => s?.flight && it.some(i => i.id === s.flight) ? s.flight : null;
   if (heen.length) {
     const e0 = stepEnds(heen[0], it);
-    push(place(e0.from, heen[0].mode), 'home', fmtDate(flightOf(heen[0], it)?.date || t.start), null);
+    const apH = heen[0].mode === 'plane' && apOf(t, 'heen');
+    if (apH) push({ c: homeCountry(), name: 'Thuis' }, 'house', '', null);
+    push(place(e0.from, heen[0].mode), 'home', fmtDate(flightOf(heen[0], it)?.date || t.start), apH ? apH.mode : null, null);
+    if (apH) Object.assign(st[st.length - 1], { ap: apH, airport: true });
     heen.slice(0, -1).forEach(s => push(place(stepEnds(s, it).to, s.mode), 'small', s.mode === 'plane' ? 'overstap' : '', s.mode, fid(s)));
   }
   const ctryOf = code => airportByCode(code)?.c;
@@ -705,6 +726,8 @@ export function stationsOf(t) {
     });
     const l = terug[terug.length - 1];
     push(place(stepEnds(l, it).to, l.mode), 'home', fmtDate(flightOf(l, it)?.date || t.end), l.mode, fid(l));
+    const apT = l.mode === 'plane' && apOf(t, 'terug');
+    if (apT && st.length) { st[st.length - 1].airport = true; push({ c: homeCountry(), name: 'Thuis' }, 'house', '', apT.mode); st[st.length - 1].ap = apT; }
   }
   // Eerste terugvlucht hoort bij de verplaatsing vanuit het laatste land
   return st;
@@ -720,6 +743,9 @@ function kmBetween(a, b) {
 const xsv = d => `<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="${d}"/></svg>`;
 /** Iconen voor de knop "alles uit-/inklappen" in de Reisweg. */
 export const XALL_ICON = { open: xsv('m7 15 5 5 5-5M7 9l5-5 5 5'), close: xsv('m7 20 5-5 5 5M7 4l5 5 5-5') };
+const HOUSE_D = 'M13.6 3.6a2.2 2.2 0 0 1 2.8 0l10.4 8.6a2.4 2.4 0 0 1 .9 1.9V26a2 2 0 0 1-2 2H4.3a2 2 0 0 1-2-2V14.1a2.4 2.4 0 0 1 .9-1.9z';
+/** Thuishalte: de vlag van thuis in de vorm van een huisje. */
+const houseDot = (c, color, id) => `<span class="hdot"><svg viewBox="0 0 30 30" width="32" height="32" aria-hidden="true"><defs><clipPath id="${id}"><path d="${HOUSE_D}"/></clipPath></defs>${c ? `<image href="assets/flags/${String(c).toLowerCase()}.svg" x="0" y="0" width="30" height="30" preserveAspectRatio="none" clip-path="url(#${id})"/>` : `<path d="${HOUSE_D}" fill="${color}"/>`}<path d="${HOUSE_D}" fill="none" stroke="${color}" stroke-width="2" stroke-linejoin="round"/></svg></span>`;
 export function metroHtml(t) {
   const st = stationsOf(t);
   if (st.length < 2) return '';
@@ -729,13 +755,13 @@ export function metroHtml(t) {
   let n = 0; const occ = {};
   const rows = st.map((s, i) => {
     const inc = i ? s.mode : null, nx = st[i + 1], out = nx?.mode || null;
-    const ring = col(out || inc);
+    const ring = s.airport ? col('plane') : col(out || inc);
     let stays = [];
     if (s.kind === 'stay') { occ[s.c] = (occ[s.c] || 0) + 1; stays = staysAt(t, { c: s.c, n: occ[s.c] }); }
     const nights = stays.filter(x => x.type === 'stay').reduce((a, x) => a + (nightsBetween(x.date, x.dateEnd) || 0), 0);
     const sid = stays.length ? `ms${n++}` : '';
-    const inner = `<div class="mrail">${seg('mup', inc)}${seg('mdn', out)}<span class="mdot" style="--c:${ring}">${s.c ? flag(s.c) : ''}</span></div>
-      <div class="mtx"><b>${esc(s.name)}</b>${s.kind === 'home' ? `<small>${i ? 'thuis' : 'vertrek'}</small>` : s.sub ? `<small>${esc(s.sub)}</small>` : ''}</div>${s.kind === 'home' && s.sub ? `<span class="mdate">${esc(s.sub)}</span>` : ''}${nights ? `<span class="mnights">${esc(nightsLabel(nights))}</span>` : ''}${sid ? `<span class="mchev">${ic('chev', 13)}</span>` : ''}`;
+    const inner = `<div class="mrail">${seg('mup', inc)}${seg('mdn', out)}${s.kind === 'house' ? houseDot(s.c, ring, `hs${i}`) : `<span class="mdot" style="--c:${ring}">${s.c ? flag(s.c) : ''}</span>`}</div>
+      <div class="mtx"><b>${esc(s.name)}</b>${s.kind === 'home' ? `<small>${s.airport ? 'luchthaven' : i ? 'thuis' : 'vertrek'}</small>` : s.sub ? `<small>${esc(s.sub)}</small>` : ''}</div>${s.kind === 'home' && s.sub ? `<span class="mdate">${esc(s.sub)}</span>` : ''}${nights ? `<span class="mnights">${esc(nightsLabel(nights))}</span>` : ''}${sid ? `<span class="mchev">${ic('chev', 13)}</span>` : ''}`;
     const row = sid
       ? `<button type="button" class="mst ${s.kind} tap" data-exp="${sid}" aria-expanded="false">${inner}</button>
         <div class="mexp" id="${sid}" hidden><div class="mrail">${seg('mfull', out)}</div><div class="mbox"><div class="mstays">${[...stays.filter(x => x.type === 'stay'), ...stays.filter(x => x.type !== 'stay')].map(x => `<button type="button" class="mstay" data-item="${esc(x.id)}">${x.type === 'stay' ? ic('bed', 18) : actIc(x.icon, 18)}<span class="grow"><b>${esc(x.name)}</b>${x.date ? `<small>${esc(x.dateEnd && x.dateEnd !== x.date ? fmtRange(x.date, x.dateEnd) : fmtDate(x.date))}${x.type === 'stay' && nightsBetween(x.date, x.dateEnd) ? ' · ' + esc(nightsLabel(nightsBetween(x.date, x.dateEnd))) : ''}</small>` : ''}</span>${x.score ? scoreH(String(x.score).replace('.', ',')) : ''}</button>`).join('')}</div></div></div>`
@@ -749,7 +775,8 @@ export function metroHtml(t) {
     // Vlucht die dichter bij huis landt dan ze vertrekt: vliegtuigje omgekeerd.
     const homeAp = (() => { const h = partsData(t).heen[0]; return h?.mode === 'plane' ? stepEnds(h, it).from : (flightsOf(t)[0]?.f?.from); })();
     const back = f && homeAp && (() => { const d1 = kmBetween(homeAp, f.f.from), d2 = kmBetween(homeAp, f.f.to); return d1 != null && d2 != null && d2 < d1 - 1; })();
-    const icon = `<span class="mico${back ? ' back' : ''}" style="color:${col(out)}">${ic(MODES[out]?.[1] || 'dots', 15)}</span>`;
+    const icon = `<span class="mico${back ? ' back' : ''}" style="color:${col(out)}">${ic((nx.ap ? AP_MODES[out] : MODES[out])?.[1] || 'dots', 15)}</span>`;
+    if (nx.ap) return row + `<div class="mgap"><div class="mrail">${seg('mfull', out)}${icon}</div><span class="minfo" style="color:${col(out)}">${esc([AP_MODES[out][0], nx.ap.note].filter(Boolean).join(' · '))}</span></div>`;
     if (f) {
       const id = `mf${n++}`;
       return row + `<button type="button" class="mgap tap" data-exp="${id}" aria-expanded="false"><div class="mrail">${seg('mfull', out)}${icon}</div><span class="minfo" style="color:${col(out)}">${esc(times || MODES[out]?.[0] || '')}</span><span class="mchev">${ic('chev', 13)}</span></button>
