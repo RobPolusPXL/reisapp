@@ -681,15 +681,17 @@ export function transportHtml(t) {
 // ---- Reisweg als metrolijn: stations onder elkaar, de lijn kleurt per vervoer ----
 const MODE_COLOR = { plane: '#0E7C66', boat: '#1f78c8', car: '#d97706', train: '#7c3aed', bus: '#b45309', other: '#64748b', taxi: '#d97706', lift: '#d97706' };
 /** Stations van de reis: vertrek, overstappen/doorgereden landen, bezochte landen, thuiskomst. Elk station krijgt het vervoer waarmee je er aankwam. */
+/** Luchthavens waarvan de stad in de lijst misleidt (Charleroi staat als 'Brussels'): eigen naam. */
+const AP_NAME = { BRU: 'Brussel-Zaventem', CRL: 'Charleroi', NRN: 'Weeze', CGN: 'Keulen-Bonn', EIN: 'Eindhoven', BVA: 'Beauvais', HHN: 'Hahn' };
 export function stationsOf(t) {
   const d = partsData(t), it = t.items || [];
   const heen = d.heen.filter(x => x.from || x.to || x.flight), terug = d.terug.filter(x => x.from || x.to || x.flight);
   const place = (code, mode) => {
-    if (mode === 'plane') { const a = airportByCode(code); return { c: a?.c, name: a ? cityNl(a.city || a.name || a.code) : String(code || '?').toUpperCase() }; }
+    if (mode === 'plane') { const a = airportByCode(code); return { c: a?.c, code: a?.code || String(code || '?').toUpperCase(), name: a ? (AP_NAME[a.code] || cityNl(a.city || a.name || a.code)) : '' }; }
     return { c: code, name: nameOf(code) || '?' };
   };
   const st = [];
-  const push = (p, kind, sub, mode, flightIn) => { if (!p?.c && !p?.name) return; st.push({ ...p, kind, sub, mode, flightIn }); };
+  const push = (p, kind, sub, mode, flightIn) => { if (!p?.c && !p?.name && !p?.code) return; st.push({ ...p, kind, sub, mode, flightIn }); };
   const fid = s => s?.flight && it.some(i => i.id === s.flight) ? s.flight : null;
   if (heen.length) {
     const e0 = stepEnds(heen[0], it);
@@ -761,7 +763,11 @@ export function metroHtml(t) {
     const nights = stays.filter(x => x.type === 'stay').reduce((a, x) => a + (nightsBetween(x.date, x.dateEnd) || 0), 0);
     const sid = stays.length ? `ms${n++}` : '';
     const inner = `<div class="mrail">${seg('mup', inc)}${seg('mdn', out)}${s.kind === 'house' ? houseDot(s.c, ring, `hs${i}`) : `<span class="mdot" style="--c:${ring}">${s.c ? flag(s.c) : ''}</span>`}</div>
-      <div class="mtx"><b>${esc(s.name)}</b>${s.kind === 'home' ? `<small>${s.airport ? 'luchthaven' : i ? 'thuis' : 'vertrek'}</small>` : s.sub ? `<small>${esc(s.sub)}</small>` : ''}</div>${s.kind === 'home' && s.sub ? `<span class="mdate">${esc(s.sub)}</span>` : ''}${nights ? `<span class="mnights">${esc(nightsLabel(nights))}</span>` : ''}${sid ? `<span class="mchev">${ic('chev', 13)}</span>` : ''}`;
+      <div class="mtx">${(() => {
+        const lab = s.kind === 'home' ? (s.airport ? 'luchthaven' : i ? 'thuis' : 'vertrek') : s.sub;
+        if (s.code) return `<b class="mcode">${esc(s.code)}</b><small>${esc([s.name, lab].filter(Boolean).join(' · '))}</small>`;
+        return `<b>${esc(s.name)}</b>${lab ? `<small>${esc(lab)}</small>` : ''}`;
+      })()}</div>${s.kind === 'home' && s.sub ? `<span class="mdate">${esc(s.sub)}</span>` : ''}${nights ? `<span class="mnights">${esc(nightsLabel(nights))}</span>` : ''}${sid ? `<span class="mchev">${ic('chev', 13)}</span>` : ''}`;
     const row = sid
       ? `<button type="button" class="mst ${s.kind} tap" data-exp="${sid}" aria-expanded="false">${inner}</button>
         <div class="mexp" id="${sid}" hidden><div class="mrail">${seg('mfull', out)}</div><div class="mbox"><div class="mstays">${[...stays.filter(x => x.type === 'stay'), ...stays.filter(x => x.type !== 'stay')].map(x => `<button type="button" class="mstay" data-item="${esc(x.id)}">${x.type === 'stay' ? ic('bed', 18) : actIc(x.icon, 18)}<span class="grow"><b>${esc(x.name)}</b>${x.date ? `<small>${esc(x.dateEnd && x.dateEnd !== x.date ? fmtRange(x.date, x.dateEnd) : fmtDate(x.date))}${x.type === 'stay' && nightsBetween(x.date, x.dateEnd) ? ' · ' + esc(nightsLabel(nightsBetween(x.date, x.dateEnd))) : ''}</small>` : ''}</span>${x.score ? scoreH(String(x.score).replace('.', ',')) : ''}</button>`).join('')}</div></div></div>`

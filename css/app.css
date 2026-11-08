@@ -602,3 +602,4 @@ button.fc { cursor: pointer; } .card-head + .fc { margin-top: 0; }
 .xall { background: var(--accent-soft); color: var(--accent); width: 40px; height: 40px; flex: none; }
 .hdot { position: relative; z-index: 1; display: flex; width: 32px; height: 32px; flex: none; background: var(--surface); margin: 0 -2px; } .hdot svg { display: block; }
 .sheet .chips.apc { flex-wrap: wrap; } .sheet .chips.apc .ch { flex: 1 1 30%; gap: 6px; font: inherit; font-size: 14px; font-weight: 600; color: var(--ink); } .sheet .chips.apc .ch.on { color: var(--accent); }
+.mcode { letter-spacing: .04em; }
