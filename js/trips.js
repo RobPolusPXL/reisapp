@@ -711,6 +711,18 @@ export function stationsOf(t) {
   while (legs.length && legs[0].transit && viaH.has(legs[0].c)) legs = legs.slice(1);
   while (legs.length && legs[legs.length - 1].transit && viaT.has(legs[legs.length - 1].c)) legs = legs.slice(0, -1);
   const used = new Set([...heen, ...terug].map(fid).filter(Boolean));
+  // Reis over land (auto, trein…) zonder heen/terug: start en eindig thuis, met het huisje.
+  const home = t.from || homeCountry();
+  const overland = home && legs.length && legs[0].mode !== 'plane' && legs.some(l => l.c !== home);
+  let backMode = null;
+  if (overland && !heen.length) {
+    while (legs.length && legs[0].c === home) legs = legs.slice(1);
+    push({ c: home, name: 'Thuis' }, 'house', '', null);
+  }
+  if (overland && !terug.length) {
+    backMode = legs[legs.length - 1]?.mode || 'car';
+    while (legs.length > 1 && legs[legs.length - 1].c === home) { backMode = legs[legs.length - 1].mode || backMode; legs = legs.slice(0, -1); }
+  }
   legs.forEach((l, i) => {
     const first = i === 0 && heen.length, mode = first ? heen[heen.length - 1].mode : l.mode;
     let flightIn = first ? fid(heen[heen.length - 1]) : null;
@@ -720,6 +732,7 @@ export function stationsOf(t) {
     }
     push({ c: l.c, name: nameOf(l.c) }, l.transit ? 'small' : 'stay', l.transit && mode === 'plane' ? 'overstap' : '', st.length ? mode : null, flightIn);
   });
+  if (backMode) push({ c: home, name: 'Thuis' }, 'house', '', backMode);
   if (terug.length) {
     terug.slice(0, -1).forEach(s => {
       const p = place(stepEnds(s, it).to, s.mode), last = st[st.length - 1];
