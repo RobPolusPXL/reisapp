@@ -14,6 +14,7 @@ function applyTheme() {
   const isDark = mode === 'dark' || (mode === 'system' && dark.matches);
   document.documentElement.dataset.theme = theme;
   document.documentElement.dataset.scheme = isDark ? 'dark' : 'light';
+  document.documentElement.dataset.look = get().settings.look || 'standaard';
   const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim();
   document.querySelector('meta[name=theme-color]')?.setAttribute('content', accent);
 }

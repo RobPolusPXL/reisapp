@@ -25,6 +25,17 @@
 [data-scheme=dark][data-theme=roze] { --accent: #FF7AA8; --accent-soft: #4A1830; }
 [data-scheme=dark][data-theme=grafiet] { --accent: #AEB8C2; --accent-soft: #2A323B; }
 
+/* Paspoortweergave: de hele app op papier (instelling Weergave) */
+[data-look=paspoort]:not([data-scheme=dark]) {
+  --bg: #F4EEDF; --surface: #FFFCF3; --ink: #2A2620; --muted: #857A63; --line: #E3D8BF;
+  --sea: #EDE5D0; --land: #D8CBAA; --field: #C9BA97; --shadow: 0 1px 0 #E3D8BF, 0 2px 6px rgba(80, 60, 20, .08);
+}
+[data-look=paspoort][data-scheme=dark] { --bg: #16130E; --surface: #211C15; --ink: #EDE6D6; --muted: #A89C84; --line: #3A3226; --sea: #1B1711; --land: #3A3226; --field: #5A4E3B; }
+[data-look=paspoort] #view:not(.kaart) { background-image: radial-gradient(rgba(120, 100, 60, .07) 1px, transparent 1px); background-size: 6px 6px; }
+[data-look=paspoort] :is(.sub, .year, .label, .tl-yr span, .mdate, .page-head + .muted, .tl-cd small, .pc-d, .pmeta) { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; letter-spacing: .04em; }
+[data-look=paspoort] .card-head h2, [data-look=paspoort] .page h2 { letter-spacing: .01em; }
+[data-look=paspoort] #tabs, [data-look=paspoort] #side { background: var(--surface); }
+
 /* ---------- Basis ---------- */
 * { box-sizing: border-box; }
 html, body { height: 100%; margin: 0; }
@@ -657,8 +668,8 @@ button.fc { cursor: pointer; } .card-head + .fc { margin-top: 0; }
 .tl-cd b { font-size: 12.5px; line-height: 1.2; } .tl-cd small { font-size: 11px; color: var(--muted); } .tl-fl { display: flex; gap: 3px; } .tl-fl .flag { width: 20px; height: 15px; }
 
 /* ---------- Paspoortweergave van reizen (instelling) ---------- */
-.paper { --pmuted: #8a7f6a; --pline: #d6ccb6; }
-:root:not([data-scheme=dark]) .paper { background: #f8f4ea; background-image: radial-gradient(rgba(120, 100, 60, .06) 1px, transparent 1px); background-size: 6px 6px; color: #2a2620; min-height: 100%; }
+.paper { --pmuted: var(--muted); --pline: var(--line); }
+.paper { min-height: 100%; }
 [data-scheme=dark] .paper { --pmuted: var(--muted); --pline: var(--line); }
 .paper .pyear, .paper .pc-d, .paper .pmeta, .paper .ministamp, .paper .stamp { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; letter-spacing: .06em; }
 .paper .pyear { font-size: 12px; color: var(--pmuted); margin: 14px 0 2px; text-align: left; }
@@ -676,4 +687,4 @@ button.fc { cursor: pointer; } .card-head + .fc { margin-top: 0; }
 .stamp.round { border-radius: 50%; width: 124px; height: 124px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 8px; }
 .st-top { font-size: 9.5px; font-weight: 600; text-transform: uppercase; overflow-wrap: anywhere; } .st-f { margin: 5px 0 2px; } .st-f .flag { width: 30px; height: 22px; }
 .st-m { display: flex; justify-content: center; margin-bottom: 2px; } .st-d { font-size: 10px; font-weight: 600; }
-.paper .card, .paper .stat-card + h2 { } :root:not([data-scheme=dark]) .paper .card { background: #fffdf7; box-shadow: 0 1px 0 var(--pline); }
+.paper .card, .paper .stat-card + h2 { } 
