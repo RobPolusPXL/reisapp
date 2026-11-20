@@ -32,7 +32,7 @@
 }
 [data-look=paspoort][data-scheme=dark] { --bg: #16130E; --surface: #211C15; --ink: #EDE6D6; --muted: #A89C84; --line: #3A3226; --sea: #1B1711; --land: #3A3226; --field: #5A4E3B; }
 [data-look=paspoort] #view:not(.kaart) { background-image: radial-gradient(rgba(120, 100, 60, .07) 1px, transparent 1px); background-size: 6px 6px; }
-[data-look=paspoort] :is(.sub, .year, .label, .tl-yr span, .mdate, .page-head + .muted, .tl-cd small, .pc-d, .pmeta) { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; letter-spacing: .04em; }
+[data-look=paspoort] :is(.sub, .year, .label, .tl-yr span, .mdate, .page-head + .muted, .pc-d, .pmeta) { font-family: "IBM Plex Mono", ui-monospace, Menlo, monospace; letter-spacing: .04em; }
 [data-look=paspoort] .card-head h2, [data-look=paspoort] .page h2 { letter-spacing: .01em; }
 [data-look=paspoort] #tabs, [data-look=paspoort] #side { background: var(--surface); }
 
