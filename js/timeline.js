@@ -3,7 +3,7 @@ import { esc, ic } from './ui.js';
 import { flag } from './data.js';
 import { MODES, MODE_COLOR } from './trips.js';
 
-const PXY = 368, PAD = 60, CW = 118, STEM = 26, LH = 74;   // pixels per jaar, rand, kaartbreedte, steel, rijhoogte
+const PXY = 368, PAD = 60, CW = 150, STEM = 26, LH = 74;   // pixels per jaar, rand, kaartbreedte, steel, rijhoogte
 const MON = ['jan', 'feb', 'mrt', 'apr', 'mei', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'dec'];
 const D = s => new Date(s + 'T00:00:00');
 const dayOfYear = d => (d - new Date(d.getFullYear(), 0, 1)) / 864e5;

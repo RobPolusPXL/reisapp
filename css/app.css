@@ -662,10 +662,10 @@ button.fc { cursor: pointer; } .card-head + .fc { margin-top: 0; }
 .tl-stem { position: absolute; left: -1px; width: 2px; height: var(--stem); background: var(--c); } .tl-trip.up .tl-stem { bottom: 6px; } .tl-trip.dn .tl-stem { top: 6px; }
 .tl-mi { position: absolute; left: -11px; width: 22px; height: 22px; border-radius: 11px; background: var(--surface); border: 2px solid var(--c); color: var(--c); display: flex; align-items: center; justify-content: center; }
 .tl-trip.up .tl-mi { bottom: calc(var(--stem) - 4px); } .tl-trip.dn .tl-mi { top: calc(var(--stem) - 4px); }
-.tl-cd { position: absolute; left: -59px; width: 118px; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; background: var(--bg); border-radius: 12px; padding: 6px 6px 7px; }
+.tl-cd { position: absolute; left: -75px; width: 150px; display: flex; flex-direction: column; align-items: center; gap: 2px; text-align: center; background: var(--bg); border-radius: 12px; padding: 6px 6px 7px; }
 .tl-trip.up .tl-cd { bottom: calc(var(--stem) + 20px); } .tl-trip.dn .tl-cd { top: calc(var(--stem) + 20px); }
 .tl-trip:hover .tl-cd, .tl-trip:focus-visible .tl-cd { outline: 2px solid var(--c); }
-.tl-cd b { font-size: 12.5px; line-height: 1.2; } .tl-cd small { font-size: 11px; color: var(--muted); } .tl-fl { display: flex; gap: 3px; } .tl-fl .flag { width: 20px; height: 15px; }
+.tl-cd b { font-size: 12.5px; line-height: 1.2; } .tl-cd small { font-size: 11px; color: var(--muted); white-space: nowrap; } .tl-fl { display: flex; gap: 3px; } .tl-fl .flag { width: 20px; height: 15px; }
 
 /* ---------- Paspoortweergave van reizen (instelling) ---------- */
 .paper { --pmuted: var(--muted); --pline: var(--line); }
