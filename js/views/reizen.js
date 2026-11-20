@@ -3,13 +3,10 @@ import { esc, ic, fmtRange, daysBetween } from '../ui.js';
 import { matesText, flagsHtml, tripStats } from '../trips.js';
 import { openTripForm } from '../tripform.js';
 import { loadAirports } from '../airports.js';
-import { timelineHtml } from '../timeline.js';
 
 export function mount(el) {
   loadAirports().then(() => draw());
-  let tlScroll = null;   // onthoud waar je in de tijdlijn stond; de eerste keer begin je bij de nieuwste reis
   const draw = () => {
-    const prev = el.querySelector('#tl-wrap'); if (prev) tlScroll = prev.scrollLeft;
     const st = get();
     const s = tripStats(st);
     const trips = [...st.trips].sort((a, b) => (b.start || '').localeCompare(a.start || ''));
@@ -41,11 +38,9 @@ export function mount(el) {
         </div>
         <a class="all" href="#/statistieken">Alle reisstatistieken${ic('chev', 20)}</a>
       </section>
-      ${trips.length ? `<h2 style="font-size:18px">Tijdlijn</h2><section class="card tl-card">${timelineHtml(st.trips)}</section>` : ''}
       ${trips.length ? `<h2 style="font-size:18px">Afgelopen</h2>${cards}` : `<div class="card"><h2>Nog geen reizen</h2><p class="muted">Voeg je eerste reis toe met de knop rechtsonder.</p></div>`}
       <button type="button" class="fab" id="add" aria-label="Reis toevoegen" style="position:fixed;bottom:calc(88px + env(safe-area-inset-bottom))">${ic('plus', 26)}</button>
     </div>`;
-    const w = el.querySelector('#tl-wrap'); if (w) w.scrollLeft = tlScroll ?? w.scrollWidth;
   };
   draw();
   const unsub = subscribe(draw);

@@ -3,7 +3,7 @@ import { get, subscribe } from './store.js';
 import { ic, esc } from './ui.js';
 import { initSync } from './sync.js';
 
-const TABS = [['kaart', 'Kaart', 'map'], ['paspoort', 'Paspoort', 'book'], ['reizen', 'Reizen', 'case']];
+const TABS = [['kaart', 'Kaart', 'map'], ['paspoort', 'Paspoort', 'book'], ['reizen', 'Reizen', 'case'], ['tijdlijn', 'Tijdlijn', 'timeline']];
 const view = document.getElementById('view');
 let cleanup = null;
 
@@ -34,6 +34,7 @@ const loaders = {
   kaart: () => import('./views/kaart.js'),
   paspoort: () => import('./views/paspoort.js'),
   reizen: () => import('./views/reizen.js'),
+  tijdlijn: () => import('./views/tijdlijn.js'),
   reis: () => import('./views/reis.js'),
   statistieken: () => import('./views/statistieken.js'),
   credits: () => import('./views/credits.js'),

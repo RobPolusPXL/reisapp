@@ -26,6 +26,7 @@ export const ICONS = {
   doc: '<path d="M7 3h7l4 4v14H7zM14 3v4h4M10 12h5M10 16h5"/>',
   check: '<path d="m5 12 5 5 9-10"/>',
   clock: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>',
+  timeline: '<path d="M2 12h20"/><circle cx="6" cy="12" r="2.2"/><circle cx="13" cy="12" r="2.2"/><circle cx="19" cy="12" r="2.2"/><path d="M6 9.8V5M13 14.2V19M19 9.8V6"/>',
   gear: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
   trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13M10 11v6M14 11v6"/>',
   edit: '<path d="M4 20h4L19 9l-4-4L4 16zM13 7l4 4"/>',
