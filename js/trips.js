@@ -808,3 +808,21 @@ export function metroHtml(t) {
   const body = open ? rows.replaceAll('aria-expanded="false"', 'aria-expanded="true"').replace(/(<div class="mexp" id="[^"]+") hidden>/g, '$1>') : rows;
   return `<section class="card"><div class="card-head"><h2>Reisweg</h2>${rows.includes('data-exp=') ? `<button type="button" class="icon-btn xall" aria-label="${open ? 'Alles inklappen' : 'Alles uitklappen'}" aria-expanded="${open}">${open ? XALL_ICON.close : XALL_ICON.open}</button>` : ''}</div><div class="metro">${body}</div></section>`;
 }
+
+// ---- Paspoortweergave (instelling): stempels per land ----
+const STAMP_INK = ['#1d4f91', '#8a2b6b', '#2f6b3a', '#9a3324', '#6b4a1d'];
+const dmyy = s => s ? `${s.slice(8, 10)}.${s.slice(5, 7)}.${s.slice(2, 4)}` : '';
+const tilt = i => [-6, 4, -3, 5, -2][i % 5];
+/** Kleine stempels voor het overzicht: vlag, vervoer en landcode. */
+export function miniStamps(t) {
+  return `<div class="pc-s">${entries(t).map((e, i) => `<span class="ministamp" style="--r:${tilt(i)}deg;--c:${STAMP_INK[i % 5]}">${flag(e.c)}<b>${ic(MODES[e.mode]?.[1] || 'dots', 11)}${esc(e.c)}</b></span>`).join('')}</div>`;
+}
+/** Grote stempels voor een geopende reis, met IN- en UIT-datum op het eerste en laatste land. */
+export function bigStamps(t) {
+  const es = entries(t), d = partsData(t), it = t.items || [];
+  const inDate = flightOf(d.heen[d.heen.length - 1], it)?.date || t.start, outDate = flightOf(d.terug[0], it)?.date || t.end;
+  return `<div class="stamps">${es.map((e, i) => {
+    const a = i === 0 ? inDate : '', b = i === es.length - 1 ? outDate : '';
+    return `<div class="stamp${e.mode === 'boat' ? ' round' : ''}" style="--r:${tilt(i)}deg;--c:${STAMP_INK[i % 5]}"><div class="st-top">${esc(nameOf(e.c))}</div><div class="st-f">${flag(e.c)}</div><div class="st-m">${ic(MODES[e.mode]?.[1] || 'dots', 16)}</div>${a || b ? `<div class="st-d">${a ? 'IN ' + dmyy(a) : ''}${a && b ? '<br>' : ''}${b ? 'UIT ' + dmyy(b) : ''}</div>` : ''}</div>`;
+  }).join('')}</div>`;
+}

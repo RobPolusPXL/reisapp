@@ -19,6 +19,10 @@ export function mount(el) {
       <section class="card"><div class="card-head"><h2>Weergave</h2></div>
         <div class="seg" role="group" aria-label="Weergave">${MODES.map(([id, n]) => `<button type="button" data-mode="${id}" aria-pressed="${s.mode === id}">${n}</button>`).join('')}</div>
       </section>
+      <section class="card"><div class="card-head"><h2>Weergave reizen</h2></div>
+        <p class="muted" style="margin:0 0 12px">Hoe je reizen eruitzien. Paspoort toont ze op papier met stempels per land.</p>
+        <div class="seg" role="group" aria-label="Weergave reizen">${[['standaard', 'Standaard'], ['paspoort', 'Paspoort']].map(([v, n]) => `<button type="button" data-look="${v}" aria-pressed="${(s.look || 'standaard') === v}">${n}</button>`).join('')}</div>
+      </section>
       <section class="card"><div class="card-head"><h2>Reisweg</h2></div>
         <p class="muted" style="margin:0 0 12px">Hoe de Reisweg opent als je een reis bekijkt.</p>
         <div class="seg" role="group" aria-label="Reisweg standaard">${[[false, 'Ingeklapt'], [true, 'Uitgeklapt']].map(([v, n]) => `<button type="button" data-route="${v}" aria-pressed="${!!s.routeOpen === v}">${n}</button>`).join('')}</div>
@@ -43,6 +47,8 @@ export function mount(el) {
     if (t) { update(st => { st.settings.theme = t.dataset.theme; }); return; }
     const m = e.target.closest('button[data-mode]');
     if (m) { update(st => { st.settings.mode = m.dataset.mode; }); return; }
+    const lk = e.target.closest('button[data-look]');
+    if (lk) { update(st => { st.settings.look = lk.dataset.look; }); return; }
     const r = e.target.closest('button[data-route]');
     if (r) { update(st => { st.settings.routeOpen = r.dataset.route === 'true'; }); return; }
     if (e.target.closest('#sync-in')) { signIn(); return; }

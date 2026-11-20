@@ -3,7 +3,7 @@ import { nameOf } from '../data.js';
 import { loadAirports } from '../airports.js';
 import { actIc } from '../acticons.js';
 import { esc, ic, ICONS, fmtRange, fmtDate, daysBetween, scoreH } from '../ui.js';
-import { matesText, flagsHtml, transportHtml, metroHtml, XALL_ICON, stayStops, staysAt, TYPES, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
+import { matesText, flagsHtml, bigStamps, transportHtml, metroHtml, XALL_ICON, stayStops, staysAt, TYPES, openItemForm, confirmSheet, nightsBetween, nightsLabel } from '../trips.js';
 import { openTripForm } from '../tripform.js';
 
 export function mount(el, { params }) {
@@ -39,14 +39,21 @@ export function mount(el, { params }) {
     const all = [...(t.items || [])].sort((a, b) => (a.date || '9').localeCompare(b.date || '9'));
     const inMetro = new Set(stayStops(t).flatMap(st => staysAt(t, st).map(x => x.id)));   // verblijven en activiteiten die al bij een land in de reisweg staan
     const sec = (title, type) => { const l = all.filter(i => i.type === type && !inMetro.has(i.id)); return l.length ? `<section class="card"><div class="card-head"><h2>${title}</h2></div><div class="items">${l.map(itemRow).join('')}</div></section>` : ''; };
-    el.innerHTML = `<div class="page">
+    const pass = get().settings?.look === 'paspoort';
+    const btns = `<button type="button" class="icon-btn" id="edit" aria-label="Reis bewerken">${ic('edit', 22)}</button>
+        <button type="button" class="icon-btn" id="del" aria-label="Reis verwijderen">${ic('trash', 22)}</button>`;
+    const head = pass ? `<div class="page paper">
+      <header class="page-head"><a class="icon-btn" href="#/reizen" aria-label="Terug naar reizen">${ic('back', 26)}</a><span style="flex:1"></span>${btns}</header>
+      <h1 class="ptitle">${esc(t.title || countries || 'Reis')}</h1>
+      <div class="pmeta">${esc(fmtRange(t.start, t.end))} · ${d} ${d === 1 ? 'dag' : 'dagen'}${t.mates?.length ? ' · met ' + esc(matesText(t.mates)) : ''}</div>
+      ${bigStamps(t)}` : `<div class="page">
       <header class="page-head"><a class="icon-btn" href="#/reizen" aria-label="Terug naar reizen">${ic('back', 26)}</a>
         <div style="flex:1;min-width:0"><h1 style="font-size:22px">${esc(t.title || countries || 'Reis')}</h1>
         <div class="sub">${esc(fmtRange(t.start, t.end))} · ${d} ${d === 1 ? 'dag' : 'dagen'}</div>${t.mates?.length ? `<div class="sub">Met ${esc(matesText(t.mates))}</div>` : ''}</div>
-        <button type="button" class="icon-btn" id="edit" aria-label="Reis bewerken">${ic('edit', 22)}</button>
-        <button type="button" class="icon-btn" id="del" aria-label="Reis verwijderen">${ic('trash', 22)}</button>
+        ${btns}
       </header>
-      ${flagsHtml(t)}
+      ${flagsHtml(t)}`;
+    el.innerHTML = `${head}
       <div class="trip-secs">
         ${metroHtml(t)}
         ${transportHtml(t)}
